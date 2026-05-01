@@ -1,7 +1,5 @@
 <?php
 
-namespace Database\Migrations;
-
 use App\Core\Migration;
 
 /**
@@ -11,7 +9,7 @@ use App\Core\Migration;
  * (e.g., site -> building -> floor -> room, or any other hierarchy).
  * This is a kernel-level feature, not specific to any application domain.
  */
-class Migration_0038_create_locations_table extends Migration
+class CreateLocationsTable extends Migration
 {
     public function up(): void
     {
