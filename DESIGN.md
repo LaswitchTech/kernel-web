@@ -274,6 +274,32 @@ To be expanded later:
 
 ---
 
+## Post-Cleanup Architecture (Current)
+
+After the NetMon cleanup pass, the kernel contains:
+
+### Core (Kernel)
+- Routing, service container, config system
+- Database layer (PDO abstraction + SQLite driver)
+- Migration system
+- Authentication (users, groups, permissions, API tokens, sessions)
+- Hierarchical locations
+- Installer system
+
+### Modules (Future Plugins)
+- Chat, Notifications, Tasks, FileManager, Notes, Setup
+
+### Admin (Kernel-Level)
+- User management, Group management, Permission management
+- System settings, Locations management
+
+All NetMon-specific infrastructure (devices, monitoring, alerts, discovery, topology) has been removed.
+NetMon is a future application built on Kernel-Web, not part of the kernel itself.
+
+For the full cleanup history, see `/docs/kernel-status.md`.
+
+---
+
 ## Design Evolution Rule
 
 Whenever a structural or architectural change is made:

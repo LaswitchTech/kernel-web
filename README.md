@@ -17,11 +17,11 @@
 
 Instead of building applications from scratch, Kernel-Web provides:
 
-- A structured backend architecture
-- A plugin system for features
+- A structured backend architecture (routing, container, config, database layer)
+- A foundation for authentication, permissions, and API tokens
+- A modular plugin system for features
 - A theme system for customization
 - A layout system for UI reuse
-- A foundation for authentication, APIs, and future integrations
 
 Built with a strong focus on:
 - Simplicity
@@ -79,32 +79,33 @@ Provide reusable UI structures (dashboard, auth pages, app shells, etc.).
 
 ## Features (Current & Planned)
 
-### Core
+### Core (Implemented)
 - Lightweight PHP kernel (no heavy framework)
 - Modular architecture
-- Service-based backend structure
-- SQLite support (MySQL/MariaDB planned)
+- Routing with middleware chaining
+- Service container (DI)
+- Config system with local overrides
+- Database layer (SQLite, MySQL/MariaDB driver reserved)
+- Migration system
+- Authentication (users, groups, permissions, API tokens)
+- Session and token-based auth
+- Hierarchical locations
 
-### Plugin System (Planned)
+### Plugin System (Deferred)
 - Installable and removable modules
 - Plugin discovery and lifecycle
 - Independent migrations and routes
 
-### Theme System (Planned)
+### Theme System (Deferred)
 - LESS-based theming
 - Dark / Light mode support
 - Token-based styling
 
-### Layout System (Planned)
+### Layout System (Deferred)
 - Reusable page structures
 - Shared UI components across apps
 
-### Authentication (Planned)
-- Users, groups, permissions
-- API tokens
-- Future OAuth support (client + server)
-
-### Licensing (Planned)
+### Licensing (Deferred)
 - Support for licensed apps and plugins
 - Future licensing server as first production app
 
@@ -112,11 +113,12 @@ Provide reusable UI structures (dashboard, auth pages, app shells, etc.).
 
 ## Architecture Highlights
 
-- Modular design
+- Kernel is application-agnostic (no domain-specific logic)
 - Clear separation:
-  - Controllers
-  - Services
-  - Repositories
+  - Controllers (orchestration)
+  - Services (business logic)
+  - Repositories (data access)
+  - Kernel (infrastructure)
 - No heavy framework dependency
 - Plugin-first extensibility model
 - Theme-driven UI system
@@ -160,8 +162,8 @@ cd kernel-web
 
 ### Goals
 - Build a reusable application kernel
-- Extract reusable logic from NetMon
-- Keep core independent from domain logic
+- Keep core independent from application domain logic
+- Maintain clear separation between kernel and features
 
 ### Workflow
 - Follow rules in `CLAUDE.md`
@@ -173,16 +175,15 @@ cd kernel-web
 ## Roadmap
 
 Short-term:
-- Kernel bootstrap (entry point, routing, container)
-- Secure public structure (`/public` + `.htaccess`)
-- Config system
-- Database layer and migrations
+- Plugin system implementation
+- Extract modules to `/lib/plugins/`
+- Add automated tests
 
 Mid-term:
-- Plugin system implementation
 - Theme system implementation
 - Layout system implementation
-- Authentication foundation
+- MySQL/MariaDB driver
+- OAuth provider abstraction
 
 Long-term:
 - OAuth server/client support
@@ -194,10 +195,10 @@ Long-term:
 
 ## Ecosystem (Planned)
 
-Apps built on Kernel-Web:
-- NetMon (network monitoring)
+Future apps built on Kernel-Web:
+- Network monitoring application
 - Licensing Server
-- Future CRM / tools
+- CRM / tools
 
 ---
 

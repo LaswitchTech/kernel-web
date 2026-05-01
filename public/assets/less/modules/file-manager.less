@@ -1,0 +1,47 @@
+// ============================================================
+// Kernel-Web — File Manager module styles
+// ============================================================
+
+// ── Text preview ─────────────────────────────────────────────
+// Scrollable <pre> block used by the preview page for plain-text
+// and code file types.  Content is always HTML-escaped before
+// being written here — this block must never render active markup.
+
+.fm-preview-text {
+    font-family:      'SFMono-Regular', Menlo, Monaco, Consolas,
+                      'Liberation Mono', 'Courier New', monospace;
+    font-size:        0.8rem;
+    line-height:      1.65;
+    white-space:      pre;
+    overflow:         auto;
+    max-height:       70vh;
+    padding:          1rem 1.25rem;
+    margin:           0;
+    background:       var(--app-panel-3);
+    color:            var(--app-text);
+    border:           none;
+    border-radius:    0 0 var(--app-radius) var(--app-radius);
+
+    // Horizontal scrollbar uses theme background
+    &::-webkit-scrollbar        { height: 6px; width: 6px; }
+    &::-webkit-scrollbar-track  { background: var(--app-panel-2); }
+    &::-webkit-scrollbar-thumb  { background: var(--app-border); border-radius: 3px; }
+}
+
+// ── Image preview ─────────────────────────────────────────────
+// Constrain rendered size; centre within the card body.
+
+.fm-preview-image {
+    max-height: 70vh;
+    object-fit: contain;
+}
+
+// ── PDF embed ─────────────────────────────────────────────────
+// Full-width, fixed-height <embed> for browser-native PDF rendering.
+
+.fm-preview-pdf {
+    display:  block;
+    width:    100%;
+    height:   75vh;
+    border:   none;
+}
