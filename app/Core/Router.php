@@ -43,6 +43,17 @@ class Router
     }
 
     /**
+     * Register a route definition array declared by a plugin manifest.
+     *
+     * Format: ['METHOD', '/path', 'Handler@method', ['middleware']]
+     */
+    public function registerPluginRoutes(array $routeDef): void
+    {
+        [$method, $path, $handler, $middleware] = array_pad($routeDef, 4, []);
+        $this->add(strtoupper($method), $path, $handler, $middleware);
+    }
+
+    /**
      * Dispatch the current request.
      * Handler format: "Controller@method"
      */

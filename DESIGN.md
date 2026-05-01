@@ -158,12 +158,46 @@ Each plugin has a `plugin.json` at its root:
 3. Validates manifests
 4. Checks dependencies
 5. Registers plugin-declared permissions with Gate
-6. Stores registry in container (`$container->set('plugins', $registry)`)
+6. Registers plugin-declared services in container
+7. Stores registry in container (`$container->set('plugins', $registry)`)
+8. Includes `routes.php` and registers manifest-declared routes
+9. Kernel loads its own routes (web.php) and dispatches
+
+### Plugin Directory Structure
+```
+lib/plugins/{Name}/
+├── plugin.json        — manifest (required)
+├── src/               — PHP classes (autoloaded)
+│   ├── {Controller}.php
+│   ├── {Service}.php
+│   └── {Repository}.php
+├── routes.php         — optional route registration hook
+├── migrations/        — migration files (path relative to plugin root)
+├── views/             — plugin-specific views
+└── README.md          — plugin documentation
+```
+
+### Handler Format for Plugin Routes
+Plugin routes use the handler format: `Plugins\{Name}\{Controller}@method`
+This resolves to `App\Plugins\{Name}\{Controller}` via the Router's handler resolution logic.
+
+### Service Registration Format
+```json
+"services": {
+    "service_key": {
+        "class": "App\\Plugins\\{Name}\\{Class}",
+        "singleton": true,
+        "args": []
+    }
+}
+```
+Keys in `args` that match container bindings are resolved as dependencies.
 
 ### Extension Points (deferred)
-- Plugin routes are declared in manifest but not auto-registered (hook: `registerRoutes()`)
-- Plugin migrations are declared but not auto-executed (hook: `runMigrations()`)
-- Plugin services are declared but not auto-registered (hook: `registerServices()`)
+- Plugin migration auto-execution (hook: `runMigrations()`)
+- Plugin autoloader for additional directories
+- Plugin activation/deactivation API
+- Plugin marketplace / licensing
 
 ### Design Rules
 - No plugin should break kernel if it fails
@@ -316,8 +350,11 @@ After the NetMon cleanup pass, the kernel contains:
 - Hierarchical locations
 - Installer system
 
+### Plugins (Extracted from Core)
+- **Notes** (`lib/plugins/notes/`) — polymorphic note annotations (first real plugin)
+
 ### Modules (Future Plugins)
-- Chat, Notifications, Tasks, FileManager, Notes, Setup
+- Chat, Notifications, Tasks, FileManager, Setup
 
 ### Admin (Kernel-Level)
 - User management, Group management, Permission management

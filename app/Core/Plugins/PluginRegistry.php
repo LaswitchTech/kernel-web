@@ -16,6 +16,17 @@ namespace App\Core\Plugins;
  */
 class PluginRegistry
 {
+    private ?\App\Core\Container $container = null;
+
+    /**
+     * Set the DI container for service registration.
+     * Called by the loader before enable() is invoked.
+     */
+    public function setContainer(\App\Core\Container $container): void
+    {
+        $this->container = $container;
+    }
+
     private array $discovered = [];
     private array $invalid    = [];
     private array $enabled    = [];
@@ -142,6 +153,27 @@ class PluginRegistry
      */
     protected function registerServices(PluginManifest $plugin): void
     {
-        // Extension point — no-op by default.
+        if ($this->container === null) {
+            return;
+        }
+
+        foreach ($plugin->services() as $key => $serviceDef) {
+            $class = $serviceDef['class'] ?? '';
+            if ($class === '' || !class_exists($class)) {
+                continue;
+            }
+
+            // Resolve constructor arguments if provided.
+            $args = $serviceDef['args'] ?? [];
+            $resolved = [];
+            foreach ($args as $arg) {
+                $resolved[] = is_string($arg) && $this->container->has($arg)
+                    ? $this->container->get($arg)
+                    : $arg;
+            }
+
+            $instance = new $class(...$resolved);
+            $this->container->set($key, $instance);
+        }
     }
 }

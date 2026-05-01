@@ -157,9 +157,9 @@ class PluginLoader
     /**
      * Register routes declared by all enabled plugins.
      *
-     * Calls the router if a 'router' binding exists in the container.
-     * Each plugin routes array should follow the format:
-     *   ['GET', '/path/to/route', 'Handler@method', ['middleware']]
+     * Includes each plugin's routes.php if it exists, then processes
+     * the routes array from the manifest. Both mechanisms inject
+     * routes into the global $router instance.
      *
      * Returns the number of routes registered.
      */
@@ -178,6 +178,11 @@ class PluginLoader
         $count = 0;
 
         foreach ($this->registry->getEnabled() as $plugin) {
+            $routesFile = $plugin->basePath() . '/routes.php';
+            if (is_file($routesFile)) {
+                include $routesFile;
+            }
+
             foreach ($plugin->routes() as $routeDef) {
                 $router->registerPluginRoutes($routeDef);
                 $count++;

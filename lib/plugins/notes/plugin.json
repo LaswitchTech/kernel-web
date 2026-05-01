@@ -1,0 +1,28 @@
+{
+    "name": "notes",
+    "version": "0.1.0",
+    "description": "Polymorphic note annotations attached to any domain entity.",
+    "enabled": true,
+    "requires": {
+        "kernel": "8.1"
+    },
+    "dependencies": {},
+    "permissions": [
+        "notes.manage"
+    ],
+    "routes": [
+        ["GET",  "/notes",      "Plugins\\Notes\\NotesController@index"],
+        ["POST", "/notes",      "Plugins\\Notes\\NotesController@add"],
+        ["GET",  "/notes/{id}", "Plugins\\Notes\\NotesController@show"],
+        ["DELETE", "/notes/{id}/delete", "Plugins\\Notes\\NotesController@delete"]
+    ],
+    "migrations": [
+        "migrations/0021_create_notes_table.php"
+    ],
+    "services": {
+        "notes.service": {
+            "class": "App\\Plugins\\Notes\\NoteService",
+            "singleton": true
+        }
+    }
+}

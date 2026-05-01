@@ -182,26 +182,25 @@ They should become plugins in a future cleanup:
 3. **Chat Module** (`Modules/Chat/`) — Chat rooms
 4. **Tasks Module** (`Modules/Tasks/`) — Task management
 5. **FileManager Module** (`Modules/FileManager/`) — File browser
-6. **Notes Module** (`Modules/Notes/`) — Entity notes
 
 ### Plugin System Implementation
 
-Implemented (v1 — minimal foundation):
+Implemented (v2 — route and service support):
 
 - `app/Core/Plugins/PluginManifest.php` — manifest parsing and validation
-- `app/Core/Plugins/PluginRegistry.php` — in-memory registry (discovered/invalid/enabled/disabled)
-- `app/Core/Plugins/PluginLoader.php` — discovery, validation, dependency check
+- `app/Core/Plugins/PluginRegistry.php` — in-memory registry + service registration
+- `app/Core/Plugins/PluginLoader.php` — discovery, validation, routes/services/migrations hooks
 - `app/Core/Plugins/PluginException.php` — custom exception class
-- `lib/plugins/` — plugin directory (with `.example-plugin` template)
-- Integration in `public/index.php` — loads plugins during bootstrap
+- `app/Core/Router.php` — `registerPluginRoutes()` method + plugin handler resolution
+- `lib/plugins/` — plugin directory with `notes` (first real plugin) and `.example-plugin` template
+- Integration in `public/index.php` — plugin autoloader, service registration, route loading
 
 Extension points (deferred):
 
-- Plugin route auto-registration
-- Plugin migration auto-execution
-- Plugin service auto-registration
-- Plugin autoloader
+- Plugin migration auto-execution (hook: `runMigrations()`)
+- Plugin autoloader for additional directories
 - Plugin activation/deactivation API
+- Plugin marketplace / licensing
 
 ### Modules to Extract as Plugins
 
@@ -213,7 +212,6 @@ They should become plugins in a future cleanup:
 3. **Chat Module** (`Modules/Chat/`) — Chat rooms
 4. **Tasks Module** (`Modules/Tasks/`) — Task management
 5. **FileManager Module** (`Modules/FileManager/`) — File browser
-6. **Notes Module** (`Modules/Notes/`) — Entity notes
 
 ### Future Kernel Work
 
@@ -259,8 +257,9 @@ Migration IDs will not be renumbered.
 
 ### Not Yet Done
 
-- [ ] Extract modules to `/lib/plugins/`
+- [ ] Extract remaining modules to `/lib/plugins/`
 - [ ] Remove remaining NetMon references in `/docs`
 - [ ] Update `DESIGN.md` with post-cleanup architecture
 - [ ] Add automated tests
 - [ ] MySQL/MariaDB driver
+- [ ] Plugin migration auto-execution

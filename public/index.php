@@ -44,6 +44,38 @@ spl_autoload_register(function (string $class): void {
     }
 });
 
+// Plugin autoloader — scans /lib/plugins/{name}/src/ for classes.
+spl_autoload_register(function (string $class): void {
+    if (strncmp($class, 'App\\Plugins\\', strlen('App\\Plugins\\')) !== 0) {
+        return;
+    }
+
+    $pluginsDir = __DIR__ . '/../lib/plugins';
+    if (!is_dir($pluginsDir)) {
+        return;
+    }
+
+    $iterator = new \DirectoryIterator($pluginsDir);
+    foreach ($iterator as $entry) {
+        if (!$entry->isDir() || $entry->isDot()) {
+            continue;
+        }
+
+        $srcDir = $entry->getPathname() . '/src';
+        if (!is_dir($srcDir)) {
+            continue;
+        }
+
+        $relative = substr($class, strlen('App\\Plugins\\'));
+        $file     = $srcDir . '/' . str_replace('\\', '/', $relative) . '.php';
+
+        if (file_exists($file)) {
+            require $file;
+            return;
+        }
+    }
+});
+
 // ---------------------------------------------------------------------------
 // Environment — must run before Config or InstallLock
 // ---------------------------------------------------------------------------
@@ -185,6 +217,10 @@ if ($pluginsDir !== false && is_dir($pluginsDir)) {
     if (!empty($permissions) && method_exists($gate, 'registerPermissions')) {
         $gate->registerPermissions($permissions);
     }
+
+    // Register plugin services from manifest (before routes).
+    $loader->getRegistry()->setContainer($container);
+    $loader->registerServices();
 
     // Store registry in container for later access (e.g. admin UI).
     $container->set('plugins', $loader->getRegistry());
