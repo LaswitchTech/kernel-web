@@ -1,37 +1,32 @@
 <?php
 
-namespace App\Modules\Tasks\Models;
-
-use App\Core\DatabaseInterface;
+namespace App\Plugins\tasks;
 
 /**
  * All database queries for the tasks table.
  *
  * This repository is entity-agnostic: it knows about tasks and their
  * polymorphic (entity_type, entity_id) linkage, but has no dependency on
- * any NetMon-specific class — it belongs to the reusable Tasks module and
+ * any NetMon-specific class — it belongs to the reusable Tasks plugin and
  * may be used by any application built on this platform.
  *
  * Returns raw arrays; no domain objects.
  */
 class TaskRepository
 {
-    private DatabaseInterface $db;
+    private \App\Core\DatabaseInterface $db;
 
-    public function __construct(DatabaseInterface $db)
+    public function __construct(\App\Core\DatabaseInterface $db)
     {
         $this->db = $db;
     }
 
-    // -------------------------------------------------------------------------
+    // ---------------------------------------------------------------
     // Read
-    // -------------------------------------------------------------------------
+    // ---------------------------------------------------------------
 
     /**
      * Return all tasks, newest first.
-     *
-     * JOINs users twice so callers receive assigned_display / created_display
-     * without additional queries.
      *
      * @return array<int, array>
      */
@@ -145,9 +140,9 @@ class TaskRepository
         );
     }
 
-    // -------------------------------------------------------------------------
+    // ---------------------------------------------------------------
     // Write
-    // -------------------------------------------------------------------------
+    // ---------------------------------------------------------------
 
     /**
      * Insert a new task row.
@@ -198,11 +193,6 @@ class TaskRepository
 
     /**
      * Update mutable fields of an existing task.
-     *
-     * Only the fields present in $data are updated; other columns are unchanged.
-     *
-     * @param  int   $id    Task primary key
-     * @param  array $data  Subset of mutable columns
      */
     public function update(int $id, array $data): void
     {
@@ -235,15 +225,6 @@ class TaskRepository
         );
     }
 
-    /**
-     * Soft-delete a task by setting deleted_at to the current timestamp.
-     *
-     * Does NOT hard-delete.  Soft-deleted tasks are excluded from all default
-     * read queries (findAll, findByEntity, findById) via WHERE deleted_at IS NULL.
-     *
-     * The caller is responsible for confirming the task exists and has not
-     * already been deleted before calling this method.
-     */
     public function delete(int $id, string $now): void
     {
         $this->db->execute(
@@ -252,33 +233,18 @@ class TaskRepository
         );
     }
 
-    // -------------------------------------------------------------------------
-    // User-scoped queries (used by TaskController::index for My Tasks view)
-    // -------------------------------------------------------------------------
+    // ---------------------------------------------------------------
+    // User-scoped queries
+    // ---------------------------------------------------------------
 
-    /**
-     * Return all active (non-completed, non-canceled) tasks assigned to a user.
-     *
-     * Filters on the canonical assignment model: assigned_type = 'user' AND assigned_id = ?.
-     *
-     * @return array<int, array>
-     */
     public function findForUser(int $userId): array
     {
         return $this->db->fetch(
             "SELECT
-                t.id,
-                t.title,
-                t.description,
-                t.status,
-                t.assigned_type,
-                t.assigned_id,
-                t.due_at,
-                t.entity_type,
-                t.entity_id,
-                t.created_by_user_id,
-                t.created_at,
-                t.updated_at,
+                t.id, t.title, t.description, t.status,
+                t.assigned_type, t.assigned_id, t.due_at,
+                t.entity_type, t.entity_id, t.created_by_user_id,
+                t.created_at, t.updated_at,
                 a.username     AS assigned_username,
                 a.display_name AS assigned_display,
                 c.username     AS created_username,
@@ -297,27 +263,14 @@ class TaskRepository
         );
     }
 
-    /**
-     * Return active tasks assigned to a user whose due date is strictly in the past.
-     *
-     * @return array<int, array>
-     */
     public function findOverdueForUser(int $userId): array
     {
         return $this->db->fetch(
             "SELECT
-                t.id,
-                t.title,
-                t.description,
-                t.status,
-                t.assigned_type,
-                t.assigned_id,
-                t.due_at,
-                t.entity_type,
-                t.entity_id,
-                t.created_by_user_id,
-                t.created_at,
-                t.updated_at,
+                t.id, t.title, t.description, t.status,
+                t.assigned_type, t.assigned_id, t.due_at,
+                t.entity_type, t.entity_id, t.created_by_user_id,
+                t.created_at, t.updated_at,
                 a.username     AS assigned_username,
                 a.display_name AS assigned_display,
                 c.username     AS created_username,
@@ -336,27 +289,14 @@ class TaskRepository
         );
     }
 
-    /**
-     * Return active tasks assigned to a user whose due date is today.
-     *
-     * @return array<int, array>
-     */
     public function findDueTodayForUser(int $userId): array
     {
         return $this->db->fetch(
             "SELECT
-                t.id,
-                t.title,
-                t.description,
-                t.status,
-                t.assigned_type,
-                t.assigned_id,
-                t.due_at,
-                t.entity_type,
-                t.entity_id,
-                t.created_by_user_id,
-                t.created_at,
-                t.updated_at,
+                t.id, t.title, t.description, t.status,
+                t.assigned_type, t.assigned_id, t.due_at,
+                t.entity_type, t.entity_id, t.created_by_user_id,
+                t.created_at, t.updated_at,
                 a.username     AS assigned_username,
                 a.display_name AS assigned_display,
                 c.username     AS created_username,
@@ -375,9 +315,6 @@ class TaskRepository
         );
     }
 
-    /**
-     * Count open + in_progress tasks assigned to a user.
-     */
     public function countOpenForUser(int $userId): int
     {
         $row = $this->db->fetchOne(
@@ -392,9 +329,6 @@ class TaskRepository
         return (int) ($row['n'] ?? 0);
     }
 
-    /**
-     * Count active tasks assigned to a user whose due date is strictly in the past.
-     */
     public function countOverdueForUser(int $userId): int
     {
         $row = $this->db->fetchOne(
@@ -411,9 +345,6 @@ class TaskRepository
         return (int) ($row['n'] ?? 0);
     }
 
-    /**
-     * Count active tasks assigned to a user whose due date is today.
-     */
     public function countDueTodayForUser(int $userId): int
     {
         $row = $this->db->fetchOne(
@@ -430,33 +361,14 @@ class TaskRepository
         return (int) ($row['n'] ?? 0);
     }
 
-    /**
-     * Return active tasks with no assignee.
-     *
-     * A task is considered unassigned when assigned_type IS NULL.
-     * All existing rows were backfilled by migration 0035; the write path
-     * (TaskController) now always sets assigned_type for assigned tasks.
-     *
-     * Sorted newest first.
-     *
-     * @return array<int, array>
-     */
     public function findUnassigned(): array
     {
         return $this->db->fetch(
             "SELECT
-                t.id,
-                t.title,
-                t.description,
-                t.status,
-                t.assigned_type,
-                t.assigned_id,
-                t.due_at,
-                t.entity_type,
-                t.entity_id,
-                t.created_by_user_id,
-                t.created_at,
-                t.updated_at,
+                t.id, t.title, t.description, t.status,
+                t.assigned_type, t.assigned_id, t.due_at,
+                t.entity_type, t.entity_id, t.created_by_user_id,
+                t.created_at, t.updated_at,
                 c.username     AS created_username,
                 c.display_name AS created_display
             FROM   tasks t
@@ -469,11 +381,6 @@ class TaskRepository
         );
     }
 
-    /**
-     * Count active unassigned tasks.
-     *
-     * Matches the same definition as findUnassigned().
-     */
     public function countUnassigned(): int
     {
         $row = $this->db->fetchOne(
@@ -487,43 +394,18 @@ class TaskRepository
         return (int) ($row['n'] ?? 0);
     }
 
-    // -------------------------------------------------------------------------
+    // ---------------------------------------------------------------
     // Reminder queries (used by scripts/task-reminders.php)
-    // -------------------------------------------------------------------------
+    // ---------------------------------------------------------------
 
-    /**
-     * Return tasks due today that have not yet had a "due today" reminder sent.
-     *
-     * Conditions:
-     *   - assigned_type = 'user' (only user-assigned tasks receive reminders)
-     *   - status NOT IN ('completed', 'canceled')
-     *   - DATE(due_at) = DATE('now')
-     *   - reminder_due_sent_at IS NULL
-     *
-     * The INNER JOIN on users ensures only tasks with a valid assigned user are
-     * returned.  Tasks whose assigned user was deleted are excluded automatically.
-     * Tasks assigned to non-user types (agent, cron) are excluded by the JOIN condition.
-     *
-     * Returns user email alongside task fields so the caller can dispatch
-     * notifications without a second query.
-     *
-     * @return array<int, array>
-     */
     public function findDueTodayPendingReminder(): array
     {
         return $this->db->fetch(
             "SELECT
-                t.id,
-                t.title,
-                t.description,
-                t.status,
-                t.assigned_type,
-                t.assigned_id,
-                t.due_at,
-                t.entity_type,
-                t.entity_id,
-                t.reminder_due_sent_at,
-                t.reminder_overdue_sent_at,
+                t.id, t.title, t.description, t.status,
+                t.assigned_type, t.assigned_id, t.due_at,
+                t.entity_type, t.entity_id,
+                t.reminder_due_sent_at, t.reminder_overdue_sent_at,
                 u.email        AS assigned_user_email,
                 u.username     AS assigned_username,
                 u.display_name AS assigned_display
@@ -538,34 +420,14 @@ class TaskRepository
         );
     }
 
-    /**
-     * Return overdue tasks that have not yet had an "overdue" reminder sent.
-     *
-     * Conditions:
-     *   - assigned_type = 'user' (only user-assigned tasks receive reminders)
-     *   - status NOT IN ('completed', 'canceled')
-     *   - DATE(due_at) < DATE('now')   (strictly in the past)
-     *   - reminder_overdue_sent_at IS NULL  (sent at most once per task, ever)
-     *
-     * Tasks assigned to non-user types (agent, cron) are excluded by the JOIN condition.
-     *
-     * @return array<int, array>
-     */
     public function findOverduePendingReminder(): array
     {
         return $this->db->fetch(
             "SELECT
-                t.id,
-                t.title,
-                t.description,
-                t.status,
-                t.assigned_type,
-                t.assigned_id,
-                t.due_at,
-                t.entity_type,
-                t.entity_id,
-                t.reminder_due_sent_at,
-                t.reminder_overdue_sent_at,
+                t.id, t.title, t.description, t.status,
+                t.assigned_type, t.assigned_id, t.due_at,
+                t.entity_type, t.entity_id,
+                t.reminder_due_sent_at, t.reminder_overdue_sent_at,
                 u.email        AS assigned_user_email,
                 u.username     AS assigned_username,
                 u.display_name AS assigned_display
@@ -580,13 +442,6 @@ class TaskRepository
         );
     }
 
-    /**
-     * Record that the "due today" reminder was dispatched for a task.
-     *
-     * Called by scripts/task-reminders.php immediately after a successful
-     * dispatch() call, so a second run of the script on the same day
-     * does not re-send the notification.
-     */
     public function markReminderDueSent(int $id, string $now): void
     {
         $this->db->execute(
@@ -595,13 +450,6 @@ class TaskRepository
         );
     }
 
-    /**
-     * Record that the "overdue" reminder was dispatched for a task.
-     *
-     * Called by scripts/task-reminders.php immediately after a successful
-     * dispatch() call.  The IS NULL guard in findOverduePendingReminder()
-     * ensures this fires at most once per task.
-     */
     public function markReminderOverdueSent(int $id, string $now): void
     {
         $this->db->execute(
@@ -610,24 +458,10 @@ class TaskRepository
         );
     }
 
-    // -------------------------------------------------------------------------
+    // ---------------------------------------------------------------
     // Cron / scheduler queries
-    // -------------------------------------------------------------------------
+    // ---------------------------------------------------------------
 
-    /**
-     * Return all tasks the scheduler should execute on this pass.
-     *
-     * Conditions:
-     *   - assigned_type = 'cron'
-     *   - status IN ('open', 'in_progress')
-     *   - execution_type IS NOT NULL
-     *   - deleted_at IS NULL
-     *
-     * Only the fields needed for dispatch are selected; the scheduler does not
-     * need display columns (username, etc.).
-     *
-     * @return array<int, array>
-     */
     public function findRunnableCron(): array
     {
         return $this->db->fetch(
@@ -643,14 +477,6 @@ class TaskRepository
         );
     }
 
-    /**
-     * Record the outcome of a scheduler execution attempt.
-     *
-     * Updates last_run_at, last_run_status, last_run_message, and updated_at.
-     *
-     * @param  string      $status   'ok' or 'failed'
-     * @param  string|null $message  Truncated combined stdout+stderr (may be null)
-     */
     public function updateExecution(int $id, string $now, string $status, ?string $message): void
     {
         $this->db->execute(

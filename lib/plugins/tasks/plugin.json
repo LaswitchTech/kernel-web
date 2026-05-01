@@ -1,0 +1,62 @@
+{
+    "name": "tasks",
+    "version": "0.1.0",
+    "description": "Polymorphic task management — create, assign, track, and link tasks to any domain entity.",
+    "enabled": true,
+    "requires": {
+        "kernel": "8.1"
+    },
+    "dependencies": {},
+    "permissions": [
+        "tasks.manage"
+    ],
+    "routes": [
+        ["GET",     "/tasks",                        "Plugins\\Tasks\\TaskController@index"],
+        ["GET",     "/tasks/create",                 "Plugins\\Tasks\\TaskController@createForm"],
+        ["POST",    "/tasks",                        "Plugins\\Tasks\\TaskController@store"],
+        ["GET",     "/tasks/{id}/edit",              "Plugins\\Tasks\\TaskController@editForm"],
+        ["POST",    "/tasks/{id}",                   "Plugins\\Tasks\\TaskController@update"],
+        ["POST",    "/tasks/{id}/delete",            "Plugins\\Tasks\\TaskController@delete"]
+    ],
+    "migrations": [
+        "migrations/0030_create_tasks_table.php",
+        "migrations/0031_add_tasks_manage_permission.php",
+        "migrations/0032_add_task_reminder_fields.php",
+        "migrations/0033_add_tasks_deleted_at.php",
+        "migrations/0034_add_task_assignment_model.php",
+        "migrations/0035_backfill_task_assignment_model.php",
+        "migrations/0036_drop_tasks_assigned_user_id.php",
+        "migrations/0037_add_task_execution_tracking.php",
+        "migrations/0043_add_task_schedule_fields.php"
+    ],
+    "services": {
+        "tasks.service": {
+            "class": "App\\Plugins\\Tasks\\TaskService",
+            "singleton": true
+        }
+    },
+    "hooks": [
+        {
+            "hook": "layout.head",
+            "content": {
+                "priority": 5,
+                "callback": "Plugins\\Tasks\\TaskController::headAssets"
+            }
+        }
+    ],
+    "menus": [
+        {
+            "menu": "sidebar",
+            "item": {
+                "name": "tasks",
+                "label": "Tasks",
+                "url": "/tasks",
+                "icon": "bi bi-check2-square",
+                "permission": "tasks.manage",
+                "order": 20,
+                "parentId": null,
+                "source": "tasks"
+            }
+        }
+    ]
+}

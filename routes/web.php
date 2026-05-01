@@ -73,14 +73,6 @@ $router->post('/chat/rooms/{id}/join', 'Modules\Chat\Controllers\ChatController@
 $router->post('/chat/rooms/{id}/messages', 'Modules\Chat\Controllers\ChatController@sendMessage', ['WebAuth', 'WebPermission:chat.use']);
 $router->get('/chat/rooms/{id}', 'Modules\Chat\Controllers\ChatController@show', ['WebAuth', 'WebPermission:chat.use']);
 
-// -------------------------------- Tasks Module ------
-$router->get('/tasks', 'Modules\Tasks\Controllers\TaskController@index', ['WebAuth', 'WebPermission:tasks.manage']);
-$router->get('/tasks/create', 'Modules\Tasks\Controllers\TaskController@createForm', ['WebAuth', 'WebPermission:tasks.manage']);
-$router->post('/tasks', 'Modules\Tasks\Controllers\TaskController@store', ['WebAuth', 'WebPermission:tasks.manage']);
-$router->get('/tasks/{id}/edit', 'Modules\Tasks\Controllers\TaskController@editForm', ['WebAuth', 'WebPermission:tasks.manage']);
-$router->post('/tasks/{id}/delete', 'Modules\Tasks\Controllers\TaskController@delete', ['WebAuth', 'WebPermission:tasks.manage']);
-$router->post('/tasks/{id}', 'Modules\Tasks\Controllers\TaskController@update', ['WebAuth', 'WebPermission:tasks.manage']);
-
 // -------------------------------- File Manager Module ------
 $router->get('/files', 'Modules\FileManager\Controllers\FileManagerController@index', ['WebAuth', 'WebPermission:files.manage']);
 $router->get('/files/{rootId}/download', 'Modules\FileManager\Controllers\FileManagerController@download', ['WebAuth', 'WebPermission:files.manage']);

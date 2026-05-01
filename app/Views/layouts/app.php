@@ -149,12 +149,28 @@ if (in_array('chat.use', $permissions ?? [], true)) {
                 </span>
             </a>
             <?php endif; ?>
-            <?php if (in_array('tasks.manage', $permissions ?? [], true)): ?>
-            <a class="sidebar-link <?= $navActive === 'Tasks' ? 'active' : '' ?>" href="/tasks">
-                <i class="bi bi-check2-square sidebar-link-icon"></i>
-                <span class="sidebar-link-label">Tasks</span>
+            <?php
+            $sidebarItems = \App\Core\MenuRegistry::get('sidebar', $permissions ?? []);
+            $hasSidebarItems = false;
+            foreach ($sidebarItems as $item) {
+                if ($item->url && strpos($item->url, '/tasks') === 0) {
+                    $hasSidebarItems = true;
+                    break;
+                }
+            }
+            if ($hasSidebarItems):
+                foreach ($sidebarItems as $item):
+                    if ($item->url && strpos($item->url, '/tasks') === 0):
+            ?>
+            <a class="sidebar-link <?= $navActive === $item->label ? 'active' : '' ?>" href="<?= htmlspecialchars($item->url) ?>">
+                <i class="bi <?= htmlspecialchars($item->icon) ?> sidebar-link-icon"></i>
+                <span class="sidebar-link-label"><?= htmlspecialchars($item->label) ?></span>
             </a>
-            <?php endif; ?>
+            <?php
+                    endif;
+                endforeach;
+            endif;
+            ?>
             <?php if (in_array('files.manage', $permissions ?? [], true)): ?>
             <a class="sidebar-link <?= $navActive === 'File Manager' ? 'active' : '' ?>" href="/files">
                 <i class="bi bi-folder2 sidebar-link-icon"></i>

@@ -519,9 +519,10 @@ After the NetMon cleanup pass, the kernel contains:
 
 ### Plugins (Extracted from Core)
 - **Notes** (`lib/plugins/notes/`) — polymorphic note annotations (first real plugin)
+- **Tasks** (`lib/plugins/tasks/`) — polymorphic task management (second real plugin)
 
 ### Modules (Future Plugins)
-- Chat, Notifications, Tasks, FileManager, Setup
+- Chat, Notifications, FileManager, Setup
 
 ### Admin (Kernel-Level)
 - User management, Group management, Permission management

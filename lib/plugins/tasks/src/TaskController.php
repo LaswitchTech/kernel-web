@@ -1,17 +1,15 @@
 <?php
 
-namespace App\Modules\Tasks\Controllers;
+namespace App\Plugins\tasks;
 
 use App\Core\Controller;
 use App\Models\AuditLogRepository;
 use App\Models\UserRepository;
-use App\Modules\Tasks\Models\TaskRepository;
-use App\Modules\Tasks\Services\TaskService;
 
 /**
- * Task Management module controller.
+ * Task Management plugin controller.
  *
- * Routes:
+ * Routes (declared in routes.php):
  *
  *   GET  /tasks              → index()       Task list (DataTable)
  *   GET  /tasks/create       → createForm()  Create form
@@ -24,13 +22,13 @@ use App\Modules\Tasks\Services\TaskService;
  */
 class TaskController extends Controller
 {
-    // -------------------------------------------------------------------------
+    // ------
     // GET /tasks
-    // -------------------------------------------------------------------------
+    // -
 
     public function index(array $params = []): void
     {
-        [$principal, $config, $viewsPath, $appName, $displayName, $permissions] = $this->ctx();
+        [$principal, $config, $appName, $displayName, $permissions] = $this->ctx();
 
         $service   = new TaskService(new TaskRepository($this->container->get('db')));
         $userId    = (int) ($principal['user']['id'] ?? 0);
@@ -61,20 +59,22 @@ class TaskController extends Controller
         $activeSection = 'Tasks';
         $flash         = $this->popFlash();
 
+        $viewsPath = $this->pluginViewPath();
+
         ob_start();
-        require $viewsPath . '/tasks/index.php';
+        require $viewsPath . '/index.php';
         $content = ob_get_clean();
 
-        require $viewsPath . '/layouts/app.php';
+        $this->renderAppLayout($pageTitle, $content);
     }
 
-    // -------------------------------------------------------------------------
+    // ------
     // GET /tasks/create
-    // -------------------------------------------------------------------------
+    // -
 
     public function createForm(array $params = []): void
     {
-        [$principal, $config, $viewsPath, $appName, $displayName, $permissions] = $this->ctx();
+        [$principal, $config, $appName, $displayName, $permissions] = $this->ctx();
 
         $users = (new UserRepository($this->container->get('db')))->findAllActive();
 
@@ -84,7 +84,7 @@ class TaskController extends Controller
         $entityId   = (int) ($_GET['entity_id'] ?? 0);
 
         // Silently discard invalid entity types — don't expose an error for GET params.
-        if (!in_array($entityType, \App\Modules\Tasks\Services\TaskService::ENTITY_TYPES, true)) {
+        if (!in_array($entityType, TaskService::ENTITY_TYPES, true)) {
             $entityType = '';
             $entityId   = 0;
         }
@@ -100,26 +100,24 @@ class TaskController extends Controller
         $errors        = [];
         $old           = [];
 
+        $viewsPath = $this->pluginViewPath();
+
         ob_start();
-        require $viewsPath . '/tasks/create.php';
+        require $viewsPath . '/create.php';
         $content = ob_get_clean();
 
-        require $viewsPath . '/layouts/app.php';
+        $this->renderAppLayout($pageTitle, $content);
     }
 
-    // -------------------------------------------------------------------------
+    // ------
     // POST /tasks
-    // -------------------------------------------------------------------------
+    // -
 
     public function store(array $params = []): void
     {
-        [$principal, $config, $viewsPath, $appName, $displayName, $permissions] = $this->ctx();
+        [$principal, $config, $appName, $displayName, $permissions] = $this->ctx();
 
         // Derive assignment fields from the form submission.
-        // The form posts assigned_type (select: user|cron), and conditionally
-        // assigned_id (user PK), execution_type, execution_payload.
-        // 'agent' is not exposed in the web UI; any unexpected value is silently
-        // treated as unassigned so it cannot be injected via POST manipulation.
         $rawAssignedType = trim($_POST['assigned_type'] ?? '');
         if (!in_array($rawAssignedType, ['user', 'cron'], true)) {
             $rawAssignedType = '';
@@ -175,12 +173,13 @@ class TaskController extends Controller
             $pageTitle     = 'New Task';
             $activeSection = 'Tasks';
 
+            $viewsPath = $this->pluginViewPath();
             ob_start();
-            require $viewsPath . '/tasks/create.php';
+            require $viewsPath . '/create.php';
             $content = ob_get_clean();
 
             http_response_code(422);
-            require $viewsPath . '/layouts/app.php';
+            $this->renderAppLayout($pageTitle, $content);
             return;
         }
 
@@ -192,8 +191,6 @@ class TaskController extends Controller
             'entity_id'   => $input['entity_id'],
         ]);
 
-        // Redirect back to the originating entity page when the task is linked;
-        // otherwise fall back to the generic task list.
         $this->flash('success', 'Task created.');
         $redirect = ($input['entity_type'] && $input['entity_id'])
             ? $this->entityUrl((string) $input['entity_type'], (int) $input['entity_id'])
@@ -202,13 +199,13 @@ class TaskController extends Controller
         exit;
     }
 
-    // -------------------------------------------------------------------------
+    // ------
     // GET /tasks/{id}/edit
-    // -------------------------------------------------------------------------
+    // -
 
     public function editForm(array $params = []): void
     {
-        [$principal, $config, $viewsPath, $appName, $displayName, $permissions] = $this->ctx();
+        [$principal, $config, $appName, $displayName, $permissions] = $this->ctx();
 
         $service = new TaskService(new TaskRepository($this->container->get('db')));
         $task    = $service->getById((int) ($params['id'] ?? 0));
@@ -227,20 +224,21 @@ class TaskController extends Controller
         $old           = [];
         $flash         = $this->popFlash();
 
+        $viewsPath = $this->pluginViewPath();
         ob_start();
-        require $viewsPath . '/tasks/edit.php';
+        require $viewsPath . '/edit.php';
         $content = ob_get_clean();
 
-        require $viewsPath . '/layouts/app.php';
+        $this->renderAppLayout($pageTitle, $content);
     }
 
-    // -------------------------------------------------------------------------
+    // ------
     // POST /tasks/{id}
-    // -------------------------------------------------------------------------
+    // -
 
     public function update(array $params = []): void
     {
-        [$principal, $config, $viewsPath, $appName, $displayName, $permissions] = $this->ctx();
+        [$principal, $config, $appName, $displayName, $permissions] = $this->ctx();
 
         $db      = $this->container->get('db');
         $service = new TaskService(new TaskRepository($db));
@@ -298,12 +296,13 @@ class TaskController extends Controller
             $activeSection = 'Tasks';
             $flash         = null;
 
+            $viewsPath = $this->pluginViewPath();
             ob_start();
-            require $viewsPath . '/tasks/edit.php';
+            require $viewsPath . '/edit.php';
             $content = ob_get_clean();
 
             http_response_code(422);
-            require $viewsPath . '/layouts/app.php';
+            $this->renderAppLayout($pageTitle, $content);
             return;
         }
 
@@ -313,7 +312,6 @@ class TaskController extends Controller
             'status' => $input['status'],
         ]);
 
-        // Reload the task to pick up its entity linkage for the redirect decision.
         $saved = $service->getById($taskId);
         $this->flash('success', 'Task updated.');
         $redirect = ($saved && $saved['entity_type'] && $saved['entity_id'])
@@ -323,13 +321,13 @@ class TaskController extends Controller
         exit;
     }
 
-    // -------------------------------------------------------------------------
+    // ------
     // POST /tasks/{id}/delete
-    // -------------------------------------------------------------------------
+    // -
 
     public function delete(array $params = []): void
     {
-        [$principal, $config, $viewsPath, $appName, $displayName, $permissions] = $this->ctx();
+        [$principal, $config, $appName, $displayName, $permissions] = $this->ctx();
 
         $service = new TaskService(new TaskRepository($this->container->get('db')));
         $taskId  = (int) ($params['id'] ?? 0);
@@ -337,7 +335,6 @@ class TaskController extends Controller
         try {
             $task = $service->delete($taskId);
         } catch (\InvalidArgumentException $e) {
-            // Task not found — redirect to task list with a notice.
             $this->flash('error', 'Task not found or already deleted.');
             header('Location: /tasks');
             exit;
@@ -358,25 +355,31 @@ class TaskController extends Controller
         exit;
     }
 
-    // -------------------------------------------------------------------------
+    // ------
     // Helpers
-    // -------------------------------------------------------------------------
+    // -
+
+    /**
+     * Inject minimal CSS/JS for the Tasks plugin into the page head.
+     */
+    public static function headAssets(array $ctx): ?string
+    {
+        return null; // No custom assets needed at this time.
+    }
 
     /**
      * Build the canonical URL for an entity page.
      *
-     * Used for post-create / post-update redirects when a task is entity-linked,
-     * and for "back" links on the create form.
-     *
      * Supported entity types mirror TaskService::ENTITY_TYPES.
+     * Returns '/tasks' as a generic fallback for unknown types.
      */
     private function entityUrl(string $entityType, int $entityId): string
     {
         return match ($entityType) {
-            'device'  => '/devices/'   . $entityId . '#tasks',
-            'alert'   => '/alerts/'    . $entityId,
-            'finding' => '/discovery/' . $entityId,
-            default   => '/tasks',
+            'device'   => '/devices/'   . $entityId . '#tasks',
+            'alert'    => '/alerts/'    . $entityId,
+            'finding'  => '/discovery/' . $entityId,
+            default    => '/tasks',
         };
     }
 
@@ -384,12 +387,32 @@ class TaskController extends Controller
     {
         $principal   = $this->container->get('principal');
         $config      = $this->container->get('config');
-        $viewsPath   = __DIR__ . '/../../../Views';
         $appName     = $config['name'] ?? 'Kernel-Web';
         $displayName = $principal['user']['display_name'] ?? $principal['user']['username'];
         $permissions = $principal['permissions'];
 
-        return [$principal, $config, $viewsPath, $appName, $displayName, $permissions];
+        return [$principal, $config, $appName, $displayName, $permissions];
+    }
+
+    private function pluginViewPath(): string
+    {
+        return dirname(__DIR__) . '/views';
+    }
+
+    private function renderAppLayout(string $pageTitle, string $content): void
+    {
+        $principal   = $this->container->get('principal');
+        $config      = $this->container->get('config');
+        $appName     = $config['name'] ?? 'Kernel-Web';
+        $displayName = $principal['user']['display_name'] ?? $principal['user']['username'];
+        $permissions = $principal['permissions'];
+
+        $viewsPath = realpath(__DIR__ . '/../../../app/Views');
+        if ($viewsPath === false) {
+            $viewsPath = __DIR__ . '/../../../app/Views';
+        }
+
+        require $viewsPath . '/layouts/app.php';
     }
 
     private function auditLog(

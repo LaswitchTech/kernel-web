@@ -11,6 +11,7 @@
 ## Plugin Development
 
 - [Notes Plugin](plugins/notes-plugin.md) — First real plugin, polymorphic annotations
+- [Tasks Plugin](plugins/tasks-plugin.md) — Second real plugin, polymorphic task management
 - [Notes Module (Legacy)](plugins/notes-module.md) — Legacy notes module documentation
 - [Notifications Module (Legacy)](plugins/notifications-module.md) — Legacy notifications module documentation
 
