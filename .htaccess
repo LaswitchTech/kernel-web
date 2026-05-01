@@ -1,0 +1,34 @@
+# Kernel-Web — root .htaccess
+# Redirect all requests to the /public/ webroot.
+
+# ------------------------------------------------------------------
+# MIME type for ES modules (served from /public/assets/)
+# ------------------------------------------------------------------
+<IfModule mod_mime.c>
+    AddType application/javascript .mjs
+    AddType text/html .env
+</IfModule>
+
+# ------------------------------------------------------------------
+# Proxy header — remove the automatically-added Proxy header to
+# prevent HTTP request smuggling in reverse-proxy setups.
+# ------------------------------------------------------------------
+<IfModule mod_headers.c>
+    RequestHeader unset Proxy
+</IfModule>
+
+# ------------------------------------------------------------------
+# Redirect rules
+# ------------------------------------------------------------------
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Allow .well-known paths (Let's Encrypt, DNS-01, etc.)
+    RewriteCond %{REQUEST_URI} !^/\.well-known/ [NC]
+
+    # Allow the root .htaccess itself (avoid infinite loop)
+    RewriteCond %{REQUEST_URI} !^/\.htaccess$ [NC]
+
+    # Redirect everything else to /public/
+    RewriteRule ^(.*)$ /public/$1 [L]
+</IfModule>

@@ -7,7 +7,7 @@ namespace App\Core\Plugins;
  *
  * Required fields: name, version
  * Optional fields: description, enabled, requires, dependencies, permissions,
- *                  routes, migrations, services
+ *                  routes, migrations, services, hooks, menus
  *
  * The manifest is immutable once constructed — callers cannot modify it.
  */
@@ -24,6 +24,8 @@ class PluginManifest
     private array  $routes;
     private array  $migrations;
     private array  $services;
+    private array  $hooks;
+    private array  $menus;
 
     /**
      * @param array $data  Decoded plugin.json contents
@@ -54,6 +56,8 @@ class PluginManifest
         $this->routes           = isset($data['routes']) ? (array) $data['routes'] : [];
         $this->migrations       = isset($data['migrations']) ? (array) $data['migrations'] : [];
         $this->services         = isset($data['services']) ? (array) $data['services'] : [];
+        $this->hooks            = isset($data['hooks']) ? (array) $data['hooks'] : [];
+        $this->menus            = isset($data['menus']) ? (array) $data['menus'] : [];
     }
 
     // ------ Properties ------
@@ -69,6 +73,8 @@ class PluginManifest
     public function routes(): array { return $this->routes; }
     public function migrations(): array { return $this->migrations; }
     public function services(): array { return $this->services; }
+    public function hooks(): array { return $this->hooks; }
+    public function menus(): array { return $this->menus; }
 
     /**
      * Set the directory path where this plugin's plugin.json lives.
@@ -114,6 +120,8 @@ class PluginManifest
             'routes'      => $this->routes,
             'migrations'  => $this->migrations,
             'services'    => $this->services,
+            'hooks'       => $this->hooks,
+            'menus'       => $this->menus,
         ];
     }
 }

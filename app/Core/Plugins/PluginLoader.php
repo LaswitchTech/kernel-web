@@ -266,4 +266,72 @@ class PluginLoader
 
         return array_unique($permissions);
     }
+
+    /**
+     * Register hooks declared by all enabled plugins.
+     *
+     * Each plugin's hooks[] array should follow the format:
+     *   ["hook_name" => "callable", ...]
+     * where callable receives a $context array and returns output.
+     *
+     * Returns the number of hooks registered.
+     */
+    public function registerHooks(): int
+    {
+        $count = 0;
+
+        foreach ($this->registry->getEnabled() as $plugin) {
+            foreach ($plugin->hooks() as $hookName => $hookContent) {
+                $priority = $hookContent['priority'] ?? 0;
+                \App\Core\HookRegistry::register($hookName, $hookContent['content'], (int) $priority);
+                $count++;
+            }
+        }
+
+        return $count;
+    }
+
+    /**
+     * Register menus declared by all enabled plugins.
+     *
+     * Each plugin's menus[] array should follow the format:
+     *   [
+     *     ["menu" => "sidebar", "item" => [...MenuItem data...]],
+     *   ]
+     * where item data contains: name, label, url, icon, styleClass,
+     * permission, order, parentId, source.
+     *
+     * Returns the number of menu items registered.
+     */
+    public function registerMenus(): int
+    {
+        $count = 0;
+
+        foreach ($this->registry->getEnabled() as $plugin) {
+            foreach ($plugin->menus() as $menuDef) {
+                $menuName = $menuDef['menu'] ?? '';
+                $itemData = $menuDef['item'] ?? [];
+                if ($menuName === '' || empty($itemData)) {
+                    continue;
+                }
+
+                $item = new \App\Core\MenuItem(
+                    name:        $itemData['name'] ?? '',
+                    label:       $itemData['label'] ?? '',
+                    url:         $itemData['url'] ?? null,
+                    icon:        $itemData['icon'] ?? null,
+                    styleClass:  $itemData['styleClass'] ?? null,
+                    permission:  $itemData['permission'] ?? null,
+                    order:       (int) ($itemData['order'] ?? 0),
+                    parentId:    $itemData['parentId'] ?? null,
+                    source:      $plugin->name(),
+                );
+
+                \App\Core\MenuRegistry::add($menuName, $item);
+                $count++;
+            }
+        }
+
+        return $count;
+    }
 }

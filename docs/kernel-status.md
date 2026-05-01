@@ -26,6 +26,9 @@ It answers: **what does the kernel contain today, what was removed, and what rem
 | **Error Handling** | `ErrorHandler` with debug/production modes |
 | **Installer** | `InstallLock`, `EnvironmentChecker`, `DirectoryChecker`, `ConfigWriter` |
 | **Env Loader** | `.env` file parser |
+| **Hook Registry** | `HookRegistry` + `HookRenderable` for layout injection |
+| **Menu Registry** | `MenuItem` + `MenuRegistry` for extensible menus |
+| **Security** | Root `.htaccess` with webroot redirect and `.env` MIME blocking |
 
 ### Admin Controllers (Kernel-Level)
 
@@ -185,15 +188,23 @@ They should become plugins in a future cleanup:
 
 ### Plugin System Implementation
 
-Implemented (v2 — route and service support):
+Implemented (v3 — hooks, menus, and layout infrastructure):
 
-- `app/Core/Plugins/PluginManifest.php` — manifest parsing and validation
+- `app/Core/Plugins/PluginManifest.php` — manifest parsing and validation (hooks + menus fields)
 - `app/Core/Plugins/PluginRegistry.php` — in-memory registry + service registration
-- `app/Core/Plugins/PluginLoader.php` — discovery, validation, routes/services/migrations hooks
+- `app/Core/Plugins/PluginLoader.php` — discovery, validation, routes/services/migrations/hooks/menus
 - `app/Core/Plugins/PluginException.php` — custom exception class
+- `app/Core/HookRegistry.php` — named hook registration and rendering
+- `app/Core/MenuItem.php` — immutable menu item value object
+- `app/Core/MenuRegistry.php` — named menu registration with permission filtering
 - `app/Core/Router.php` — `registerPluginRoutes()` method + plugin handler resolution
+- `public/index.php` — plugin autoloader, service/hook/menu registration
+- `app/Views/layouts/app.php` — hook render points (layout.head, layout.body.start/end, panel.footer)
+- `.htaccess` — root webroot redirect
 - `lib/plugins/` — plugin directory with `notes` (first real plugin) and `.example-plugin` template
-- Integration in `public/index.php` — plugin autoloader, service registration, route loading
+- `docs/root-htaccess.md` — root .htaccess reference
+- `docs/layout-hook-registry.md` — layout hook registry reference
+- `docs/menu-registry.md` — menu registry reference
 
 Extension points (deferred):
 

@@ -27,8 +27,18 @@
     <link rel="stylesheet" href="/assets/vendor/datatables-buttons/2.4.2/css/buttons.bootstrap5.min.css">
     <!-- App theme -->
     <link rel="stylesheet" href="/assets/css/app.css">
+
+    <?php
+    // Hook: layout.head — plugins can inject meta tags, CSS links, etc.
+    echo \App\Core\HookRegistry::render('layout.head');
+    ?>
 </head>
 <body>
+
+<?php
+// Hook: layout.body.start — plugins can inject content at the start of <body>
+echo \App\Core\HookRegistry::render('layout.body.start');
+?>
 
 <?php
 // $displayName should be set by the controller before ob_start().
@@ -330,6 +340,7 @@ if (in_array('chat.use', $permissions ?? [], true)) {
         <!-- Footer -->
         <footer class="app-footer">
             <span>&copy; <?= date('Y') ?> <?= htmlspecialchars($appName) ?></span>
+            <?php echo \App\Core\HookRegistry::render('panel.footer'); ?>
         </footer>
 
     </div><!-- /.app-main -->
@@ -624,6 +635,11 @@ if (in_array('chat.use', $permissions ?? [], true)) {
     setInterval(refreshChatUnread, 30000);
 }());
 </script>
+
+<?php
+// Hook: layout.body.end — plugins can inject JS, analytics, etc. before </body>
+echo \App\Core\HookRegistry::render('layout.body.end');
+?>
 
 </body>
 </html>

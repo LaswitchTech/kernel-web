@@ -222,6 +222,10 @@ if ($pluginsDir !== false && is_dir($pluginsDir)) {
     $loader->getRegistry()->setContainer($container);
     $loader->registerServices();
 
+    // Register plugin hooks and menus.
+    $loader->registerHooks();
+    $loader->registerMenus();
+
     // Store registry in container for later access (e.g. admin UI).
     $container->set('plugins', $loader->getRegistry());
 

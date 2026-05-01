@@ -134,12 +134,14 @@ Each plugin has a `plugin.json` at its root:
     "permissions": ["permission.string"],
     "routes": [],
     "migrations": [],
-    "services": {}
+    "services": {},
+    "hooks": [],
+    "menus": []
 }
 ```
 
 **Required fields:** `name`, `version`
-**Optional fields:** `description`, `enabled` (default: `true`), `requires`, `dependencies`, `permissions`, `routes`, `migrations`, `services`
+**Optional fields:** `description`, `enabled` (default: `true`), `requires`, `dependencies`, `permissions`, `routes`, `migrations`, `services`, `hooks`, `menus`
 
 ### Discovery
 - Scan `/lib/plugins/*/plugin.json`
@@ -159,9 +161,11 @@ Each plugin has a `plugin.json` at its root:
 4. Checks dependencies
 5. Registers plugin-declared permissions with Gate
 6. Registers plugin-declared services in container
-7. Stores registry in container (`$container->set('plugins', $registry)`)
-8. Includes `routes.php` and registers manifest-declared routes
-9. Kernel loads its own routes (web.php) and dispatches
+7. Registers plugin-declared hooks via HookRegistry
+8. Registers plugin-declared menus via MenuRegistry
+9. Stores registry in container (`$container->set('plugins', $registry)`)
+10. Includes `routes.php` and registers manifest-declared routes
+11. Kernel loads its own routes (web.php) and dispatches
 
 ### Plugin Directory Structure
 ```
@@ -174,6 +178,8 @@ lib/plugins/{Name}/
 ├── routes.php         — optional route registration hook
 ├── migrations/        — migration files (path relative to plugin root)
 ├── views/             — plugin-specific views
+├── hooks.php          — optional hook registration hook
+├── menus.php          — optional menu registration hook
 └── README.md          — plugin documentation
 ```
 
@@ -237,6 +243,83 @@ Define reusable UI structures
 
 ### Rule
 > Layouts define structure, NOT behavior
+
+### Layout Hook Registry
+
+Plugins can inject content into layouts at named hook points.
+
+#### Hook Names
+- `layout.head` — inside `<head>`, after CSS links
+- `layout.body.start` — immediately after `<body>`
+- `layout.body.end` — immediately before `</body>`
+- `panel.sidebar.before` — reserved for future sidebar injection
+- `panel.sidebar.after` — reserved for future sidebar injection
+- `panel.topbar.left` — reserved for future topbar injection
+- `panel.topbar.right` — reserved for future topbar injection
+- `panel.footer` — inside the page footer
+- `dashboard.widgets` — reserved for future dashboard widgets
+
+#### Registration
+```php
+HookRegistry::register('layout.head', function($ctx) { return '<meta ...>'; }, $priority);
+```
+
+#### Renderable Interface
+Objects implementing `HookRenderable` can be registered directly:
+```php
+HookRegistry::register('layout.body.end', $widget);
+```
+
+### Rule
+> Hooks must never crash the layout — errors are silently swallowed
+
+---
+
+## Menu System Design
+
+### Purpose
+Central location for registering and rendering named menus used across the application.
+
+### Menu Locations
+- `sidebar` — main sidebar navigation
+- `topbar` — top bar actions
+- `user-menu` — user dropdown menu
+- `admin-menu` — administration submenu
+
+### MenuItem Fields
+- `name` — unique identifier within menu
+- `label` — display text
+- `url` — destination URL
+- `icon` — Bootstrap Icons class
+- `styleClass` — additional CSS class
+- `permission` — required permission string
+- `order` — sort priority (lower renders first)
+- `parentId` — parent item for grouping
+- `source` — plugin name or `core`
+
+### Registration
+```php
+MenuRegistry::add('sidebar', new MenuItem('tasks', 'Tasks', '/tasks', 'bi bi-check2-square', null, 'tasks.manage', 20, null, 'tasks'));
+```
+
+### Plugin Manifest Support
+Plugins can declare menu items in `plugin.json`:
+```json
+{
+    "menus": [
+        {
+            "menu": "sidebar",
+            "item": { "name": "tasks", "label": "Tasks", "url": "/tasks", "icon": "bi bi-check2-square", "permission": "tasks.manage", "order": 20 }
+        }
+    ]
+}
+```
+
+### Filtering
+Items are automatically filtered by the user's permissions at render time.
+
+### Rule
+> Menus must never expose items the user cannot access
 
 ---
 
@@ -314,6 +397,13 @@ Define reusable UI structures
 ### Web Root
 - Only `/public` accessible
 
+### Root .htaccess
+- Redirects all requests to `/public/`
+- Exempts `/.well-known/*` (Let's Encrypt, DNS-01)
+- Sets `.env` MIME type to `text/html` to block direct access
+- Unsets `Proxy` request header (prevents HTTP request smuggling)
+- Adds `.mjs` MIME type for ES modules
+
 ### Protection
 - `.htaccess` blocks sensitive dirs
 
@@ -349,6 +439,8 @@ After the NetMon cleanup pass, the kernel contains:
 - Authentication (users, groups, permissions, API tokens, sessions)
 - Hierarchical locations
 - Installer system
+- Hook registry (layout.body.*, panel.* hook points)
+- Menu registry (sidebar, topbar, user-menu, admin-menu)
 
 ### Plugins (Extracted from Core)
 - **Notes** (`lib/plugins/notes/`) — polymorphic note annotations (first real plugin)
