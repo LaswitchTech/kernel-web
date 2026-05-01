@@ -11,7 +11,11 @@
  *     resolve to 'App\Modules\Chat\Controllers\ChatController'.
  */
 
-$router->get('/', 'Controllers\Admin\AdminController@index', ['WebAuth']);
+// -------------------------------- Public (no auth required) ------
+
+$router->get('/', 'Home\HomeController@index');
+$router->get('/install', 'Home\HomeController@install');
+$router->get('/dashboard', 'Home\HomeController@dashboard');
 
 // -------------------------------- Admin Area (requires 'admin' permission) ------
 

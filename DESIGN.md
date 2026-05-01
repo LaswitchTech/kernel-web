@@ -341,7 +341,18 @@ Items are automatically filtered by the user's permissions at render time.
 
 ---
 
-## Licensing Design (Planned)
+## Landing Page Design
+
+### Public Landing Page
+- Shown at `/` before authentication
+- Displays kernel status, documentation links, and next steps
+- Minimal layout (no sidebar/topbar)
+- Route: `GET /` → `HomeController@index`
+- Install redirect: `GET /install` → `/install`
+- Dashboard redirect: `GET /dashboard` → `/admin`
+
+### Rule
+> The landing page must remain public and lightweight
 
 ### Goal
 - Support paid plugins/apps
@@ -360,6 +371,12 @@ Items are automatically filtered by the user's permissions at render time.
 ### Strategy
 - Central router
 - Plugin route injection
+
+### Clean URL Convention
+- Use path-based parameters: `/resource/{id}` instead of `/resource?id=1`
+- RESTful structure: `/resource/create`, `/resource/{id}/edit`, `/resource/{id}/delete`
+- JSON API routes use `/api/` prefix
+- All routes declared in `routes/web.php` with middleware list
 
 ### Rule
 > Routes must be declarative and traceable
@@ -415,7 +432,37 @@ Items are automatically filtered by the user's permissions at render time.
 
 ---
 
-## Future Design Areas
+## Documentation Organization
+
+### Structure
+```
+docs/
+├── developer/     — developer-facing documentation
+│   ├── kernel/    — kernel architecture, schema, services
+│   ├── plugins/   — plugin development docs
+│   ├── layouts/   — layout/theme development docs
+│   ├── templates/ — template docs (future)
+│   ├── themes/    — theme docs (future)
+│   └── installation/ — installation guides
+├── user/          — user-facing documentation
+│   ├── kernel/    — kernel user guides
+│   ├── plugins/   — plugin usage docs
+│   ├── layouts/   — layout usage docs (future)
+│   ├── templates/ — template usage docs (future)
+│   └── themes/    — theme usage docs (future)
+└── reference/     — HTML reference docs
+```
+
+### Index Files
+- `docs/index.md` — master documentation index
+- `docs/developer/index.md` — developer docs index
+- `docs/user/index.md` — user docs index
+
+### Conventions Docs
+- `docs/routing.md` — routing conventions
+- `docs/menu-registry.md` — menu registry reference
+- `docs/layout-hook-registry.md` — hook registry reference
+- `docs/root-htaccess.md` — root .htaccess reference
 
 To be expanded later:
 
