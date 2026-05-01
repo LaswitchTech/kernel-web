@@ -12,33 +12,55 @@ class Router
         $this->container = $container;
     }
 
-    public function get(string $path, string $handler, array $middleware = []): void
+    /**
+     * Register a GET route.
+     *
+     * @param int $priority Higher values win over lower values.
+     *                      Default: 0 (no preference). Use higher values
+     *                      for kernel/core routes that must be overridable.
+     */
+    public function get(string $path, string $handler, array $middleware = [], int $priority = 0): void
     {
-        $this->add('GET', $path, $handler, $middleware);
+        $this->add('GET', $path, $handler, $middleware, $priority);
     }
 
-    public function post(string $path, string $handler, array $middleware = []): void
+    /**
+     * Register a POST route.
+     */
+    public function post(string $path, string $handler, array $middleware = [], int $priority = 0): void
     {
-        $this->add('POST', $path, $handler, $middleware);
+        $this->add('POST', $path, $handler, $middleware, $priority);
     }
 
-    public function put(string $path, string $handler, array $middleware = []): void
+    /**
+     * Register a PUT route.
+     */
+    public function put(string $path, string $handler, array $middleware = [], int $priority = 0): void
     {
-        $this->add('PUT', $path, $handler, $middleware);
+        $this->add('PUT', $path, $handler, $middleware, $priority);
     }
 
-    public function delete(string $path, string $handler, array $middleware = []): void
+    /**
+     * Register a DELETE route.
+     */
+    public function delete(string $path, string $handler, array $middleware = [], int $priority = 0): void
     {
-        $this->add('DELETE', $path, $handler, $middleware);
+        $this->add('DELETE', $path, $handler, $middleware, $priority);
     }
 
-    private function add(string $method, string $path, string $handler, array $middleware = []): void
+    /**
+     * Internal route registration with priority support.
+     *
+     * @param int $priority Higher values win over lower values.
+     */
+    private function add(string $method, string $path, string $handler, array $middleware = [], int $priority = 0): void
     {
         $this->routes[] = [
             'method'     => strtoupper($method),
             'path'       => $path,
             'handler'    => $handler,
             'middleware' => $middleware,
+            'priority'   => $priority,
         ];
     }
 
@@ -46,6 +68,8 @@ class Router
      * Register a route definition array declared by a plugin manifest.
      *
      * Format: ['METHOD', '/path', 'Handler@method', ['middleware']]
+     *
+     * @deprecated Use registerRoute() with explicit priority instead.
      */
     public function registerPluginRoutes(array $routeDef): void
     {
@@ -54,14 +78,45 @@ class Router
     }
 
     /**
+     * Register a route with explicit priority.
+     *
+     * Priority levels (convention):
+     *   0 — neutral (no preference)
+     *   1 — plugin / extension (overrides kernel)
+     *   10 — kernel core (overridable by plugins)
+     *
+     * Higher values win. Ties broken by insertion order.
+     */
+    public function registerRoute(
+        string $method,
+        string $path,
+        string $handler,
+        array $middleware = [],
+        int $priority = 0
+    ): void {
+        $this->add($method, $path, $handler, $middleware, $priority);
+    }
+
+    /**
      * Dispatch the current request.
+     *
+     * Routes are sorted by priority (descending) before matching,
+     * so higher-priority routes always win over lower-priority ones.
+     * Ties are broken by insertion order (first registered wins).
+     *
      * Handler format: "Controller@method"
      */
     public function dispatch(string $method, string $uri): void
     {
         $uri = strtok($uri, '?'); // strip query string
 
-        foreach ($this->routes as $route) {
+        // Sort routes by priority (highest first), preserving insertion order for ties.
+        $sorted = $this->routes;
+        usort($sorted, function ($a, $b) {
+            return $b['priority'] <=> $a['priority'];
+        });
+
+        foreach ($sorted as $route) {
             [$pattern, $paramNames] = $this->compile($route['path']);
 
             if ($route['method'] !== strtoupper($method)) {

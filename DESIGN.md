@@ -241,8 +241,16 @@ Define reusable UI structures
 - Footer
 - Scripts
 
+### Layout Override Resolution
+
+Layout files are resolved in this order:
+1. `app/Views/layouts/{name}.php` — app-level override
+2. `lib/layouts/{name}.php` — kernel layout (future)
+3. `app.php` — safe default
+
 ### Rule
 > Layouts define structure, NOT behavior
+> App-level layouts always override kernel layouts
 
 ### Layout Hook Registry
 
@@ -347,12 +355,18 @@ Items are automatically filtered by the user's permissions at render time.
 - Shown at `/` before authentication
 - Displays kernel status, documentation links, and next steps
 - Minimal layout (no sidebar/topbar)
-- Route: `GET /` → `HomeController@index`
+- Route: `GET /` → `HomeController@index` (priority 0, overridable)
 - Install redirect: `GET /install` → `/install`
 - Dashboard redirect: `GET /dashboard` → `/admin`
 
+### Landing Page Override
+- A plugin can override the landing page by registering `GET /` with priority 1
+- The kernel landing page acts as a fallback only
+- No hardcoded app-level override — any plugin can replace it
+
 ### Rule
 > The landing page must remain public and lightweight
+> The landing page must be overridable by plugins without kernel changes
 
 ### Goal
 - Support paid plugins/apps
@@ -378,8 +392,21 @@ Items are automatically filtered by the user's permissions at render time.
 - JSON API routes use `/api/` prefix
 - All routes declared in `routes/web.php` with middleware list
 
+### Route Override Precedence
+
+Routes have integer priority levels. Higher values win.
+
+| Source | Default Priority |
+|--------|-----------------|
+| Plugin routes | `1` |
+| Kernel core routes | `0` |
+
+On dispatch, routes are sorted by priority (descending) before matching.
+Same-path routes: higher priority always wins.
+
 ### Rule
 > Routes must be declarative and traceable
+> Kernel routes must always be overridable by plugins
 
 ---
 
@@ -460,6 +487,7 @@ docs/
 
 ### Conventions Docs
 - `docs/routing.md` — routing conventions
+- `docs/override-system.md` — route and layout override
 - `docs/menu-registry.md` — menu registry reference
 - `docs/layout-hook-registry.md` — hook registry reference
 - `docs/root-htaccess.md` — root .htaccess reference

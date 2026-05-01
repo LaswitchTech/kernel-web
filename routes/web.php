@@ -9,13 +9,19 @@
  *   - Bare names (e.g., 'AdminController@index') resolve to 'App\Controllers\...'.
  *   - Module namespaces (e.g., 'Modules\Chat\Controllers\ChatController@index')
  *     resolve to 'App\Modules\Chat\Controllers\ChatController'.
+ *
+ * All kernel routes use priority 0 (lowest precedence) so plugins and
+ * application overrides can replace them. See /docs/override-system.md.
  */
 
 // -------------------------------- Public (no auth required) ------
+// These routes have priority 0 by default (kernel = lowest precedence).
+// A plugin can override any of these by registering the same path
+// with priority > 0 (higher precedence).
 
-$router->get('/', 'Home\HomeController@index');
-$router->get('/install', 'Home\HomeController@install');
-$router->get('/dashboard', 'Home\HomeController@dashboard');
+$router->get('/', 'Home\HomeController@index', [], 0);
+$router->get('/install', 'Home\HomeController@install', [], 0);
+$router->get('/dashboard', 'Home\HomeController@dashboard', [], 0);
 
 // -------------------------------- Admin Area (requires 'admin' permission) ------
 

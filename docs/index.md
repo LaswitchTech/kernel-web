@@ -25,6 +25,10 @@
 - [Notifications Plugin](user/plugins/notifications.md)
 - [File Manager Plugin](user/plugins/file-manager.md)
 
+## System Design
+
+- [Override System](override-system.md) — How to override routes and layouts
+
 ## External Links
 
 - [README](../README.md)

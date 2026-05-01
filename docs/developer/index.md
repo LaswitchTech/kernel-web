@@ -27,6 +27,7 @@
 ## Reference
 
 - [Routing Conventions](../routing.md) — Clean URL routing conventions
+- [Override System](../override-system.md) — Route and layout override
 - [Plugin Manifest Format](../DESIGN.md#plugin-system-design) — Plugin system design
 - [Menu Registry](../menu-registry.md) — Menu registration system
 - [Hook Registry](../layout-hook-registry.md) — Layout hook system

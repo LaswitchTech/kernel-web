@@ -161,6 +161,9 @@ class PluginLoader
      * the routes array from the manifest. Both mechanisms inject
      * routes into the global $router instance.
      *
+     * Plugin routes are registered with priority 1, so they always
+     * win over kernel routes (which use priority 0 by default).
+     *
      * Returns the number of routes registered.
      */
     public function registerRoutes(): int
@@ -170,11 +173,6 @@ class PluginLoader
         }
 
         $router = $this->container->get('router');
-
-        if (!method_exists($router, 'registerPluginRoutes')) {
-            return 0;
-        }
-
         $count = 0;
 
         foreach ($this->registry->getEnabled() as $plugin) {
@@ -184,7 +182,8 @@ class PluginLoader
             }
 
             foreach ($plugin->routes() as $routeDef) {
-                $router->registerPluginRoutes($routeDef);
+                [$method, $path, $handler, $middleware] = array_pad($routeDef, 4, []);
+                $router->registerRoute($method, $path, $handler, $middleware, 1);
                 $count++;
             }
         }
