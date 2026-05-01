@@ -186,15 +186,38 @@ They should become plugins in a future cleanup:
 
 ### Plugin System Implementation
 
-The kernel has the **foundation** for a plugin system but not the **loader** yet:
+Implemented (v1 — minimal foundation):
 
-- `DESIGN.md` documents the plugin lifecycle (Installed/Enabled/Disabled)
-- Container and routing are already extensible
-- Missing: plugin discovery, registration, route injection, migration hook
+- `app/Core/Plugins/PluginManifest.php` — manifest parsing and validation
+- `app/Core/Plugins/PluginRegistry.php` — in-memory registry (discovered/invalid/enabled/disabled)
+- `app/Core/Plugins/PluginLoader.php` — discovery, validation, dependency check
+- `app/Core/Plugins/PluginException.php` — custom exception class
+- `lib/plugins/` — plugin directory (with `.example-plugin` template)
+- Integration in `public/index.php` — loads plugins during bootstrap
+
+Extension points (deferred):
+
+- Plugin route auto-registration
+- Plugin migration auto-execution
+- Plugin service auto-registration
+- Plugin autoloader
+- Plugin activation/deactivation API
+
+### Modules to Extract as Plugins
+
+These modules are generic but currently live inside the kernel.
+They should become plugins in a future cleanup:
+
+1. **Setup Module** (`Modules/Setup/`) — Installation wizard
+2. **Notifications Module** (`Modules/Notifications/`) — Notification inbox
+3. **Chat Module** (`Modules/Chat/`) — Chat rooms
+4. **Tasks Module** (`Modules/Tasks/`) — Task management
+5. **FileManager Module** (`Modules/FileManager/`) — File browser
+6. **Notes Module** (`Modules/Notes/`) — Entity notes
 
 ### Future Kernel Work
 
-- [ ] Plugin loader implementation
+- [ ] Extract remaining modules into plugins
 - [ ] Theme loader implementation
 - [ ] Layout renderer implementation
 - [ ] MySQL/MariaDB driver
@@ -237,7 +260,6 @@ Migration IDs will not be renumbered.
 ### Not Yet Done
 
 - [ ] Extract modules to `/lib/plugins/`
-- [ ] Implement plugin loader
 - [ ] Remove remaining NetMon references in `/docs`
 - [ ] Update `DESIGN.md` with post-cleanup architecture
 - [ ] Add automated tests

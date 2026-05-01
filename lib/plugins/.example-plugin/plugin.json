@@ -1,0 +1,16 @@
+{
+    "name": "example-plugin",
+    "version": "0.1.0",
+    "description": "Sample plugin — remove this directory when creating your own plugin.",
+    "enabled": true,
+    "requires": {
+        "kernel": "8.1"
+    },
+    "dependencies": {},
+    "permissions": [
+        "example.feature"
+    ],
+    "routes": [],
+    "migrations": [],
+    "services": {}
+}

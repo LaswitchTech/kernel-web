@@ -23,6 +23,7 @@ use App\Modules\Notifications\Models\NotificationRepository as ModuleNotificatio
 use App\Modules\Notifications\Models\NotificationQueueRepository;
 use App\Modules\Notifications\Services\NotificationService;
 use App\Modules\Setup\Controllers\SetupController;
+use App\Core\Plugins\PluginLoader;
 
 // ---------------------------------------------------------------------------
 // Autoloader
@@ -161,10 +162,40 @@ $notifService    = new NotificationService($moduleNotifRepo, $queueRepo);
 $container->set('notifications', $notifService);
 
 // ---------------------------------------------------------------------------
-// Routing
+// Routing — create router before plugin loading so plugin routes
+// can be injected into it during the registration phase.
 // ---------------------------------------------------------------------------
 $router = new Router($container);
+$container->set('router', $router);
 
+// ---------------------------------------------------------------------------
+// Plugin Loader
+// ---------------------------------------------------------------------------
+// Discover and load plugins from /lib/plugins/ before routing.
+// Gracefully no-ops if /lib/plugins/ does not exist yet.
+
+$pluginsDir = realpath(__DIR__ . '/../lib/plugins');
+
+if ($pluginsDir !== false && is_dir($pluginsDir)) {
+    $loader = new PluginLoader($pluginsDir, $container);
+    $loader->load();
+
+    // Register plugin-declared permissions (if Gate supports it).
+    $permissions = $loader->getDeclaredPermissions();
+    if (!empty($permissions) && method_exists($gate, 'registerPermissions')) {
+        $gate->registerPermissions($permissions);
+    }
+
+    // Store registry in container for later access (e.g. admin UI).
+    $container->set('plugins', $loader->getRegistry());
+
+    // Register plugin routes.
+    $loader->registerRoutes();
+}
+
+// ---------------------------------------------------------------------------
+// Application Routes
+// ---------------------------------------------------------------------------
 require __DIR__ . '/../routes/web.php';
 
 $router->dispatch($method, $requestPath);

@@ -119,27 +119,57 @@ Persistent local data (SQLite)
 
 ## Plugin System Design
 
+### Manifest Format
+
+Each plugin has a `plugin.json` at its root:
+
+```json
+{
+    "name": "plugin-name",
+    "version": "0.1.0",
+    "description": "Short description",
+    "enabled": true,
+    "requires": { "kernel": "8.1" },
+    "dependencies": { "dependency-name": ">=0.1.0" },
+    "permissions": ["permission.string"],
+    "routes": [],
+    "migrations": [],
+    "services": {}
+}
+```
+
+**Required fields:** `name`, `version`
+**Optional fields:** `description`, `enabled` (default: `true`), `requires`, `dependencies`, `permissions`, `routes`, `migrations`, `services`
+
 ### Discovery
 - Scan `/lib/plugins/*/plugin.json`
-- Build registry
+- Validate manifest (required fields, valid JSON)
+- Build in-memory registry
 
 ### Lifecycle
-- Installed
-- Enabled
-- Disabled
+- **discovered** — valid manifest, not yet loaded
+- **invalid** — manifest failed validation
+- **enabled** — valid manifest, active
+- **disabled** — valid manifest, not active
 
-### Boot Flow
+### Boot Flow (implemented)
 1. Kernel loads config
-2. Kernel discovers plugins
-3. Validate dependencies
-4. Register services
-5. Register routes
-6. Load migrations if needed
+2. Kernel discovers plugins from `/lib/plugins/`
+3. Validates manifests
+4. Checks dependencies
+5. Registers plugin-declared permissions with Gate
+6. Stores registry in container (`$container->set('plugins', $registry)`)
+
+### Extension Points (deferred)
+- Plugin routes are declared in manifest but not auto-registered (hook: `registerRoutes()`)
+- Plugin migrations are declared but not auto-executed (hook: `runMigrations()`)
+- Plugin services are declared but not auto-registered (hook: `registerServices()`)
 
 ### Design Rules
 - No plugin should break kernel if it fails
 - Plugins must declare dependencies
 - Plugins must be self-contained
+- Plugin manifests are validated before any plugin code runs
 
 ---
 
