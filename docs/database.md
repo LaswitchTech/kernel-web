@@ -1,4 +1,4 @@
-# NetMon Database Layer
+# Kernel-Web Database Layer
 
 ## Overview
 
@@ -83,7 +83,7 @@ return [
     'mysql' => [
         'host'    => '127.0.0.1',
         'port'    => 3306,
-        'name'    => 'netmon',
+        'name'    => 'kernel_web',
         'user'    => 'root',
         'pass'    => '',
         'charset' => 'utf8mb4',

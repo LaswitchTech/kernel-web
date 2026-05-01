@@ -1,7 +1,7 @@
 <?php
 
 /**
- * NetMon CLI Installer
+ * Kernel-Web CLI Installer
  *
  * Usage:
  *   php scripts/install.php
@@ -270,7 +270,7 @@ try {
 // ---------------------------------------------------------------------------
 // Phase 6 — Migrations
 // ---------------------------------------------------------------------------
-phase('6/8', 'Running database migrations');
+phase('6/9', 'Running database migrations');
 
 $migResult = $setup->runMigrations($db);
 if (!$migResult['ok']) {
@@ -280,9 +280,27 @@ if (!$migResult['ok']) {
 }
 
 if (empty($migResult['applied'])) {
-    out('  [✓] No pending migrations.');
+    out('  [✓] No pending kernel migrations.');
 } else {
     foreach ($migResult['applied'] as $name) {
+        out('  [✓] Applied: ' . $name);
+    }
+}
+out('');
+
+phase('7/9', 'Running plugin migrations');
+
+$pluginMigResult = $setup->runPluginMigrations($rootPath . '/lib/plugins', $db);
+if (!$pluginMigResult['ok']) {
+    out('  [✗] ' . $pluginMigResult['error']);
+    err('Plugin migration failed.');
+    exit(4);
+}
+
+if (empty($pluginMigResult['applied'])) {
+    out('  [✓] No pending plugin migrations.');
+} else {
+    foreach ($pluginMigResult['applied'] as $name) {
         out('  [✓] Applied: ' . $name);
     }
 }
@@ -291,7 +309,7 @@ out('');
 // ---------------------------------------------------------------------------
 // Phase 7 — Seeds
 // ---------------------------------------------------------------------------
-phase('7/8', 'Running database seeds');
+phase('8/9', 'Running database seeds');
 
 $seedResult = $setup->runSeeds($db, ['AdminBootstrap']);
 if (!$seedResult['ok']) {
@@ -309,7 +327,7 @@ out('');
 // ---------------------------------------------------------------------------
 // Phase 8 — Admin user + finalize
 // ---------------------------------------------------------------------------
-phase('8/8', 'Creating administrator account and finalizing');
+phase('9/9', 'Creating administrator account and finalizing');
 
 $adminResult = $setup->createAdminUser($db, [
     'display_name'    => $adminName,

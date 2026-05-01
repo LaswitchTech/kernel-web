@@ -521,6 +521,13 @@ After the NetMon cleanup pass, the kernel contains:
 - **Notes** (`lib/plugins/notes/`) — polymorphic note annotations (first real plugin)
 - **Tasks** (`lib/plugins/tasks/`) — polymorphic task management (second real plugin)
 
+### Plugin Migrations
+- Plugin migrations run via `SetupService::runPluginMigrations()` during install.
+- Each plugin declares its migrations in `plugin.json` under the `migrations` key.
+- Migrations are discovered by scanning each plugin's `migrations/` subdirectory.
+- Migration runner (`MigrationRunner`) executes pending migrations in filename order.
+- Kernel migrations run first, then plugin migrations.
+
 ### Modules (Future Plugins)
 - Chat, Notifications, FileManager, Setup
 

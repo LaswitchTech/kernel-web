@@ -24,6 +24,7 @@ class SetupController
 {
     private SetupService $setup;
     private string $viewsPath;
+    private string $rootPath;
 
     public function __construct(string $rootPath)
     {
@@ -31,8 +32,9 @@ class SetupController
             session_start();
         }
 
-        $this->setup     = new SetupService($rootPath);
-        $this->viewsPath = __DIR__ . '/../Views';
+        $this->setup      = new SetupService($rootPath);
+        $this->viewsPath  = __DIR__ . '/../Views';
+        $this->rootPath   = $rootPath;
     }
 
     // -------------------------------------------------------------------------
@@ -322,10 +324,17 @@ class SetupController
             return;
         }
 
-        // Phase 7 — Run migrations
+        // Phase 7 — Run kernel migrations
         $migResult = $this->setup->runMigrations($db);
         if (!$migResult['ok']) {
             $this->json(['ok' => false, 'phase' => 'migrations', 'error' => $migResult['error']]);
+            return;
+        }
+
+        // Phase 7b — Run plugin migrations
+        $pluginMigResult = $this->setup->runPluginMigrations($this->rootPath . '/lib/plugins', $db);
+        if (!$pluginMigResult['ok']) {
+            $this->json(['ok' => false, 'phase' => 'plugin migrations', 'error' => $pluginMigResult['error']]);
             return;
         }
 

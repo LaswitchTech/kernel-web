@@ -1,8 +1,8 @@
-# NetMon Theming System
+# Kernel-Web Theming System
 
 ## Overview
 
-NetMon uses a LESS-based theme system that compiles to a single `public/assets/css/app.css`. Themes are defined as CSS custom property blocks so a single compiled file supports dark mode, light mode, and any future themes at runtime — no separate CSS file per theme.
+Kernel-Web uses a LESS-based theme system that compiles to a single `public/assets/css/app.css`. Themes are defined as CSS custom property blocks so a single compiled file supports dark mode, light mode, and any future themes at runtime — no separate CSS file per theme.
 
 ---
 
@@ -206,7 +206,7 @@ The application ships a runtime theme toggle in the topbar so users can switch p
 
 ### User preferences
 
-Three values are supported, stored in `localStorage` under the key `netmon-theme`:
+Three values are supported, stored in `localStorage` under the key `kernel_web_theme`:
 
 | Value | Behaviour |
 |---|---|
@@ -224,7 +224,7 @@ A synchronous inline `<script>` is placed in `<head>` **before** the CSS `<link>
 <head>
     <script>
     (function(){
-        var t = localStorage.getItem('netmon-theme') || 'auto';
+        var t = localStorage.getItem('kernel_web_theme') || 'auto';
         var e = document.documentElement;
         e.setAttribute('data-bs-theme',
             t === 'light' ? 'light' :
@@ -248,9 +248,9 @@ If the stored preference is `'dark'` or `'light'`, the listener is still registe
 
 ### Toggle button
 
-The toggle is a dropdown button in the topbar `.topbar-actions` group. It uses a `<button class="topbar-icon-btn" id="js-theme-toggle">` with three `<button data-netmon-theme="...">` items inside a `.dropdown-menu`:
+The toggle is a dropdown button in the topbar `.topbar-actions` group. It uses a `<button class="topbar-icon-btn" id="js-theme-toggle">` with three `<button data-kernel_web_theme="...">` items inside a `.dropdown-menu`:
 
-| Item | Icon | `data-netmon-theme` |
+| Item | Icon | `data-kernel_web_theme` |
 |---|---|---|
 | Dark | `bi-moon-stars-fill` | `dark` |
 | Light | `bi-sun-fill` | `light` |
@@ -275,7 +275,7 @@ applyThemePref(pref)
 setThemePref(pref)
 ```
 
-`[data-netmon-theme]` click handlers call `setThemePref`. The `matchMedia` change event calls `applyThemePref` (no persistence — just re-evaluates auto).
+`[data-kernel_web_theme]` click handlers call `setThemePref`. The `matchMedia` change event calls `applyThemePref` (no persistence — just re-evaluates auto).
 
 ### No backend persistence (current state)
 

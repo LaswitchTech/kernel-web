@@ -1,4 +1,4 @@
-# NetMon HTTP API Reference
+# Kernel-Web HTTP API Reference
 
 ## Overview
 
@@ -79,7 +79,7 @@ Health check.
 
 **Response 200:**
 ```json
-{ "app": "NetMon", "status": "ok" }
+{ "app": "Kernel-Web", "status": "ok" }
 ```
 
 ---

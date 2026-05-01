@@ -197,6 +197,8 @@ class PluginLoader
      * Each plugin migrations array should contain relative paths
      * to migration files within the plugin directory.
      *
+     * Uses the shared MigrationRunner instance from the container.
+     *
      * Returns the number of migrations run.
      */
     public function runMigrations(): int
@@ -205,21 +207,47 @@ class PluginLoader
             return 0;
         }
 
-        $count = 0;
+        $db     = $this->container->get('db');
+        $runner = new \App\Core\MigrationRunner($db, '');
+        $count  = 0;
 
         foreach ($this->registry->getEnabled() as $plugin) {
             $baseDir = $plugin->basePath();
-            foreach ($plugin->migrations() as $migrationFile) {
-                $fullPath = $baseDir . '/' . $migrationFile;
-                if (is_file($fullPath)) {
-                    // Migration execution is deferred to a future hook.
-                    // For now, just count declared migrations.
-                    $count++;
+            $runner  = new \App\Core\MigrationRunner($db, $baseDir . '/migrations');
+
+            $pending = $runner->pending();
+            foreach ($pending as $file) {
+                $name  = basename($file, '.php');
+                $class = $this->classFromName($name);
+
+                require_once $file;
+
+                if (!class_exists($class)) {
+                    throw new \RuntimeException("Migration class '{$class}' not found in {$file}");
                 }
+
+                $migration = new $class($db);
+
+                if (!($migration instanceof \App\Core\Migration)) {
+                    throw new \RuntimeException("Migration '{$class}' must extend App\\Core\\Migration");
+                }
+
+                $migration->up();
+                $runner->record($name);
+                $count++;
             }
         }
 
         return $count;
+    }
+
+    /**
+     * Convert a migration name (e.g. '0001_create_tasks') to a class name.
+     */
+    private function classFromName(string $name): string
+    {
+        $stripped = preg_replace('/^\d+_/', '', $name);
+        return str_replace('_', '', ucwords($stripped, '_'));
     }
 
     /**

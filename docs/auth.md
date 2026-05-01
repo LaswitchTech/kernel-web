@@ -1,4 +1,4 @@
-# NetMon Authentication & Authorization
+# Kernel-Web Authentication & Authorization
 
 ## Overview
 
@@ -116,7 +116,7 @@ Identical principal-building logic to `SessionAuth`, but designed for **browser 
 **302 redirect to `/auth/login`** if not authenticated. Use for routes that render pages.
 
 ```php
-$router->get('/', 'NetMon\Controllers\HomeController@index', ['WebAuth']);
+$router->get('/', 'Home\HomeController@index', ['WebAuth']);
 ```
 
 ### `TokenAuth`
@@ -276,7 +276,7 @@ The `AuthService`, session middleware, and all downstream code are provider-agno
 return [
     'provider' => 'local',
     'session'  => [
-        'name'     => 'netmon_session',
+        'name'     => 'kernel_web_session',
         'lifetime' => 7200,
         'secure'   => false,   // true in production (HTTPS)
     ],

@@ -13,7 +13,7 @@ Kernel-Web has no built-in scheduler or daemon. Recurring tasks must be register
 Dispatches all active cron-assigned tasks. Recommended interval: every minute.
 
 ```cron
-* * * * * php /path/to/netmon/scripts/monitor.php >> /path/to/netmon/storage/logs/monitor.log 2>&1
+* * * * * php /path/to/installation/scripts/monitor.php >> /path/to/installation/storage/logs/monitor.log 2>&1
 ```
 
 See [monitoring.md](monitoring.md) for full documentation.
@@ -25,7 +25,7 @@ See [monitoring.md](monitoring.md) for full documentation.
 Deletes historical rows from `device_checks`, `service_checks`, and `notification_history` that are older than the configured retention thresholds. Recommended interval: once daily, during off-peak hours.
 
 ```cron
-0 3 * * * php /path/to/netmon/scripts/cleanup.php >> /path/to/netmon/storage/logs/cleanup.log 2>&1
+0 3 * * * php /path/to/installation/scripts/cleanup.php >> /path/to/installation/storage/logs/cleanup.log 2>&1
 ```
 
 **What it cleans:**

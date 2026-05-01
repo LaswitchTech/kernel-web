@@ -82,8 +82,8 @@ use App\Core\Config;
 use App\Core\Env;
 use App\Core\SQLiteDriver;
 use App\Models\AuditLogRepository;
-use App\Modules\Tasks\Models\TaskRepository;
-use App\Modules\Tasks\Services\TaskService;
+use App\Plugins\tasks\Models\TaskRepository;
+use App\Plugins\tasks\Services\TaskService;
 
 Env::load(__DIR__ . '/../.env');
 
@@ -116,7 +116,7 @@ $auditRepo  = new AuditLogRepository($db);
 $now       = date('Y-m-d H:i:s');
 $timestamp = $now;
 
-echo "NetMon Task Scheduler — {$timestamp}\n";
+echo "Kernel-Web Task Scheduler — {$timestamp}\n";
 echo str_repeat('-', 50) . "\n";
 
 if ($dryRun) {

@@ -2,14 +2,14 @@
 
 ## Purpose
 
-This document defines the **planned implementation architecture** for the NetMon installer. No installer code exists yet. This blueprint governs where installer-related code should be placed, what is shared vs. application-specific, and what contracts must be designed before implementation begins.
+This document defines the **implementation architecture** for the Kernel-Web installer. The installer provides both CLI (`scripts/install.php`) and web wizard (`/setup`) installation flows with shared core logic in `SetupService`.
 
 ---
 
 ## Guiding Principles
 
-- The installer must be **reusable** — nothing in the installer core may know about NetMon specifically.
-- Application-specific steps (admin account creation, NetMon seeds) are plugged in via **configuration or extension**, not baked into the installer.
+- The installer must be **reusable** — nothing in the installer core may know about the specific application deploying it.
+- Application-specific steps (admin account creation, seed files) are plugged in via **configuration or extension**, not baked into the installer.
 - Both the CLI installer and the web wizard run the **same phase logic** from the same shared classes.
 - The installer does **not** require the application Container to be running. It must work before the database exists.
 - Installer code follows the same three-layer architecture as the rest of the project.
@@ -43,10 +43,10 @@ public/
 └── index.php                        ← Boot guard: redirect to /setup if not installed
 ```
 
-NetMon-specific installer logic (admin creation, NetMon seeds) lives in:
+Application-specific installer logic (admin creation, seed files) lives in:
 ```
 database/seeds/AdminBootstrap.php    ← already exists; run during Phase 8
-app/NetMon/                          ← if NetMon-specific installer steps are needed
+app/Modules/Setup/                   ← installer module (shared between CLI and web)
 ```
 
 ---
@@ -70,7 +70,7 @@ These four classes are all the installer needs from the kernel. They have no dep
 
 ### Module Layer (`app/Modules/Setup/`)
 
-**Rule:** knows about the kernel and the auth module schema, but not about NetMon.
+**Rule:** knows about the kernel and the auth module schema, but not about the deploying application.
 
 #### `SetupService`
 
@@ -106,19 +106,19 @@ A self-contained PHP file that outputs the wizard HTML shell. Minimal inline sty
 
 ---
 
-### Application Layer (`app/NetMon/`)
+### Seed Configuration
 
-**Rule:** NetMon-specific only.
+**Rule:** Seed class names are provided by the calling application, not hardcoded.
 
-The only NetMon-specific installer concern is which seed files to run. This is configured, not coded:
+The seed list is passed to `SetupService::runSeeds()` at invocation time:
 
 ```php
 // In the installer invocation (CLI or SetupController):
-$seedClasses = ['AdminBootstrap'];  // NetMon passes this list; SetupService runs them
-$setupService->runSeeds($seedClasses);
+$seedClasses = ['AdminBootstrap'];  // Application provides this list; SetupService runs them
+$setupService->runSeeds($db, $seedClasses);
 ```
 
-As NetMon grows, additional seeds (e.g., default monitoring profiles) would be added to this list.
+As the application grows, additional seeds (e.g., default profiles) would be added to this list.
 
 Admin account creation (Phase 9) is handled by `SetupService` using `UserRepository` and `LocalAuthProvider` from the existing auth module. It is generic — any application with the same auth schema can use it.
 
@@ -174,7 +174,7 @@ The CLI installer shares **no code** with the web wizard's HTTP layer. It only s
 Application-level, stable per deployment. Written by `ConfigWriter`.
 
 ```
-APP_NAME=NetMon
+APP_NAME=Kernel-Web
 APP_ENV=production
 APP_DEBUG=false
 APP_URL=https://example.com

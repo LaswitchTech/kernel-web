@@ -4,7 +4,7 @@
 
 The web-based setup wizard provides a guided, browser-based first-run installation experience. It is the recommended path for non-technical users, managed hosting environments, and any deployment where running CLI commands is inconvenient.
 
-The wizard is implemented as a **reusable module** (`app/Modules/Setup/`). It contains no NetMon-specific logic. Application identity, default values, and the list of seed files to run are injected via configuration — the module itself remains portable.
+The wizard is implemented as a **reusable module** (`app/Modules/Setup/`). It contains no application-specific logic. Application identity, default values, and the list of seed files to run are injected via configuration — the module itself remains portable.
 
 For the backend phase reference and API contracts, see [install.md](install.md).  
 For the code architecture and class placement, see [installer-architecture.md](installer-architecture.md).
@@ -123,9 +123,9 @@ Step 8 is a terminal screen; no navigation back from here.
 - Clicking "Start Installation" advances to Screen 2 and immediately fires `POST /setup/check`
 - No Back button on this screen
 
-**Generic vs NetMon-specific:**
+**Generic vs application-specific:**
 - Generic: layout, checklist, button behavior
-- NetMon-specific: app name, logo (injected via config — not hardcoded in the module)
+- application-specific: app name, logo (injected via config — not hardcoded in the module)
 
 ---
 
@@ -165,9 +165,9 @@ Step 8 is a terminal screen; no navigation back from here.
 | `/data/` writable | Required | "Run: chmod 775 data/ (or mkdir data && chmod 775 data/)" |
 | `/config/` writable | Required | "Run: chmod 775 config/" |
 
-**Generic vs NetMon-specific:**
+**Generic vs application-specific:**
 - Generic: all check items, all retry behavior, the response renderer
-- NetMon-specific: none — the required/optional extension list comes from kernel config
+- application-specific: none — the required/optional extension list comes from kernel config
 
 ---
 
@@ -203,9 +203,9 @@ Step 8 is a terminal screen; no navigation back from here.
 - Connection failure: show sanitized error message inline (not in an alert/modal — in the panel itself)
 - Never display raw PDO exception strings; show a friendly message + the sanitized driver error
 
-**Generic vs NetMon-specific:**
+**Generic vs application-specific:**
 - Generic: all of this screen, driver toggle logic, connection test
-- NetMon-specific: none. The MySQL database name default (`netmon`) comes from config if provided, but is not hardcoded in the module.
+- application-specific: none. The MySQL database name default (`kernel_web`) comes from config if provided, but is not hardcoded in the module.
 
 ---
 
@@ -219,7 +219,7 @@ Step 8 is a terminal screen; no navigation back from here.
 
 | Field | Type | Default | Notes |
 |---|---|---|---|
-| Application name | text | from `config/app.php` `name` key | e.g. `NetMon` |
+| Application name | text | from `config/app.php` `name` key | e.g. `Kernel-Web` |
 | Base URL | text | inferred from `$_SERVER['HTTP_HOST']` | e.g. `https://example.com` |
 | Environment | select | `production` | Options: `development`, `production` |
 | Debug mode | checkbox | off | Shown only if Environment = `development`; auto-disabled in production |
@@ -243,9 +243,9 @@ Step 8 is a terminal screen; no navigation back from here.
 | Environment | Required. Must be `development` or `production`. |
 | Debug mode | Boolean. Forced `false` when environment = `production`. |
 
-**Generic vs NetMon-specific:**
+**Generic vs application-specific:**
 - Generic: all form logic, validation, config write behavior
-- NetMon-specific: the default value for "Application name" (`NetMon`) is read from `config/app.php`; the module does not hardcode it
+- application-specific: the default value for "Application name" (`Kernel-Web`) is read from `config/app.php`; the module does not hardcode it
 
 ---
 
@@ -293,9 +293,9 @@ Step 8 is a terminal screen; no navigation back from here.
 - The raw password is re-submitted in the `POST /setup/install` body at execution time
 - The password is hashed immediately on receipt during Phase 9 and discarded
 
-**Generic vs NetMon-specific:**
+**Generic vs application-specific:**
 - Generic: all form logic, validation, session storage behavior
-- NetMon-specific: none. The admin group name (`admin`) is a config value, not hardcoded.
+- application-specific: none. The admin group name (`admin`) is a config value, not hardcoded.
 
 ---
 
@@ -324,9 +324,9 @@ Step 8 is a terminal screen; no navigation back from here.
 - "Install Now" is a single-click action; the button disables immediately after click to prevent double-submit
 - Once "Install Now" is clicked, Back is no longer available
 
-**Generic vs NetMon-specific:**
+**Generic vs application-specific:**
 - Generic: layout, summary cards structure, button behavior
-- NetMon-specific: the specific seed file names listed in the "Installation steps" card come from config
+- application-specific: the specific seed file names listed in the "Installation steps" card come from config
 
 ---
 
@@ -364,9 +364,9 @@ Step 8 is a terminal screen; no navigation back from here.
   - B: Keep a non-persisted in-memory JS variable holding the password for the duration of the wizard session (cleared on page close or success)
   - Recommended: Option A — cleaner, no sensitive data lingering in JS
 
-**Generic vs NetMon-specific:**
+**Generic vs application-specific:**
 - Generic: all of this screen, retry logic, progress display
-- NetMon-specific: none
+- application-specific: none
 
 ---
 
@@ -377,7 +377,7 @@ Step 8 is a terminal screen; no navigation back from here.
 **Layout:**
 - Large success icon
 - Heading: "Installation Complete"
-- Body: "NetMon has been installed successfully." (app name from config)
+- Body: "Kernel-Web has been installed successfully." (app name from config)
 - Admin reminder: "You can log in with username: **[username]**"
 - Single button: **"Go to Login"** → navigates to `/auth/login` (full page navigation, not AJAX)
 
@@ -386,9 +386,9 @@ Step 8 is a terminal screen; no navigation back from here.
 - Navigating back to `/setup` after this screen returns `403 Forbidden` (boot guard)
 - The "Go to Login" button performs a standard `window.location` redirect, not AJAX
 
-**Generic vs NetMon-specific:**
+**Generic vs application-specific:**
 - Generic: layout, session destruction, redirect
-- NetMon-specific: app name in the success message; login URL (`/auth/login` is defined in routes — the module should receive this as a config value, not hardcode it)
+- application-specific: app name in the success message; login URL (`/auth/login` is defined in routes — the module should receive this as a config value, not hardcode it)
 
 ---
 
@@ -467,11 +467,11 @@ If the PHP session expires mid-wizard (default session lifetime):
 
 ---
 
-## Generic vs NetMon-Specific Breakdown
+## Generic vs Kernel-Web-Specific Breakdown
 
-This table covers every element of the wizard and explicitly marks what belongs to the reusable module vs. what is NetMon-specific.
+This table covers every element of the wizard and explicitly marks what belongs to the reusable module vs. what is application-specific.
 
-| Element | Generic (`app/Modules/Setup/`) | NetMon-specific (`app/NetMon/` or config) |
+| Element | Generic (`app/Modules/Setup/`) | application-specific (`app/Kernel-Web/` or config) |
 |---|---|---|
 | Wizard shell HTML structure | Yes | — |
 | Progress indicator component | Yes | — |
@@ -483,24 +483,24 @@ This table covers every element of the wizard and explicitly marks what belongs 
 | Screen 2: required extensions list | Yes (from kernel `EnvironmentChecker` config) | — |
 | Screen 3: driver toggle UI | Yes | MySQL DB name default (from config, optional) |
 | Screen 3: connection test | Yes | — |
-| Screen 4: form layout | Yes | Default app name (`NetMon` from `config/app.php`) |
+| Screen 4: form layout | Yes | Default app name (`Kernel-Web` from `config/app.php`) |
 | Screen 4: `.env` write | Yes (kernel `ConfigWriter`) | Key names (`APP_NAME` etc.) are generic |
 | Screen 4: `config/local.php` write | Yes (kernel `ConfigWriter`) | — |
 | Screen 5: admin form | Yes | Admin group name (`admin` from config) |
 | Screen 5: password hashing | Yes (uses `password_hash`) | — |
 | Screen 6: summary layout | Yes | Seed file names listed (from config list) |
 | Screen 7: progress display | Yes | — |
-| Screen 7: migration execution | Yes (calls `MigrationRunner`) | Migration files are NetMon's |
-| Screen 7: seed execution | Yes (calls `SetupService::runSeeds`) | Seed class list passed from NetMon config |
+| Screen 7: migration execution | Yes (calls `MigrationRunner`) | Migration files are Kernel-Web's |
+| Screen 7: seed execution | Yes (calls `SetupService::runSeeds`) | Seed class list passed from Kernel-Web config |
 | Screen 7: admin user creation | Yes (calls `UserRepository`) | Admin group name from config |
 | Screen 7: install lock write | Yes (kernel `InstallLock`) | — |
 | Screen 8: success layout | Yes | App name; login URL from config |
 | Session state management | Yes | — |
 | Error response shape `{ok, errors}` | Yes | — |
 | Retry logic | Yes | — |
-| Wizard self-contained CSS | Yes | May incorporate NetMon brand color via a CSS variable at most |
+| Wizard self-contained CSS | Yes | May incorporate Kernel-Web brand color via a CSS variable at most |
 
-**Summary:** The `app/Modules/Setup/` module is 100% generic. All NetMon-specific values (app name, admin group, seed list, login URL) are injected via `config/app.php` or a dedicated `config/setup.php`. The module reads these; it does not hardcode them.
+**Summary:** The `app/Modules/Setup/` module is 100% generic. All application-specific values (app name, admin group, seed list, login URL) are injected via `config/app.php` or a dedicated `config/setup.php`. The module reads these; it does not hardcode them.
 
 ---
 
@@ -567,7 +567,7 @@ No custom CSS beyond one or two utility tweaks is expected.
 | MySQL support (Screen 3) | Driver toggle renders MySQL fields but they are disabled/marked "coming soon" until `MySQLDriver` is implemented |
 | Air-gapped Bootstrap bundle | CDN is acceptable for initial implementation; bundle for offline environments later |
 | `config/setup.php` definition | The specific keys (`seeds`, `admin_group`, `post_install_redirect`) need to be formalized when implementation begins |
-| Wizard CSS brand variables | One `--color-primary` CSS variable override is sufficient for NetMon branding; no full theme needed |
+| Wizard CSS brand variables | One `--color-primary` CSS variable override is sufficient for Kernel-Web branding; no full theme needed |
 | LDAP/OAuth setup steps | Deferred future wizard steps; placeholder "additional configuration" screen reserved but empty |
 | Multi-language/i18n | Not planned; all strings are English; extraction to a strings file is a future concern |
 

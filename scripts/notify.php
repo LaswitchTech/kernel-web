@@ -104,7 +104,7 @@ $channelRegistry[$emailChannel->name()] = $emailChannel;
 $now       = date('Y-m-d H:i:s');
 $timestamp = $now;
 
-echo "NetMon Notify — {$timestamp}\n";
+echo "Kernel-Web Notification Worker — {$timestamp}\n";
 echo str_repeat('-', 50) . "\n";
 
 if ($dryRun) {

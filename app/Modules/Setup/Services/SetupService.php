@@ -16,7 +16,7 @@ use App\Models\UserRepository;
  *
  * This service is shared by both the CLI installer (scripts/install.php)
  * and the future web setup wizard (app/Modules/Setup/Controllers/).
- * It contains no NetMon-specific logic; application-specific values
+ * It contains no application-specific logic; values
  * (seed class names, admin group name) are passed in by the caller.
  *
  * Every public method returns a structured array so the caller can
@@ -210,7 +210,70 @@ class SetupService
         }
     }
 
-    // -------------------------------------------------------------------------
+    // ------
+    // Phase 7b - Run plugin migrations
+    // ------
+
+    /*
+     * Scan plugin migration directories and run pending migrations for each plugin.
+     *
+     * This is called during installation (after kernel migrations) so that
+     * plugin-declared tables and columns exist before seeds run.
+     *
+     * @return array{ok: bool, applied: string[], error: string|null}
+     */
+    public function runPluginMigrations(string $pluginsDir, DatabaseInterface $db): array
+    {
+        $applied = [];
+
+        if (!is_dir($pluginsDir)) {
+            return ['ok' => true, 'applied' => $applied, 'error' => null];
+        }
+
+        $iterator = new \DirectoryIterator($pluginsDir);
+        foreach ($iterator as $entry) {
+            if (!$entry->isDir() || $entry->isDot()) {
+                continue;
+            }
+
+            $migDir = $entry->getPathname() . '/migrations';
+            if (!is_dir($migDir)) {
+                continue;
+            }
+
+            $runner = new MigrationRunner($db, $migDir);
+            $pending = $runner->pending();
+
+            foreach ($pending as $file) {
+                $name  = basename($file, '.php');
+                $class = $this->classFromName($name);
+
+                require_once $file;
+
+                if (!class_exists($class)) {
+                    return ['ok' => false, 'applied' => $applied, 'error' => "Migration class '{$class}' not found in {$file}"];
+                }
+
+                $migration = new $class($db);
+
+                if (!($migration instanceof Migration)) {
+                    return ['ok' => false, 'applied' => $applied, 'error' => "Migration '{$class}' must extend App\\Core\\Migration"];
+                }
+
+                try {
+                    $migration->up();
+                    $runner->record($name);
+                    $applied[] = $name;
+                } catch (\Throwable $e) {
+                    return ['ok' => false, 'applied' => $applied, 'error' => $e->getMessage()];
+                }
+            }
+        }
+
+        return ['ok' => true, 'applied' => $applied, 'error' => null];
+    }
+
+    // ------
     // Phase 8 — Run seeds
     // -------------------------------------------------------------------------
 
@@ -458,6 +521,15 @@ class SetupService
         }
 
         return $errors;
+    }
+
+    /**
+     * Derive the PHP class name from a migration name.
+     */
+    private function classFromName(string $name): string
+    {
+        $stripped = preg_replace('/^\d+_/', '', $name);
+        return str_replace('_', '', ucwords($stripped, '_'));
     }
 
     /**

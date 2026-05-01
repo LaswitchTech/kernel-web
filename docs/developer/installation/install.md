@@ -2,7 +2,7 @@
 
 ## Overview
 
-NetMon supports two installation methods:
+Kernel-Web supports two installation methods:
 
 | Method | When to use |
 |---|---|
@@ -140,7 +140,7 @@ Outcome:
 **Purpose:** Collect and persist application-level settings that are stable per deployment.
 
 Parameters collected:
-- Application name (default: `NetMon`)
+- Application name (default: `Kernel-Web`)
 - Base URL (default: inferred from current request for web wizard, prompt for CLI)
 - Environment: `development` or `production`
 - Debug mode: on/off (default off in production)
@@ -149,7 +149,7 @@ Persisted to: `.env`
 
 Generated `.env` structure:
 ```
-APP_NAME=NetMon
+APP_NAME=Kernel-Web
 APP_ENV=production
 APP_DEBUG=false
 APP_URL=https://example.com
@@ -193,23 +193,18 @@ For MySQL, the structure adds host/port/name/user/pass keys under `'mysql'`.
 **Purpose:** Apply all pending database schema migrations.
 
 Implementation:
-- Uses existing `App\Core\MigrationRunner`
-- Scans `/database/migrations/` for `{NNNN}_*.php` files
+- Kernel migrations: Uses `App\Core\MigrationRunner`, scans `/database/migrations/`
+- Plugin migrations: Scans `/lib/plugins/*/migrations/` for each enabled plugin
 - Applies all pending migrations in numeric order
 - Records each applied migration in the `migrations` table
 
-Migrations applied during a fresh install (current set):
-1. `0001_create_migrations_table`
-2. `0002_create_users_table`
-3. `0003_create_groups_table`
-4. `0004_create_permissions_table`
-5. `0005_create_user_groups_table`
-6. `0006_create_group_permissions_table`
-7. `0007_create_api_tokens_table`
+Migrations applied during a fresh install:
+1. Kernel migrations (0001–0047 — users, groups, permissions, tokens, notifications, tasks, chat, locations)
+2. Plugin migrations (declared in each plugin's `plugin.json`)
 
 Outcome:
 - All migrations applied → proceed
-- Any migration throws → rollback that migration, display error, halt
+- Any migration throws → display error, halt
 
 ---
 
@@ -224,7 +219,7 @@ Seeds run:
 
 Seeds are idempotent — safe to run more than once.
 
-Note: NetMon-specific permission sets (monitoring, alerting, etc.) will be added as additional seeds when those features are built.
+Note: Application-specific permission sets will be added as additional seeds when those features are built.
 
 ---
 
@@ -277,7 +272,8 @@ Both lock signals must be present. To allow reinstallation, both must be removed
    Phase 4: PDO opens /data/app.db
    Phase 5: writes .env
    Phase 6: writes config/local.php (driver: sqlite)
-   Phase 7: MigrationRunner::run()
+   Phase 7: MigrationRunner::run() (kernel)
+   Phase 7b: Plugin migration runner
    Phase 8: AdminBootstrap::run()
    Phase 9: creates admin user
    Phase 10: writes /storage/installed.lock, APP_INSTALLED=true
@@ -326,7 +322,7 @@ The script is fully interactive. It prompts for the values listed below, confirm
 
 | Setting | Where defined | Value |
 |---|---|---|
-| `APP_NAME` | `.env` | `NetMon` |
+| `APP_NAME` | `.env` | `Kernel-Web` |
 | `APP_ENV` | `.env` | `development` |
 | `APP_DEBUG` | `.env` | `true` |
 | SQLite file path | `config/database.php` default | `data/app.db` |
@@ -335,40 +331,44 @@ The script is fully interactive. It prompts for the values listed below, confirm
 
 ```
 ╔══════════════════════════════════════════════╗
-║   NetMon — Installation Wizard              ║
+║   Kernel-Web — Installation Wizard          ║
 ╚══════════════════════════════════════════════╝
 
-── Phase 1/8: Checking environment requirements
+── Phase 1/9: Checking environment requirements
   [✓] PHP 8.1.0+ (8.2.0)
   [✓] ext-pdo
   [✓] ext-pdo_sqlite
   [~] ext-pdo_mysql (not loaded — MySQL / MariaDB support (future))
 
-── Phase 2/8: Checking directory permissions
+── Phase 2/9: Checking directory permissions
   [✓] /path/to/storage
   [✓] /path/to/data
   [✓] /path/to/config
 
-── Phase 3/8: Gathering installation settings
-  Application URL [http://localhost]: https://netmon.example.com
+── Phase 3/9: Gathering installation settings
+  Application URL [http://localhost]: https://kernel-web.example.com
   ...
 
-── Phase 4/8: Writing configuration
+── Phase 4/9: Writing configuration
   [✓] Updated .env
   [✓] Wrote config/local.php
 
-── Phase 5/8: Connecting to database
+── Phase 5/9: Connecting to database
   [✓] Connection successful (Sqlite)
 
-── Phase 6/8: Running database migrations
+── Phase 6/9: Running database migrations
   [✓] Applied: 0001_create_migrations_table
   ...
-  [✓] Applied: 0008_add_display_name_to_users
+  [✓] Applied: 0038_create_locations_table
 
-── Phase 7/8: Running database seeds
+── Phase 7/9: Running plugin migrations
+  [✓] Applied: 0030_create_tasks_table
+  ...
+
+── Phase 8/9: Running database seeds
   [✓] Seeds complete.
 
-── Phase 8/8: Creating administrator account and finalizing
+── Phase 9/9: Creating administrator account and finalizing
   [✓] Administrator account created (ID: 1)
   [✓] Installation lock written
   [✓] APP_INSTALLED set to true
@@ -377,8 +377,8 @@ The script is fully interactive. It prompts for the values listed below, confirm
 ║   Installation complete!                     ║
 ╚══════════════════════════════════════════════╝
 
-  Application URL : https://netmon.example.com
-  Login URL       : https://netmon.example.com/auth/login
+  Application URL : https://kernel-web.example.com
+  Login URL       : https://kernel-web.example.com/auth/login
   Admin username  : admin
 ```
 
@@ -408,7 +408,7 @@ GET /setup          → welcome screen (blocked post-install)
 POST /setup/check   → Phase 1+2 (AJAX: returns JSON pass/fail)
 POST /setup/db      → Phase 3+4 (AJAX: tests connection, returns result)
 POST /setup/config  → Phase 5+6 (AJAX: validates and persists)
-POST /setup/install → Phase 7+8+9+10 (executes install, streams progress)
+POST /setup/install → Phase 7+7b+8+9+10 (executes install, streams progress)
 GET /setup/done     → success screen
 ```
 

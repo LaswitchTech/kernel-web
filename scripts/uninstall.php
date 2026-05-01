@@ -1,7 +1,7 @@
 <?php
 
 /**
- * NetMon CLI Uninstall / Reset Helper
+ * Kernel-Web Reset Helper
  *
  * Usage:
  *   php scripts/uninstall.php

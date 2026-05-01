@@ -209,7 +209,10 @@ class MigrationRunner
     /**
      * Record a successfully applied migration.
      */
-    private function record(string $name): void
+    /**
+     * Record a successfully applied migration.
+     */
+    public function record(string $name): void
     {
         $this->db->execute(
             'INSERT INTO migrations (name, batch, applied_at) VALUES (?, ?, ?)',
