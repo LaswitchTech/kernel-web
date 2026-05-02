@@ -7,6 +7,7 @@ use App\Core\Installer\ConfigWriter;
 use App\Core\Installer\DirectoryChecker;
 use App\Core\Installer\EnvironmentChecker;
 use App\Core\Installer\InstallLock;
+use App\Core\Migration;
 use App\Core\MigrationRunner;
 use App\Core\SQLiteDriver;
 use App\Models\UserRepository;
