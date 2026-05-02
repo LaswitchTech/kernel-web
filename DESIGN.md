@@ -558,6 +558,76 @@ For the full cleanup history, see `/docs/kernel-status.md`.
 
 ---
 
+## Extensions System
+
+### Purpose
+
+Central admin area for browsing and managing application extensions:
+- **Plugins** — feature modules in `lib/plugins/`
+- **Themes** — visual styling modules in `lib/themes/`
+- **Layouts** — page structure modules in `lib/layouts/`
+
+### Discovery
+
+Extensions are discovered read-only from their respective directories:
+
+| Type | Directory | Manifest | Fallback |
+|------|-----------|----------|----------|
+| plugin | `lib/plugins/{Name}/` | `plugin.json` | directory name |
+| theme | `lib/themes/{Name}/` | `theme.json` | directory name |
+| layout | `lib/layouts/{Name}/` | `layout.json` | directory name |
+
+Manifest format (theme/layout):
+```json
+{
+    "name": "My Theme",
+    "version": "0.1.0",
+    "description": "Short description"
+}
+```
+
+### Plugin Manifest
+
+Plugins use `plugin.json` (already documented in Plugin System Design):
+- `name` (required), `version` (required)
+- `description`, `enabled`, `requires`, `dependencies`, `permissions`, `routes`, `migrations`, `services`, `hooks`, `menus` (optional)
+- Invalid manifests show "Invalid" status with reason
+
+### Status
+
+| Status | Meaning |
+|--------|---------|
+| enabled | Valid plugin, currently active |
+| disabled | Valid plugin, user disabled |
+| discovered | Theme or layout found, no lifecycle management |
+| invalid | Manifest missing or malformed |
+
+### Admin Area
+
+- Route: `GET /admin/extensions`
+- Middleware: `WebAuth` + `WebPermission:extensions.manage`
+- Displays summary counts, per-type tables with name, slug, version, description, status
+
+### Read-Only Limitation (Current)
+
+This pass is **read-only discovery and display only**. The following are **deferred**:
+- enable / disable
+- install / uninstall
+- upload / marketplace
+- remote updates
+- licensing
+- dependency resolution UI
+- theme switching
+- layout switching
+
+### Design Rules
+
+- Extensions must never crash the kernel if they fail
+- Discovery must be read-only
+- Admin UI must gate on `extensions.manage` permission
+
+---
+
 ## Design Evolution Rule
 
 Whenever a structural or architectural change is made:

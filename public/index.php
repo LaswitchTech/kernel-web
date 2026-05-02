@@ -251,6 +251,7 @@ if ($pluginsDir !== false && is_dir($pluginsDir)) {
         ['name' => 'admin-segments', 'label' => 'Segments', 'url' => '/admin/network-segments', 'icon' => 'bi bi-hdd-network', 'permission' => 'admin', 'order' => 57, 'sections' => []],
         ['name' => 'admin-topology-candidates', 'label' => 'Topo Candidates', 'url' => '/admin/topology-candidates', 'icon' => 'bi bi-diagram-2', 'permission' => 'admin', 'order' => 58, 'sections' => []],
         ['name' => 'admin-settings', 'label' => 'Settings', 'url' => '/admin/settings', 'icon' => 'bi bi-sliders', 'permission' => 'admin', 'order' => 59, 'sections' => []],
+        ['name' => 'admin-extensions', 'label' => 'Extensions', 'url' => '/admin/extensions', 'icon' => 'bi bi-boxes', 'permission' => 'extensions.manage', 'order' => 60, 'sections' => []],
     ];
 
     foreach ($coreMenus as $menuDef) {
