@@ -52,7 +52,17 @@
             <hr>
 
             <div class="d-grid gap-2">
-                <?php if ($isInstalled): ?>
+                <?php if ($isAuthenticated): ?>
+                <div class="text-center small text-muted mb-2">Signed in as <strong><?= htmlspecialchars($user['username'] ?? $user['email'] ?? 'user') ?></strong></div>
+                <a href="/admin" class="btn btn-primary btn-lg">
+                    <i class="bi bi-box-arrow-in-right"></i> Go to App
+                </a>
+                <form method="POST" action="/auth/logout" style="display:inline;">
+                    <button type="submit" class="btn btn-outline-secondary btn-lg w-100">
+                        <i class="bi bi-box-arrow-right"></i> Sign Out
+                    </button>
+                </form>
+                <?php elseif ($isInstalled): ?>
                 <a href="/signin" class="btn btn-primary btn-lg">
                     <i class="bi bi-box-arrow-in-right"></i> Sign In
                 </a>

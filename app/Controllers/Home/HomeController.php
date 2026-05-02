@@ -14,9 +14,13 @@ class HomeController extends Controller
         $config    = $this->container->get('config');
         $viewsPath = __DIR__ . '/../../Views';
 
-        $appName   = $config['name'] ?? 'Kernel-Web';
-        $isInstalled = (bool) ($config['installed'] ?? false);
-        $installUrl = '/setup'; // unified install route
+        /** @var \App\Auth\AuthService $auth */
+        $auth           = $this->container->get('auth');
+        $user           = $auth->user();
+        $appName        = $config['name'] ?? 'Kernel-Web';
+        $isInstalled    = (bool) ($config['installed'] ?? false);
+        $installUrl     = '/setup'; // unified install route
+        $isAuthenticated = $auth->check();
 
         ob_start();
         require $viewsPath . '/home/index.php';
