@@ -14,7 +14,7 @@
 </head>
 <body>
 
-<div class="d-flex align-items-center justify-content-center min-vh-100 p-3">
+<div class="d-flex align-items-center justify-content-center min-vh-100 w-100 p-3">
 
     <div class="auth-card">
 
