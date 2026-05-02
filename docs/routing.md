@@ -65,6 +65,24 @@ POST /api/chat/rooms/{id}/messages
 - Clean URLs work via webroot redirect (`.htaccess` routes all requests to `/public/`)
 - Controllers orchestrate via middleware (WebAuth, WebPermission, SessionAuth)
 
+## Handler Resolution
+
+Route handlers use the format `"Controller@method"`. The Router resolves the
+controller class name as follows:
+
+| Handler format | Resolves to |
+|---|---|
+| `AuthController@index` | `App\Controllers\AuthController` |
+| `Controllers\Admin\UserController@index` | `App\Controllers\Admin\UserController` |
+| `Controllers\Home\HomeController@index` | `App\Controllers\Home\HomeController` |
+| `Modules\Chat\Controllers\ChatController@index` | `App\Modules\Chat\Controllers\ChatController` |
+| `Plugins\Notes\NotesController@index` | `App\Plugins\Notes\NotesController` |
+
+**Convention:** Use bare names for controllers in the root `App\Controllers`
+namespace. Prefix with `Controllers\` for sub-namespaced controllers (e.g.
+`Controllers\Admin\...`, `Controllers\Home\...`). Use fully qualified paths
+(`Modules\...`, `Plugins\...`) for module or plugin controllers.
+
 ## Rules
 
 - Routes must be declarative and traceable

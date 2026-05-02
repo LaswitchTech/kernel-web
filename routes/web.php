@@ -19,9 +19,9 @@
 // A plugin can override any of these by registering the same path
 // with priority > 0 (higher precedence).
 
-$router->get('/', 'Home\HomeController@index', [], 0);
-$router->get('/install', 'Home\HomeController@install', [], 0);
-$router->get('/dashboard', 'Home\HomeController@dashboard', [], 0);
+$router->get('/', 'Controllers\Home\HomeController@index', [], 0);
+$router->get('/install', 'Controllers\Home\HomeController@install', [], 0);
+$router->get('/dashboard', 'Controllers\Home\HomeController@dashboard', [], 0);
 
 // -------------------------------- Admin Area (requires 'admin' permission) ------
 

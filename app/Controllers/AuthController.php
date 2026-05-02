@@ -24,7 +24,16 @@ class AuthController extends Controller
 
         http_response_code(200);
         header('Content-Type: text/html; charset=utf-8');
-        require __DIR__ . '/../Views/auth/login.php';
+
+        $config    = $this->container->get('config');
+        $appName   = $config['name'] ?? 'Kernel-Web';
+        $viewsPath = __DIR__ . '/../Views';
+
+        ob_start();
+        require $viewsPath . '/auth/login.php';
+        $content = ob_get_clean();
+
+        require $viewsPath . '/layouts/blank.php';
     }
 
     // -------------------------------------------------------------------------
