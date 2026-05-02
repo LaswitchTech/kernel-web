@@ -72,6 +72,14 @@
                         </div>
                         <i class="bi bi-chevron-right ms-auto text-muted small"></i>
                     </a>
+                    <a href="/admin/extensions" class="list-group-item list-group-item-action d-flex align-items-center gap-3 px-0">
+                        <i class="bi bi-boxes text-muted"></i>
+                        <div>
+                            <div class="small fw-semibold">Extensions</div>
+                            <div class="text-muted" style="font-size:.8rem;">Browse discovered plugins, themes, and layouts</div>
+                        </div>
+                        <i class="bi bi-chevron-right ms-auto text-muted small"></i>
+                    </a>
                 </div>
             </div>
         </div>

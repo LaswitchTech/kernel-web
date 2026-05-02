@@ -26,6 +26,7 @@ $router->get('/dashboard', 'Controllers\Home\HomeController@dashboard', [], 0);
 // -------------------------------- Admin Area (requires 'admin' permission) ------
 
 // Admin dashboard
+$router->get('/admin', 'Controllers\Admin\AdminController@index', ['WebAuth', 'WebPermission:admin']);
 $router->get('/admin/audit', 'Controllers\Admin\AdminController@audit', ['WebAuth', 'WebPermission:admin']);
 $router->get('/admin/settings', 'Controllers\Admin\SystemSettingsController@show', ['WebAuth', 'WebPermission:admin']);
 $router->post('/admin/settings', 'Controllers\Admin\SystemSettingsController@update', ['WebAuth', 'WebPermission:admin']);

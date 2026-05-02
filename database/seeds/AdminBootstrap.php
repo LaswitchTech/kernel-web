@@ -68,13 +68,14 @@ class AdminBootstrap
         // Minimal permission set.
         // Naming convention: resource.action  (or bare word for global capabilities)
         $permissions = [
-            ['name' => 'admin',         'description' => 'Full administrative access'],
-            ['name' => 'users.view',    'description' => 'View user list and profiles'],
-            ['name' => 'users.create',  'description' => 'Create new users'],
-            ['name' => 'users.edit',    'description' => 'Edit existing users'],
-            ['name' => 'users.delete',  'description' => 'Delete users'],
-            ['name' => 'api.access',    'description' => 'Use the API with a token'],
-            ['name' => 'files.manage',  'description' => 'Browse, upload, download, and delete files in configured storage roots'],
+            ['name' => 'admin',               'description' => 'Full administrative access'],
+            ['name' => 'users.view',          'description' => 'View user list and profiles'],
+            ['name' => 'users.create',        'description' => 'Create new users'],
+            ['name' => 'users.edit',          'description' => 'Edit existing users'],
+            ['name' => 'users.delete',        'description' => 'Delete users'],
+            ['name' => 'api.access',          'description' => 'Use the API with a token'],
+            ['name' => 'files.manage',        'description' => 'Browse, upload, download, and delete files in configured storage roots'],
+            ['name' => 'extensions.manage',   'description' => 'Browse, inspect, and manage application extensions (plugins, themes, layouts)'],
         ];
 
         foreach ($permissions as $p) {
