@@ -9,7 +9,12 @@ class AuthController extends Controller
 {
     // -------------------------------------------------------------------------
     // GET /signin — render the login page
-    // -------------------------------------------------------------------------
+    // --------------------------------
+    public function loginRedirect(array $params = []): void
+    {
+        header('Location: /signin', true, 301);
+        exit;
+    }
 
     public function loginForm(array $params = []): void
     {

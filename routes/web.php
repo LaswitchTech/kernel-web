@@ -104,9 +104,7 @@ $router->get('/api/chat/unread', 'Modules\Chat\Controllers\ChatController@unread
 // -------------------------------- Authentication (public) ------
 $router->get('/signin', 'AuthController@loginForm');
 $router->post('/auth/login', 'AuthController@login');
-$router->get('/auth/login', function () use ($router) {
-    $router->redirect('/signin');
-});
+$router->get('/auth/login', 'AuthController@loginRedirect');
 $router->post('/auth/logout', 'AuthController@logout');
 $router->get('/auth/me', 'AuthController@me', ['SessionAuth']);
 
