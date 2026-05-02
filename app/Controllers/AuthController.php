@@ -8,7 +8,7 @@ use App\Core\Controller;
 class AuthController extends Controller
 {
     // -------------------------------------------------------------------------
-    // GET /auth/login — render the login page
+    // GET /signin — render the login page
     // -------------------------------------------------------------------------
 
     public function loginForm(array $params = []): void

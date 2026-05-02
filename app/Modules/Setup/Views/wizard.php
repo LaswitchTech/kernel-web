@@ -449,8 +449,8 @@
                     <p class="text-muted small mb-4">
                         Log in with username: <strong id="done-username"></strong>
                     </p>
-                    <a href="/auth/login" class="btn btn-primary">
-                        <i class="bi bi-box-arrow-in-right me-1"></i> Go to Login
+                    <a href="/" class="btn btn-primary">
+                        <i class="bi bi-house me-1"></i> Go to Application
                     </a>
                 </div>
             </div>

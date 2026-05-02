@@ -83,6 +83,20 @@ namespace. Prefix with `Controllers\` for sub-namespaced controllers (e.g.
 `Controllers\Admin\...`, `Controllers\Home\...`). Use fully qualified paths
 (`Modules\...`, `Plugins\...`) for module or plugin controllers.
 
+## Public Documentation (Planned)
+
+A future **Documentation plugin** will render markdown from `/docs` into the
+application. It will provide:
+
+- User documentation under `/docs/user/`
+- Developer documentation under `/docs/developer/`
+- Navigation sidebar for both sections
+- Clean routes (e.g. `/docs/user/installation`) instead of raw `.md` paths
+
+Until then, placeholder links on the landing page that point to
+Architecture, User Guide, and Plugins cards will remain non-functional.
+They are marked with `data-todo="docs-plugin"` for future implementation.
+
 ## Rules
 
 - Routes must be declarative and traceable

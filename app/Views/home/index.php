@@ -12,28 +12,28 @@
             <h6 class="text-uppercase text-muted small fw-bold mb-3">Documentation</h6>
             <div class="row g-2 mb-4">
                 <div class="col-sm-6">
-                    <a href="/docs/developer/installation/install.md" class="card p-3 text-decoration-none text-dark h-100">
+                    <a href="<?= htmlspecialchars($installUrl) ?>" class="card p-3 text-decoration-none text-dark h-100">
                         <i class="bi bi-download text-primary mb-2"></i>
-                        <div class="small fw-bold">Installation Guide</div>
-                        <div class="small text-muted">Setup and configuration</div>
+                        <div class="small fw-bold">Installation</div>
+                        <div class="small text-muted"><?= $isInstalled ? 'Verify your setup' : 'Get started' ?></div>
                     </a>
                 </div>
                 <div class="col-sm-6">
-                    <a href="/docs/developer/kernel/architecture.md" class="card p-3 text-decoration-none text-dark h-100">
+                    <a href="#" class="card p-3 text-decoration-none text-dark h-100" data-todo="docs-plugin">
                         <i class="bi bi-code-slash text-primary mb-2"></i>
                         <div class="small fw-bold">Architecture</div>
                         <div class="small text-muted">Kernel design and structure</div>
                     </a>
                 </div>
                 <div class="col-sm-6">
-                    <a href="/docs/user/kernel/dashboard.md" class="card p-3 text-decoration-none text-dark h-100">
+                    <a href="#" class="card p-3 text-decoration-none text-dark h-100" data-todo="docs-plugin">
                         <i class="bi bi-book text-primary mb-2"></i>
                         <div class="small fw-bold">User Guide</div>
                         <div class="small text-muted">Dashboard and admin features</div>
                     </a>
                 </div>
                 <div class="col-sm-6">
-                    <a href="/docs/developer/plugins/" class="card p-3 text-decoration-none text-dark h-100">
+                    <a href="#" class="card p-3 text-decoration-none text-dark h-100" data-todo="docs-plugin">
                         <i class="bi bi-puzzle text-primary mb-2"></i>
                         <div class="small fw-bold">Plugins</div>
                         <div class="small text-muted">Available plugin documentation</div>
@@ -43,32 +43,24 @@
 
             <hr>
 
-            <h6 class="text-uppercase text-muted small fw-bold mb-3">Quick Links</h6>
-            <div class="mb-4">
-                <a href="/README.md" class="me-3 text-decoration-none"><i class="bi bi-file-earmark-text"></i> README</a>
-                <a href="/DESIGN.md" class="me-3 text-decoration-none"><i class="bi bi-file-earmark-code"></i> DESIGN</a>
-                <a href="/CLAUDE.md" class="me-3 text-decoration-none"><i class="bi bi-file-earmark-person"></i> CLAUDE</a>
-            </div>
-
-            <hr>
-
             <h6 class="text-uppercase text-muted small fw-bold mb-3">Next Steps</h6>
             <ol class="small text-muted mb-0">
-                <li>If this is a fresh install, run the <a href="/install">installer</a> to configure your database.</li>
-                <li>Enable plugins in <code>/lib/plugins/</code> by adding a <code>plugin.json</code> manifest.</li>
-                <li>Customize the theme by editing files in <code>/lib/themes/</code>.</li>
-                <li>Read the <a href="/docs/developer/">developer documentation</a> for architecture details.</li>
+                <li><?= $isInstalled ? 'Sign in to the application with your administrator account.' : 'Run the <a href="' . htmlspecialchars($installUrl) . '">installer</a> to configure your database and create an admin account.' ?></li>
+                <li><?= $isInstalled ? 'Explore the admin panel to configure settings, users, and groups.' : 'Extensions like plugins and themes will be managed through a built-in Extensions interface in a future release.' ?></li>
             </ol>
 
             <hr>
 
             <div class="d-grid gap-2">
-                <a href="/auth/login" class="btn btn-primary btn-lg">
-                    <i class="bi bi-box-arrow-in-right"></i> Log In
+                <?php if ($isInstalled): ?>
+                <a href="/signin" class="btn btn-primary btn-lg">
+                    <i class="bi bi-box-arrow-in-right"></i> Sign In
                 </a>
-                <a href="/admin/locations" class="btn btn-outline-secondary">
-                    <i class="bi bi-gear"></i> Admin Panel
+                <?php else: ?>
+                <a href="<?= htmlspecialchars($installUrl) ?>" class="btn btn-primary btn-lg">
+                    <i class="bi bi-download"></i> Run Installer
                 </a>
+                <?php endif; ?>
             </div>
         </div>
     </div>

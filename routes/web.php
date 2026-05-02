@@ -102,8 +102,11 @@ $router->get('/api/notifications/recent', 'Modules\Notifications\Controllers\Not
 $router->get('/api/chat/unread', 'Modules\Chat\Controllers\ChatController@unreadCount', ['SessionAuth']);
 
 // -------------------------------- Authentication (public) ------
-$router->get('/auth/login', 'AuthController@loginForm');
+$router->get('/signin', 'AuthController@loginForm');
 $router->post('/auth/login', 'AuthController@login');
+$router->get('/auth/login', function () use ($router) {
+    $router->redirect('/signin');
+});
 $router->post('/auth/logout', 'AuthController@logout');
 $router->get('/auth/me', 'AuthController@me', ['SessionAuth']);
 

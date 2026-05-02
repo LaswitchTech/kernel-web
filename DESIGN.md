@@ -487,6 +487,22 @@ docs/
 
 ### Conventions Docs
 - `docs/routing.md` — routing conventions
+
+### Public Documentation Rendering (Planned)
+
+A future **Documentation plugin** will render markdown from `/docs` into the
+application at clean routes (`/docs/user/...`, `/docs/developer/...`).
+
+It will:
+- Replace broken markdown file links on the landing page
+- Provide navigation for both user and developer docs
+- Serve HTML output instead of raw `.md` files
+- Live under `lib/plugins/documentation/`
+
+Until implemented, landing page documentation cards that link to
+Architecture, User Guide, and Plugins are placeholders.
+
+### Conventions Docs (continued)
 - `docs/override-system.md` — route and layout override
 - `docs/menu-registry.md` — menu registry reference
 - `docs/layout-hook-registry.md` — hook registry reference

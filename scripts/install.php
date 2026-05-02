@@ -370,7 +370,7 @@ out('║   Installation complete!                     ║');
 out('╚══════════════════════════════════════════════╝');
 out('');
 out("  Application URL : {$appUrl}");
-out("  Login URL       : {$appUrl}/auth/login");
+out("  Login URL       : {$appUrl}/signin");
 out("  Admin username  : {$adminUsername}");
 out('');
 
