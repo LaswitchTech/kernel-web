@@ -53,19 +53,6 @@ if (!isset($displayName) || $displayName === '') {
 // independently of $pageTitle (e.g. sub-pages like Add/Edit Device).
 $navActive = $activeSection ?? $pageTitle;
 
-// Pending topology-candidate count for the Administration sidebar badge.
-// Only queried for admin users to avoid an unnecessary DB hit for everyone else.
-$pendingCandidateCount = 0;
-if (in_array('admin', $permissions ?? [], true)) {
-    try {
-        $pendingCandidateCount = (new \App\Models\DeviceLinkCandidateRepository(
-            $this->container->get('db')
-        ))->countPending();
-    } catch (\Throwable) {
-        // Non-critical — badge simply shows 0 on failure.
-    }
-}
-
 // Total unread chat message count for the Chat sidebar badge.
 // Only queried for users with chat.use permission.
 $chatUnreadCount = 0;
@@ -99,130 +86,12 @@ if (in_array('chat.use', $permissions ?? [], true)) {
         </a>
 
         <nav class="sidebar-nav">
-
-            <a class="sidebar-link <?= $navActive === 'Dashboard' ? 'active' : '' ?>" href="/">
-                <i class="bi bi-speedometer2 sidebar-link-icon"></i>
-                <span class="sidebar-link-label">Dashboard</span>
-            </a>
-
-            <div class="sidebar-section-label">Monitoring</div>
-
-            <a class="sidebar-link <?= $navActive === 'Devices' ? 'active' : '' ?>" href="/devices">
-                <i class="bi bi-cpu sidebar-link-icon"></i>
-                <span class="sidebar-link-label">Devices</span>
-            </a>
-            <a class="sidebar-link <?= $navActive === 'Alerts' ? 'active' : '' ?>" href="/alerts">
-                <i class="bi bi-bell sidebar-link-icon"></i>
-                <span class="sidebar-link-label">Alerts</span>
-            </a>
-            <a class="sidebar-link <?= $navActive === 'Discovery' ? 'active' : '' ?>" href="/discovery">
-                <i class="bi bi-radar sidebar-link-icon"></i>
-                <span class="sidebar-link-label">Discovery</span>
-            </a>
-            <a class="sidebar-link <?= $navActive === 'Map' ? 'active' : '' ?>" href="/map">
-                <i class="bi bi-layers sidebar-link-icon"></i>
-                <span class="sidebar-link-label">Physical Map</span>
-            </a>
-            <a class="sidebar-link <?= $navActive === 'Logical Map' ? 'active' : '' ?>" href="/map/logical">
-                <i class="bi bi-diagram-3 sidebar-link-icon"></i>
-                <span class="sidebar-link-label">Logical Map</span>
-            </a>
-            <a class="sidebar-link <?= $navActive === 'Topology Map' ? 'active' : '' ?>" href="/map/topology">
-                <i class="bi bi-diagram-2 sidebar-link-icon"></i>
-                <span class="sidebar-link-label">Topology Map</span>
-            </a>
-
-            <?php if (
-                in_array('chat.use',    $permissions ?? [], true) ||
-                in_array('files.manage', $permissions ?? [], true) ||
-                in_array('tasks.manage', $permissions ?? [], true)
-            ): ?>
-            <div class="sidebar-section-label">Tools</div>
-            <?php if (in_array('chat.use', $permissions ?? [], true)): ?>
-            <a class="sidebar-link <?= $navActive === 'Chat' ? 'active' : '' ?>" href="/chat">
-                <i class="bi bi-chat-dots sidebar-link-icon"></i>
-                <span class="sidebar-link-label">Chat</span>
-                <span id="js-chat-unread-badge"
-                      class="badge rounded-pill bg-warning text-dark ms-auto"
-                      style="<?= $chatUnreadCount > 0 ? '' : 'display:none' ?>">
-                    <?= $chatUnreadCount ?>
-                </span>
-            </a>
-            <?php endif; ?>
-            <?php
-            $sidebarItems = \App\Core\MenuRegistry::get('sidebar', $permissions ?? []);
-            $hasSidebarItems = false;
-            foreach ($sidebarItems as $item) {
-                if ($item->url && strpos($item->url, '/tasks') === 0) {
-                    $hasSidebarItems = true;
-                    break;
-                }
-            }
-            if ($hasSidebarItems):
-                foreach ($sidebarItems as $item):
-                    if ($item->url && strpos($item->url, '/tasks') === 0):
-            ?>
-            <a class="sidebar-link <?= $navActive === $item->label ? 'active' : '' ?>" href="<?= htmlspecialchars($item->url) ?>">
-                <i class="bi <?= htmlspecialchars($item->icon) ?> sidebar-link-icon"></i>
-                <span class="sidebar-link-label"><?= htmlspecialchars($item->label) ?></span>
-            </a>
-            <?php
-                    endif;
-                endforeach;
-            endif;
-            ?>
-            <?php if (in_array('files.manage', $permissions ?? [], true)): ?>
-            <a class="sidebar-link <?= $navActive === 'File Manager' ? 'active' : '' ?>" href="/files">
-                <i class="bi bi-folder2 sidebar-link-icon"></i>
-                <span class="sidebar-link-label">File Manager</span>
-            </a>
-            <?php endif; ?>
-            <?php endif; ?>
-
-            <?php if (in_array('admin', $permissions ?? [], true)): ?>
-            <div class="sidebar-section-label">Administration</div>
-
-            <a class="sidebar-link <?= $navActive === 'Admin' ? 'active' : '' ?>" href="/admin">
-                <i class="bi bi-gear sidebar-link-icon"></i>
-                <span class="sidebar-link-label">Overview</span>
-            </a>
-            <a class="sidebar-link <?= $navActive === 'Admin Users' ? 'active' : '' ?>" href="/admin/users">
-                <i class="bi bi-people sidebar-link-icon"></i>
-                <span class="sidebar-link-label">Users</span>
-            </a>
-            <a class="sidebar-link <?= $navActive === 'Admin Groups' ? 'active' : '' ?>" href="/admin/groups">
-                <i class="bi bi-collection sidebar-link-icon"></i>
-                <span class="sidebar-link-label">Groups</span>
-            </a>
-            <a class="sidebar-link <?= $navActive === 'Admin Permissions' ? 'active' : '' ?>" href="/admin/permissions">
-                <i class="bi bi-shield-check sidebar-link-icon"></i>
-                <span class="sidebar-link-label">Permissions</span>
-            </a>
-            <a class="sidebar-link <?= $navActive === 'Admin Audit' ? 'active' : '' ?>" href="/admin/audit">
-                <i class="bi bi-journal-text sidebar-link-icon"></i>
-                <span class="sidebar-link-label">Audit Log</span>
-            </a>
-            <a class="sidebar-link <?= $navActive === 'Admin Locations' ? 'active' : '' ?>" href="/admin/locations">
-                <i class="bi bi-geo-alt sidebar-link-icon"></i>
-                <span class="sidebar-link-label">Locations</span>
-            </a>
-            <a class="sidebar-link <?= $navActive === 'Admin Network Segments' ? 'active' : '' ?>" href="/admin/network-segments">
-                <i class="bi bi-hdd-network sidebar-link-icon"></i>
-                <span class="sidebar-link-label">Segments</span>
-            </a>
-            <a class="sidebar-link <?= $navActive === 'Admin Topology Candidates' ? 'active' : '' ?>" href="/admin/topology-candidates">
-                <i class="bi bi-diagram-2 sidebar-link-icon"></i>
-                <span class="sidebar-link-label">Topo Candidates</span>
-                <?php if ($pendingCandidateCount > 0): ?>
-                <span class="badge rounded-pill bg-warning text-dark ms-auto"><?= $pendingCandidateCount ?></span>
-                <?php endif; ?>
-            </a>
-            <a class="sidebar-link <?= $navActive === 'Admin Settings' ? 'active' : '' ?>" href="/admin/settings">
-                <i class="bi bi-sliders sidebar-link-icon"></i>
-                <span class="sidebar-link-label">Settings</span>
-            </a>
-            <?php endif; ?>
-
+<?php
+// Render sidebar from MenuRegistry.
+// $chatUnreadCount is available from the PHP scope above (computed earlier).
+$sidebarBadges = ['/chat' => $chatUnreadCount];
+echo \App\Core\MenuHelper::renderSidebar($navActive, $permissions ?? [], $sidebarBadges);
+?>
         </nav>
 
     </aside>

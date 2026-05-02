@@ -15,6 +15,7 @@ use App\Core\ErrorHandler;
 use App\Core\Gate;
 use App\Core\Installer\InstallLock;
 use App\Core\Logger;
+use App\Core\MenuRegistry;
 use App\Core\Router;
 use App\Core\SQLiteDriver;
 use App\Models\TokenRepository;
@@ -225,6 +226,47 @@ if ($pluginsDir !== false && is_dir($pluginsDir)) {
     // Register plugin hooks and menus.
     $loader->registerHooks();
     $loader->registerMenus();
+
+    // Register core menu items (after plugins so plugin items sort correctly).
+    $coreMenus = [
+        ['name' => 'dashboard', 'label' => 'Dashboard', 'url' => '/', 'icon' => 'bi bi-speedometer2', 'permission' => null, 'order' => 0, 'sections' => []],
+
+        // Tools section — visible only when user has any tool permission.
+        ['name' => '__section__tools', 'label' => 'Tools', 'url' => null, 'icon' => null, 'permission' => null, 'order' => 10,
+         'sections' => [['label' => 'Tools', 'order' => 10]]],
+        // Chat and File Manager are kernel modules (not plugins yet).
+        ['name' => 'chat', 'label' => 'Chat', 'url' => '/chat', 'icon' => 'bi bi-chat-dots', 'permission' => 'chat.use', 'order' => 25, 'sections' => []],
+        ['name' => 'files', 'label' => 'File Manager', 'url' => '/files', 'icon' => 'bi bi-folder2', 'permission' => 'files.manage', 'order' => 30, 'sections' => []],
+
+        // Administration section.
+        ['name' => '__section__admin', 'label' => 'Administration', 'url' => null, 'icon' => null, 'permission' => null, 'order' => 50,
+         'sections' => [['label' => 'Administration', 'order' => 50]]],
+
+        ['name' => 'admin-overview', 'label' => 'Overview', 'url' => '/admin', 'icon' => 'bi bi-gear', 'permission' => 'admin', 'order' => 51, 'sections' => []],
+        ['name' => 'admin-users', 'label' => 'Users', 'url' => '/admin/users', 'icon' => 'bi bi-people', 'permission' => 'admin', 'order' => 52, 'sections' => []],
+        ['name' => 'admin-groups', 'label' => 'Groups', 'url' => '/admin/groups', 'icon' => 'bi bi-collection', 'permission' => 'admin', 'order' => 53, 'sections' => []],
+        ['name' => 'admin-permissions', 'label' => 'Permissions', 'url' => '/admin/permissions', 'icon' => 'bi bi-shield-check', 'permission' => 'admin', 'order' => 54, 'sections' => []],
+        ['name' => 'admin-audit', 'label' => 'Audit Log', 'url' => '/admin/audit', 'icon' => 'bi bi-journal-text', 'permission' => 'admin', 'order' => 55, 'sections' => []],
+        ['name' => 'admin-locations', 'label' => 'Locations', 'url' => '/admin/locations', 'icon' => 'bi bi-geo-alt', 'permission' => 'admin', 'order' => 56, 'sections' => []],
+        ['name' => 'admin-segments', 'label' => 'Segments', 'url' => '/admin/network-segments', 'icon' => 'bi bi-hdd-network', 'permission' => 'admin', 'order' => 57, 'sections' => []],
+        ['name' => 'admin-topology-candidates', 'label' => 'Topo Candidates', 'url' => '/admin/topology-candidates', 'icon' => 'bi bi-diagram-2', 'permission' => 'admin', 'order' => 58, 'sections' => []],
+        ['name' => 'admin-settings', 'label' => 'Settings', 'url' => '/admin/settings', 'icon' => 'bi bi-sliders', 'permission' => 'admin', 'order' => 59, 'sections' => []],
+    ];
+
+    foreach ($coreMenus as $menuDef) {
+        MenuRegistry::add('sidebar', new \App\Core\MenuItem(
+            name:        $menuDef['name'],
+            label:       $menuDef['label'],
+            url:         $menuDef['url'],
+            icon:        $menuDef['icon'],
+            styleClass:  null,
+            permission:  $menuDef['permission'],
+            order:       $menuDef['order'],
+            parentId:    null,
+            source:      'core',
+            sections:    $menuDef['sections'],
+        ));
+    }
 
     // Store registry in container for later access (e.g. admin UI).
     $container->set('plugins', $loader->getRegistry());

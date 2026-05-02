@@ -352,6 +352,7 @@ class PluginLoader
                     order:       (int) ($itemData['order'] ?? 0),
                     parentId:    $itemData['parentId'] ?? null,
                     source:      $plugin->name(),
+                    sections:    $itemData['sections'] ?? [],
                 );
 
                 \App\Core\MenuRegistry::add($menuName, $item);

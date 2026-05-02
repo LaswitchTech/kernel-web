@@ -58,6 +58,76 @@ class MenuRegistry
     }
 
     /**
+     * Get rendered menu data suitable for sidebar rendering.
+     *
+     * Returns an array of arrays with keys:
+     *   - type: 'section' or 'link'
+     *   - label: section label or item label
+     *   - url: destination URL (null for sections)
+     *   - icon: Bootstrap Icons class (for links)
+     *   - styleClass: additional CSS class (for links)
+     *   - permission: required permission (for links)
+     *   - name: identifier
+     *   - source: plugin or 'core'
+     *
+     * Section carrier items (name starting with '__section__') carry section
+     * labels but have no url. They are excluded from the returned array.
+     *
+     * @param string   $menuName  Menu identifier
+     * @param string[] $userPermissions
+     * @return array<int, array<string, mixed>>
+     */
+    public static function renderItems(string $menuName, array $userPermissions = []): array
+    {
+        $items    = self::get($menuName, $userPermissions);
+        $sections = [];
+
+        foreach ($items as $item) {
+            foreach ($item->sections ?? [] as $section) {
+                $sections[$section['order']] = $section['label'];
+            }
+        }
+
+        $result = [];
+        $lastOrder = -1;
+
+        foreach ($items as $item) {
+            // Skip section carrier items (they have no url).
+            if (str_starts_with($item->name, '__section__')) {
+                continue;
+            }
+
+            // Only inject a section if it comes before this item.
+            foreach ($sections as $order => $label) {
+                if ($order > $lastOrder && $order < $item->order) {
+                    $result[] = [
+                        'type'  => 'section',
+                        'label' => $label,
+                        'order' => $order,
+                    ];
+                    $lastOrder = $order;
+                    unset($sections[$order]);
+                }
+            }
+
+            $result[] = [
+                'type'       => 'link',
+                'name'       => $item->name,
+                'label'      => $item->label,
+                'url'        => $item->url,
+                'icon'       => $item->icon,
+                'styleClass' => $item->styleClass,
+                'permission' => $item->permission,
+                'source'     => $item->source,
+                'order'      => $item->order,
+            ];
+            $lastOrder = max($lastOrder, $item->order);
+        }
+
+        return $result;
+    }
+
+    /**
      * Check if a menu has any items.
      */
     public static function has(string $menuName): bool
