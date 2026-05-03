@@ -528,7 +528,6 @@ After the NetMon cleanup pass, the kernel contains:
 - Database layer (PDO abstraction + SQLite driver)
 - Migration system
 - Authentication (users, groups, permissions, API tokens, sessions)
-- Hierarchical locations
 - Installer system
 - Hook registry (layout.body.*, panel.* hook points)
 - Menu registry (sidebar, topbar, user-menu, admin-menu)
@@ -549,7 +548,7 @@ After the NetMon cleanup pass, the kernel contains:
 
 ### Admin (Kernel-Level)
 - User management, Group management, Permission management
-- System settings, Locations management
+- System settings management
 
 All NetMon-specific infrastructure (devices, monitoring, alerts, discovery, topology) has been removed.
 NetMon is a future application built on Kernel-Web, not part of the kernel itself.
@@ -619,6 +618,84 @@ This pass is **read-only discovery and display only**. The following are **defer
 - dependency resolution UI
 - theme switching
 - layout switching
+
+### Extension Catalog (Future Design)
+
+The current Extensions system relies on loose JSON manifest files discovered from `lib/` directories.
+A future centralized **Extension Catalog** will provide structured extension metadata storage,
+online submission, review, and installation workflows.
+
+#### Catalog Database
+
+A dedicated SQLite database (`catalog.db`) will store extension records.
+
+**Table: `catalog_extensions`**
+
+| Column | Type | Description |
+|--------|------|-------|
+| `id` | INTEGER PK | Auto-increment primary key |
+| `name` | TEXT | Display name |
+| `slug` | TEXT | URL-safe identifier (unique) |
+| `type` | TEXT | `plugin`, `theme`, or `layout` |
+| `description` | TEXT | Short description |
+| `version` | TEXT | Semantic version string |
+| `author` | TEXT | Author / vendor name |
+| `download_url` | TEXT | URL to zip archive |
+| `requirements` | TEXT | JSON — PHP version, kernel version, dependencies |
+| `dependencies` | TEXT | JSON — array of extension slugs required |
+| `review_status` | TEXT | `pending`, `approved`, `rejected` |
+| `install_status` | TEXT | `not_installed`, `installed`, `enabled`, `disabled` |
+| `repo_url` | TEXT | Source repository URL |
+| `checksum` | TEXT | SHA-256 of the distribution archive |
+| `signature` | TEXT | PGP / Ed25519 signature of the archive (future validation) |
+| `created_at` | DATETIME | Submission timestamp |
+| `updated_at` | DATETIME | Last update timestamp |
+
+**Constraints:**
+- `slug` is unique across all types
+- `type` is restricted to `plugin`, `theme`, `layout` (check constraint or enum)
+- `review_status` and `install_status` use fixed string values
+- `dependencies`, `requirements` stored as JSON strings
+
+#### Online Submission Flow
+
+1. **Submission** — developers submit extensions through an online admin form (requires `extensions.manage` permission)
+   - Provide name, slug, type, description, version, author, download_url
+   - Upload zip archive (stored temporarily)
+   - Optional: repo_url, requirements, dependencies
+
+2. **Validation** — kernel validates the submission:
+   - Check manifest integrity (valid JSON)
+   - Check version format (semantic versioning)
+   - Check slug uniqueness
+   - Verify zip archive structure matches declared type
+   - Compute checksum of the archive
+
+3. **Review** — submitted extensions enter `pending` review status
+   - Reviewers inspect manifest, archive structure, dependency declarations
+   - Status transitions: `pending` → `approved` or `rejected`
+   - Approved extensions are visible in the catalog for install
+
+4. **Installation** — approved extensions can be installed via the admin UI
+   - Download from `download_url` or use uploaded archive
+   - Verify checksum against stored checksum
+   - Install to appropriate `lib/` directory
+   - Set `install_status` to `installed` or `enabled`
+   - Run migrations if declared in manifest
+
+5. **Sync / Import** — catalog metadata can be synced from a remote catalog server
+   - Remote server maintains authoritative extension listings
+   - Local kernel periodically fetches updated catalog
+   - New approved extensions appear in local catalog without manual submission
+
+#### Catalog Admin UI (Future)
+
+- `GET /admin/extensions/catalog` — browse catalog extensions
+- `GET /admin/extensions/catalog/submit` — submission form
+- `GET /admin/extensions/catalog/{slug}` — extension detail
+- `POST /admin/extensions/catalog/{slug}/install` — install extension
+- `POST /admin/extensions/catalog/{slug}/uninstall` — uninstall extension
+- `GET /admin/extensions/catalog/review` — review pending submissions (admin-only)
 
 ### Design Rules
 

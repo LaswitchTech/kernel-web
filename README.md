@@ -89,7 +89,6 @@ Provide reusable UI structures (dashboard, auth pages, app shells, etc.).
 - Migration system
 - Authentication (users, groups, permissions, API tokens)
 - Session and token-based auth
-- Hierarchical locations
 
 ### Plugin System (Deferred)
 - Installable and removable modules

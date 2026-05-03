@@ -39,7 +39,6 @@ These controllers manage the core user/permission infrastructure:
 - `GroupController` — group CRUD
 - `PermissionController` — permission CRUD
 - `SystemSettingsController` — system settings
-- `LocationController` — hierarchical locations (kernel-level)
 
 ### Reusable Modules (Future Plugins)
 
@@ -56,7 +55,7 @@ These modules are generic enough to be extracted as plugins:
 
 ### Views
 
-- Admin views (users, groups, permissions, settings, locations)
+- Admin views (users, groups, permissions, settings)
 - Layouts (`layouts/app.php`)
 - Auth views (login)
 - Module views (chat, tasks, file-manager, notifications)
@@ -96,6 +95,8 @@ These modules are generic enough to be extracted as plugins:
 | `App\NetMon\Controllers\LogicalMapController` | Logical map |
 | `App\NetMon\Controllers\TopologyMapController` | Topology map |
 | `App\NetMon\Controllers\HomeController` | Dashboard (replaced by admin) |
+| `App\Controllers\Admin\LocationController` | Hierarchical locations (NetMon) |
+| `App\Models\LocationRepository` | Location data access |
 | `App\NetMon\Models\DeviceRepository` | Device data access |
 | `App\NetMon\Models\DeviceCheckRepository` | Device check data |
 | `App\NetMon\Models\ServiceCheckRepository` | Service check data |
@@ -140,6 +141,7 @@ These modules are generic enough to be extracted as plugins:
 | `0018_create_service_checks_table` | Service check history |
 | `0019_create_discovery_jobs_table` | Discovery job tracking |
 | `0020_create_discovery_findings_table` | Discovery finding results |
+| `0038_create_locations_table` | Hierarchical locations table |
 | `0039_add_device_location_id` | Device location FK |
 | `0040_create_network_segments` | Network segments |
 | `0041_create_device_links_table` | Device topology links |
@@ -170,6 +172,9 @@ These modules are generic enough to be extracted as plugins:
 - `app/Views/admin/network-segment-edit.php`
 - `app/Views/admin/network-segments.php`
 - `app/Views/admin/topology-candidates.php`
+- `app/Views/admin/locations.php`
+- `app/Views/admin/location-create.php`
+- `app/Views/admin/location-edit.php`
 
 ---
 
@@ -265,6 +270,21 @@ Migration IDs will not be renumbered.
 - [x] Removed all NetMon routes from `routes/web.php`
 - [x] Renamed branding ('NetMon' → 'Kernel-Web') in config, controllers, setup
 - [x] Updated session name and database name defaults
+
+### Locations Removal (This Pass)
+
+Locations were a NetMon-specific feature and do not belong in Kernel-Web core.
+
+| Removed | Reason |
+|---------|--------|
+| `App\Controllers\Admin\LocationController` | NetMon-specific |
+| `App\Models\LocationRepository` | NetMon-specific |
+| `database/migrations/0038_create_locations_table` | NetMon-specific |
+| `app/Views/admin/locations.php` | NetMon-specific |
+| `app/Views/admin/location-create.php` | NetMon-specific |
+| `app/Views/admin/location-edit.php` | NetMon-specific |
+
+---
 
 ### Not Yet Done
 

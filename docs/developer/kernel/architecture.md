@@ -119,7 +119,7 @@ $router->get('/files', 'Modules\FileManager\Controllers\BrowserController@index'
 | Directory | Purpose |
 |---|---|
 | `app/Controllers/` | Kernel HTTP controllers (auth, profile, admin) |
-| `app/Controllers/Admin/` | Admin area controllers (users, groups, permissions, settings, locations) |
+| `app/Controllers/Admin/` | Admin area controllers (users, groups, permissions, settings) |
 | `app/Modules/` | Reusable feature modules (future plugins) |
 | `app/Modules/Chat/` | Chat rooms and messaging |
 | `app/Modules/FileManager/` | File browser |

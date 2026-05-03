@@ -87,19 +87,6 @@ The `admin` permission is seeded at install time (see `database/seeds/AdminBoots
 | POST | `/admin/groups/{id}` | `GroupController::update()` | Handle group update + permission sync |
 | POST | `/admin/groups/{id}/delete` | `GroupController::delete()` | Handle group delete |
 
-### LocationController (full CRUD)
-
-| Method | Path | Controller method | Description |
-|---|---|---|---|
-| GET | `/admin/locations` | `LocationController::index()` | Locations list |
-| GET | `/admin/locations/create` | `LocationController::createForm()` | Create location form |
-| POST | `/admin/locations` | `LocationController::store()` | Handle location create |
-| GET | `/admin/locations/{id}/edit` | `LocationController::editForm()` | Edit form + danger zone |
-| POST | `/admin/locations/{id}` | `LocationController::update()` | Handle location update |
-| POST | `/admin/locations/{id}/delete` | `LocationController::delete()` | Delete (guarded — refuses if devices or children exist) |
-
-See [network-map.md](network-map.md) for the full location model documentation.
-
 ### NetworkSegmentController (full CRUD + member management)
 
 | Method | Path | Controller method | Description |

@@ -199,7 +199,7 @@ Implementation:
 - Records each applied migration in the `migrations` table
 
 Migrations applied during a fresh install:
-1. Kernel migrations (0001–0047 — users, groups, permissions, tokens, notifications, tasks, chat, locations)
+1. Kernel migrations (0001–0047 — users, groups, permissions, tokens, notifications, tasks, chat)
 2. Plugin migrations (declared in each plugin's `plugin.json`)
 
 Outcome:
@@ -359,7 +359,7 @@ The script is fully interactive. It prompts for the values listed below, confirm
 ── Phase 6/9: Running database migrations
   [✓] Applied: 0001_create_migrations_table
   ...
-  [✓] Applied: 0038_create_locations_table
+  [✓] Applied: 0037_last_migration
 
 ── Phase 7/9: Running plugin migrations
   [✓] Applied: 0030_create_tasks_table
