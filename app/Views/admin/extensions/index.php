@@ -85,6 +85,12 @@
 <?php endif; ?>
 <?php endforeach; ?>
 
+<div class="d-flex gap-2 mt-4">
+    <a href="/admin/extensions/catalog" class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-database me-1"></i>Browse Catalog
+    </a>
+</div>
+
 <p class="text-muted small">
     Extensions are discovered read-only from <code>lib/plugins/</code>, <code>lib/themes/</code>, and <code>lib/layouts/</code>.
     Enable/disable, install, and uninstall are deferred to a future release.

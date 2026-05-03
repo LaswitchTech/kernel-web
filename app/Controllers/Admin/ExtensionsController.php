@@ -43,4 +43,37 @@ class ExtensionsController extends Controller
 
         require $viewsPath . '/layouts/panel.php';
     }
+
+    /**
+     * Browse catalog-managed extensions.
+     */
+    public function catalog(array $params = []): void
+    {
+        $principal  = $this->container->get('principal');
+        $user       = $principal['user'];
+        $perms      = $principal['permissions'];
+
+        $config     = $this->container->get('config');
+        $viewsPath  = __DIR__ . '/../../Views';
+
+        $catalog    = new \App\Services\Extensions\CatalogService(
+            new \App\Models\CatalogExtensionRepository(
+                $this->container->get('db')
+            )
+        );
+
+        $extensions = $catalog->listAll();
+
+        $pageTitle  = 'Extension Catalog';
+        $activeSection = 'Admin Extensions';
+        $appName    = $config['name'] ?? 'Kernel-Web';
+        $displayName = $user['display_name'] ?? $user['username'];
+        $permissions = $perms;
+
+        ob_start();
+        require $viewsPath . '/admin/extensions/catalog.php';
+        $content = ob_get_clean();
+
+        require $viewsPath . '/layouts/panel.php';
+    }
 }
