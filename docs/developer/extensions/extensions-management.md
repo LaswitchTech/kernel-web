@@ -78,9 +78,15 @@ This pass is **read-only discovery and display only**.
 - Theme switching
 - Layout switching
 
-## Implementation
+## Catalog vs Filesystem Discovery
 
-- `app/Services/Extensions/ExtensionDiscoveryService.php` — core discovery logic
+Filesystem discovery scans installed directories for JSON manifests.
+The **Extension Catalog** stores structured metadata in the `catalog_extensions` table.
+See [catalog.md](catalog.md) for the full catalog reference.
+
+- `app/Services/Extensions/ExtensionDiscoveryService.php` — filesystem discovery logic
+- `app/Services/Extensions/CatalogService.php` — catalog CRUD service
+- `app/Models/CatalogExtensionRepository.php` — catalog repository
 - `app/Controllers/Admin/ExtensionsController.php` — admin controller
 - `app/Views/admin/extensions/index.php` — admin view template
 - `routes/web.php` — route registration with permission middleware

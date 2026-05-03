@@ -627,34 +627,36 @@ online submission, review, and installation workflows.
 
 #### Catalog Database
 
-A dedicated SQLite database (`catalog.db`) will store extension records.
+Stored in the same SQLite database as the rest of the kernel.
+Created by migration `0049_create_catalog_extensions_table.php`.
 
 **Table: `catalog_extensions`**
 
 | Column | Type | Description |
 |--------|------|-------|
 | `id` | INTEGER PK | Auto-increment primary key |
-| `name` | TEXT | Display name |
-| `slug` | TEXT | URL-safe identifier (unique) |
-| `type` | TEXT | `plugin`, `theme`, or `layout` |
-| `description` | TEXT | Short description |
-| `version` | TEXT | Semantic version string |
-| `author` | TEXT | Author / vendor name |
-| `download_url` | TEXT | URL to zip archive |
-| `requirements` | TEXT | JSON — PHP version, kernel version, dependencies |
-| `dependencies` | TEXT | JSON — array of extension slugs required |
-| `review_status` | TEXT | `pending`, `approved`, `rejected` |
-| `install_status` | TEXT | `not_installed`, `installed`, `enabled`, `disabled` |
-| `repo_url` | TEXT | Source repository URL |
-| `checksum` | TEXT | SHA-256 of the distribution archive |
-| `signature` | TEXT | PGP / Ed25519 signature of the archive (future validation) |
-| `created_at` | DATETIME | Submission timestamp |
-| `updated_at` | DATETIME | Last update timestamp |
+| `name` | TEXT NOT NULL | Display name |
+| `slug` | TEXT NOT NULL UNIQUE | URL-safe identifier |
+| `type` | TEXT NOT NULL | `plugin`, `theme`, or `layout` (check constraint) |
+| `version` | TEXT NOT NULL DEFAULT '0.0.0' | Semantic version string |
+| `description` | TEXT NOT NULL DEFAULT '' | Short description |
+| `author` | TEXT NOT NULL DEFAULT '' | Author / vendor name |
+| `download_url` | TEXT NOT NULL DEFAULT '' | URL to zip archive |
+| `repo_url` | TEXT NULL | Source repository URL |
+| `requirements` | TEXT NOT NULL DEFAULT '[]' | JSON — PHP version, kernel version requirements |
+| `dependencies` | TEXT NOT NULL DEFAULT '[]' | JSON — array of extension slugs required |
+| `status` | TEXT NOT NULL DEFAULT 'pending' | `pending`, `approved`, or `rejected` (check constraint) |
+| `is_installed` | INTEGER NOT NULL DEFAULT 0 | 0 or 1 |
+| `is_enabled` | INTEGER NOT NULL DEFAULT 0 | 0 or 1 |
+| `checksum` | TEXT NULL | SHA-256 of the distribution archive |
+| `created_at` | VARCHAR(32) NOT NULL | Submission timestamp |
+| `updated_at` | VARCHAR(32) NOT NULL | Last update timestamp |
 
 **Constraints:**
 - `slug` is unique across all types
-- `type` is restricted to `plugin`, `theme`, `layout` (check constraint or enum)
-- `review_status` and `install_status` use fixed string values
+- `type` is restricted to `plugin`, `theme`, `layout`
+- `status` is restricted to `pending`, `approved`, `rejected`
+- `is_installed` and `is_enabled` are boolean flags (0 or 1)
 - `dependencies`, `requirements` stored as JSON strings
 
 #### Online Submission Flow
@@ -680,7 +682,7 @@ A dedicated SQLite database (`catalog.db`) will store extension records.
    - Download from `download_url` or use uploaded archive
    - Verify checksum against stored checksum
    - Install to appropriate `lib/` directory
-   - Set `install_status` to `installed` or `enabled`
+   - Set `is_installed = 1` and `is_enabled = 1`
    - Run migrations if declared in manifest
 
 5. **Sync / Import** — catalog metadata can be synced from a remote catalog server
