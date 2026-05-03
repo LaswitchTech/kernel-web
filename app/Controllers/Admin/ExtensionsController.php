@@ -286,10 +286,11 @@ class ExtensionsController extends Controller
     }
 
     /**
-     * Dry-run install for an approved catalog entry.
+     * Staged install for an approved catalog entry.
      *
-     * Validates type, slug, path safety, and non-overwrite.
-     * Does not copy files — reports where the extension would be installed.
+     * Copies files from /storage/extension-staging/{slug} to lib/{type_plural}/{slug}.
+     * Uses realpath() to prevent path traversal.
+     * Marks the catalog entry as installed only after copy succeeds.
      */
     public function handleInstall(array $params = []): void
     {
@@ -327,32 +328,51 @@ class ExtensionsController extends Controller
             exit;
         }
 
-        $slug       = $extension['slug'];
-        $type       = $extension['type'];
-        $version    = $extension['version'];
-        $author     = $extension['author'] ?? '';
-        $description = $extension['description'] ?? '';
-        $downloadUrl = $extension['download_url'] ?? '';
+        $slug  = $extension['slug'];
+        $type  = $extension['type'];
 
-        // Validate type and resolve target path
+        // Validate type
         $validTypes = ['plugin', 'theme', 'layout'];
-        $invalidMsg = '';
-
         if (!in_array($type, $validTypes, true)) {
-            $invalidMsg = 'Invalid extension type: ' . htmlspecialchars($type);
-        } elseif (!preg_match('/^[a-z][a-z0-9_-]+$/', $slug)) {
-            $invalidMsg = 'Invalid extension slug: ' . htmlspecialchars($slug);
-        }
-
-        if ($invalidMsg !== '') {
-            $this->flash('error', $invalidMsg);
+            $this->flash('error', 'Invalid extension type: ' . htmlspecialchars($type));
             header('Location: /admin/extensions/catalog');
             exit;
         }
 
-        // Resolve and validate target directory
-        $basePath = realpath(__DIR__ . '/../../../lib');
-        if ($basePath === false) {
+        // Validate slug format
+        if (!preg_match('/^[a-z][a-z0-9_-]+$/', $slug)) {
+            $this->flash('error', 'Invalid extension slug: ' . htmlspecialchars($slug));
+            header('Location: /admin/extensions/catalog');
+            exit;
+        }
+
+        // Resolve staging base directory
+        $stagingBase = realpath(__DIR__ . '/../../../../storage/extension-staging');
+        if ($stagingBase === false) {
+            $this->flash('error', 'Staging directory does not exist. Create <code>/storage/extension-staging/</code> and place extension files there.');
+            header('Location: /admin/extensions/catalog');
+            exit;
+        }
+
+        // Resolve source directory
+        $sourceDir = $stagingBase . '/' . $slug;
+        $resolvedSource = realpath($sourceDir);
+        if ($resolvedSource === false || !is_dir($resolvedSource)) {
+            $this->flash('error', 'Staging directory not found at <code>/storage/extension-staging/' . htmlspecialchars($slug) . '/</code>. Place extension files there first.');
+            header('Location: /admin/extensions/catalog');
+            exit;
+        }
+
+        // Path traversal check: source must be under staging
+        if (strpos($resolvedSource, $stagingBase . DIRECTORY_SEPARATOR) !== 0 && $resolvedSource !== $stagingBase) {
+            $this->flash('error', 'Staging path escapes the trusted staging directory. Installation refused.');
+            header('Location: /admin/extensions/catalog');
+            exit;
+        }
+
+        // Resolve lib base directory
+        $libBase = realpath(__DIR__ . '/../../../lib');
+        if ($libBase === false) {
             $this->flash('error', 'Cannot resolve base lib directory.');
             header('Location: /admin/extensions/catalog');
             exit;
@@ -364,35 +384,118 @@ class ExtensionsController extends Controller
             'theme'  => 'themes',
             'layout' => 'layouts',
         ];
+        $subDir = $typeDirs[$type];
 
-        $subDir    = $typeDirs[$type];
-        $targetDir = $basePath . '/' . $subDir . '/' . $slug;
+        $targetDir = $libBase . '/' . $subDir . '/' . $slug;
 
-        // Path traversal check: target must be under lib
-        if (strpos($targetDir, realpath($basePath) . DIRECTORY_SEPARATOR) !== 0) {
-            $this->flash('error', 'Install path escapes the lib directory. Installation refused.');
+        // Target must not already exist
+        if (is_dir($targetDir)) {
+            $this->flash('error', 'Target directory already exists — would overwrite: <code>' . htmlspecialchars($targetDir) . '</code>');
             header('Location: /admin/extensions/catalog');
             exit;
         }
 
-        // Non-overwrite check
-        $overwritesExisting = false;
-        if (is_dir($targetDir)) {
-            $overwritesExisting = true;
+        // Perform the copy
+        if (!$this->copyDir($resolvedSource, $targetDir)) {
+            $this->flash('error', 'Failed to copy extension files from staging to target directory.');
+            header('Location: /admin/extensions/catalog');
+            exit;
         }
 
-        // No remote download. Show dry-run result.
-        $installMessage = 'Install dry-run for "' . $extension['name'] . '" (v' . $version . '): ';
-        $installMessage .= 'would install to <code>' . htmlspecialchars($targetDir) . '</code>. ';
-        $installMessage .= 'No files written. Remote download and ZIP extraction are deferred.';
+        // Mark as installed in the catalog
+        $catalog->markInstalled($id);
 
-        if ($overwritesExisting) {
-            $installMessage .= '<div class="alert alert-warning mt-2">Target directory already exists — would overwrite.</div>';
-        }
-
-        $this->flash('success', $installMessage);
+        $this->flash('success', 'Extension "' . $extension['name'] . '" (v' . $extension['version'] . ') installed to <code>' . htmlspecialchars($targetDir) . '</code>.');
         header('Location: /admin/extensions/catalog');
         exit;
+    }
+
+    /**
+     * Recursively copy a directory tree.
+     *
+     * Skips symbolic links to prevent traversal attacks.
+     * Returns true on success, false on any failure.
+     *
+     * @param string $source
+     * @param string $target
+     * @return bool
+     */
+    private function copyDir(string $source, string $target): bool
+    {
+        if (!@mkdir($target, 0755, true)) {
+            return false;
+        }
+
+        $dir = opendir($source);
+        if (!$dir) {
+            @rmdir($target);
+            return false;
+        }
+
+        while (($file = readdir($dir)) !== false) {
+            if ($file === '.' || $file === '..') {
+                continue;
+            }
+
+            $srcPath = $source . '/' . $file;
+            $tgtPath = $target . '/' . $file;
+
+            if (is_link($srcPath)) {
+                // Skip symbolic links to prevent traversal attacks
+                continue;
+            }
+
+            if (is_dir($srcPath)) {
+                if (!$this->copyDir($srcPath, $tgtPath)) {
+                    closedir($dir);
+                    $this->removeDir($target);
+                    return false;
+                }
+            } else {
+                if (!@copy($srcPath, $tgtPath)) {
+                    closedir($dir);
+                    $this->removeDir($target);
+                    return false;
+                }
+                @chmod($tgtPath, 0644);
+            }
+        }
+
+        closedir($dir);
+        return true;
+    }
+
+    /**
+     * Recursively remove a directory tree (for cleanup on failure).
+     *
+     * @param string $dir
+     * @return void
+     */
+    private function removeDir(string $dir): void
+    {
+        if (!is_dir($dir)) {
+            return;
+        }
+
+        $files = scandir($dir);
+        if ($files === false) {
+            return;
+        }
+
+        foreach ($files as $file) {
+            if ($file === '.' || $file === '..') {
+                continue;
+            }
+
+            $path = $dir . '/' . $file;
+            if (is_dir($path)) {
+                $this->removeDir($path);
+            } else {
+                @unlink($path);
+            }
+        }
+
+        @rmdir($dir);
     }
 
     // ------ Flash Helpers ------

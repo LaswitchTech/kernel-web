@@ -16,7 +16,7 @@ plugins, themes, and layouts.
 | `GET` | `/admin/extensions/catalog/review` | Review pending submissions |
 | `POST` | `/admin/extensions/catalog/{id}/approve` | Approve a pending entry |
 | `POST` | `/admin/extensions/catalog/{id}/reject` | Reject a pending entry |
-| `POST` | `/admin/extensions/catalog/{id}/install` | Dry-run install of approved entry |
+| `POST` | `/admin/extensions/catalog/{id}/install` | Staged install of approved entry |
 
 ## Extension Types
 
@@ -138,15 +138,32 @@ The review page lists all pending catalog submissions:
 - **Reject** — sets status to `rejected` via `CatalogService::reject()`
 - Both use Bootstrap modals for confirmation and redirect back to the review page
 
-### Install (Dry-Run)
+### Install (Staged)
 
 Approved, not-installed catalog entries show an **Install** button in the Actions column.
-This is a dry-run validation pass — it does not copy files or download remote content.
+Extensions are installed from a trusted local staging directory.
 
 - **Route:** `POST /admin/extensions/catalog/{id}/install`
 - **Permission:** `extensions.manage`
 - **Controller:** `ExtensionsController::handleInstall()`
 - **View:** `app/Views/admin/extensions/catalog.php` (Install button in Actions column)
+- **Staging path:** `/storage/extension-staging/{slug}/`
+- **Target paths:**
+  - plugin → `/lib/plugins/{slug}`
+  - theme → `/lib/themes/{slug}`
+  - layout → `/lib/layouts/{slug}`
+
+**Staging directory structure:**
+```
+storage/extension-staging/
+├── my-plugin/        ← slug directory
+│   ├── plugin.json
+│   ├── src/
+│   └── assets/
+└── my-theme/         ← another extension
+    ├── theme.json
+    └── css/
+```
 
 **Validations:**
 1. Entry must exist
@@ -154,14 +171,21 @@ This is a dry-run validation pass — it does not copy files or download remote 
 3. Entry `is_installed` must be `0`
 4. `type` must be `plugin`, `theme`, or `layout`
 5. `slug` must match `/^[a-z][a-z0-9_-]+$/`
-6. Resolved target path must be under `lib/` (path traversal guard)
-7. Target directory must not already exist (no-overwrite guard)
+6. Staging directory must exist (resolved via `realpath()`)
+7. Source resolved path must be under staging base (path traversal guard)
+8. Target directory must not already exist (no-overwrite guard)
+9. Target resolved path must be under lib base (path traversal guard)
 
-**Behavior:**
-- Reports where the extension would be installed
-- No files written, no remote download, no ZIP extraction
-- Redirects back to `/admin/extensions/catalog` with flash message
-- Install button only shown for `status = 'approved'` and `is_installed = 0`
+**Install process:**
+1. All validations pass
+2. Recursive copy from staging to target (symbolic links skipped)
+3. On success: mark `is_installed = 1` in catalog
+4. On failure: remove any partially created target directory
+5. Flash message with result, redirect to `/admin/extensions/catalog`
+
+**File permissions:**
+- Directories: `0755`
+- Files: `0644`
 
 ## Read-Only Limitation
 
@@ -171,12 +195,12 @@ This pass is **read-only discovery and display only**.
 
 - Local extension catalog submission (pending review)
 - Approval/rejection review workflow for pending submissions
-- Dry-run install for approved catalog entries (validates safety, reports target path)
+- Staged install for approved catalog entries (copy from trusted staging directory)
 
 ### Deferred
 
 - Enable / disable plugins
-- Actual file copy/install from local staging or remote download
+- Remote download
 - ZIP archive extraction
 - Uninstall
 - Upload / marketplace browsing
