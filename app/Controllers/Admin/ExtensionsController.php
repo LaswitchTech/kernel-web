@@ -498,6 +498,139 @@ class ExtensionsController extends Controller
         @rmdir($dir);
     }
 
+    /**
+     * Enable an installed catalog extension.
+     *
+     * Validates the extension is installed and its directory exists.
+     * Sets is_enabled = 1 in the catalog database.
+     */
+    public function handleEnable(array $params = []): void
+    {
+        $principal  = $this->container->get('principal');
+        $user       = $principal['user'];
+        $perms      = $principal['permissions'];
+
+        $config     = $this->container->get('config');
+        $viewsPath  = __DIR__ . '/../../Views';
+
+        $catalog    = new \App\Services\Extensions\CatalogService(
+            new \App\Models\CatalogExtensionRepository(
+                $this->container->get('db')
+            )
+        );
+
+        $id         = (int) ($params['id'] ?? 0);
+        $extension  = $catalog->getById($id);
+
+        if ($extension === null) {
+            $this->flash('error', 'Extension not found.');
+            header('Location: /admin/extensions/catalog');
+            exit;
+        }
+
+        if ((int) $extension['is_installed'] !== 1) {
+            $this->flash('error', 'Extension "' . $extension['name'] . '" must be installed before enabling.');
+            header('Location: /admin/extensions/catalog');
+            exit;
+        }
+
+        if ((int) $extension['is_enabled'] === 1) {
+            $this->flash('error', 'Extension "' . $extension['name'] . '" is already enabled.');
+            header('Location: /admin/extensions/catalog');
+            exit;
+        }
+
+        $slug  = $extension['slug'];
+        $type  = $extension['type'];
+
+        if (!in_array($type, ['plugin', 'theme', 'layout'], true)) {
+            $this->flash('error', 'Invalid extension type: ' . htmlspecialchars($type));
+            header('Location: /admin/extensions/catalog');
+            exit;
+        }
+
+        if (!preg_match('/^[a-z][a-z0-9_-]+$/', $slug)) {
+            $this->flash('error', 'Invalid extension slug: ' . htmlspecialchars($slug));
+            header('Location: /admin/extensions/catalog');
+            exit;
+        }
+
+        // Validate extension directory exists
+        $libBase = realpath(__DIR__ . '/../../../lib');
+        if ($libBase === false) {
+            $this->flash('error', 'Cannot resolve base lib directory.');
+            header('Location: /admin/extensions/catalog');
+            exit;
+        }
+
+        $typeDirs = [
+            'plugin' => 'plugins',
+            'theme'  => 'themes',
+            'layout' => 'layouts',
+        ];
+        $targetDir = $libBase . '/' . $typeDirs[$type] . '/' . $slug;
+
+        if (!is_dir($targetDir)) {
+            $this->flash('error', 'Extension directory not found: <code>' . htmlspecialchars($targetDir) . '</code>. Cannot enable without installed files.');
+            header('Location: /admin/extensions/catalog');
+            exit;
+        }
+
+        $catalog->markEnabled($id);
+
+        $this->flash('success', 'Extension "' . $extension['name'] . '" enabled.');
+        header('Location: /admin/extensions/catalog');
+        exit;
+    }
+
+    /**
+     * Disable an installed catalog extension.
+     *
+     * Sets is_enabled = 0 in the catalog database.
+     */
+    public function handleDisable(array $params = []): void
+    {
+        $principal  = $this->container->get('principal');
+        $user       = $principal['user'];
+        $perms      = $principal['permissions'];
+
+        $config     = $this->container->get('config');
+        $viewsPath  = __DIR__ . '/../../Views';
+
+        $catalog    = new \App\Services\Extensions\CatalogService(
+            new \App\Models\CatalogExtensionRepository(
+                $this->container->get('db')
+            )
+        );
+
+        $id         = (int) ($params['id'] ?? 0);
+        $extension  = $catalog->getById($id);
+
+        if ($extension === null) {
+            $this->flash('error', 'Extension not found.');
+            header('Location: /admin/extensions/catalog');
+            exit;
+        }
+
+        if ((int) $extension['is_installed'] !== 1) {
+            $this->flash('error', 'Extension "' . $extension['name'] . '" must be installed before disabling.');
+            header('Location: /admin/extensions/catalog');
+            exit;
+        }
+
+        if ((int) $extension['is_enabled'] === 0) {
+            $this->flash('error', 'Extension "' . $extension['name'] . '" is already disabled.');
+            header('Location: /admin/extensions/catalog');
+            exit;
+        }
+
+        $catalog->markDisabled($id);
+
+        $this->flash('success', 'Extension "' . $extension['name'] . '" disabled.');
+        header('Location: /admin/extensions/catalog');
+        exit;
+    }
+
     // ------ Flash Helpers ------
 
     /**

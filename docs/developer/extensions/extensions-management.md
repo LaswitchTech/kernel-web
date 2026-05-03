@@ -17,6 +17,8 @@ plugins, themes, and layouts.
 | `POST` | `/admin/extensions/catalog/{id}/approve` | Approve a pending entry |
 | `POST` | `/admin/extensions/catalog/{id}/reject` | Reject a pending entry |
 | `POST` | `/admin/extensions/catalog/{id}/install` | Staged install of approved entry |
+| `POST` | `/admin/extensions/catalog/{id}/enable` | Enable an installed entry |
+| `POST` | `/admin/extensions/catalog/{id}/disable` | Disable an installed entry |
 
 ## Extension Types
 
@@ -187,6 +189,43 @@ storage/extension-staging/
 - Directories: `0755`
 - Files: `0644`
 
+### Enable / Disable
+
+Installed catalog extensions can be enabled or disabled. This controls the `is_enabled` flag in the catalog database.
+
+- **Enable route:** `POST /admin/extensions/catalog/{id}/enable`
+- **Disable route:** `POST /admin/extensions/catalog/{id}/disable`
+- **Permission:** `extensions.manage`
+- **Controller:** `ExtensionsController::handleEnable()` / `ExtensionsController::handleDisable()`
+
+**UI visibility:**
+- **Install** button — `status = approved` AND `is_installed = 0`
+- **Enable** button — `is_installed = 1` AND `is_enabled = 0`
+- **Disable** button — `is_installed = 1` AND `is_enabled = 1`
+
+**Validations (both):**
+1. Entry must exist
+2. Entry `is_installed` must be `1`
+3. Entry `is_enabled` must be the opposite of the action (not already in target state)
+4. `type` must be `plugin`, `theme`, or `layout`
+5. `slug` must match `/^[a-z][a-z0-9_-]+$/`
+6. Extension directory must exist on disk under `lib/`
+
+**Behavior:**
+- **Enable** — sets `is_enabled = 1`, flash success "Extension ... enabled."
+- **Disable** — sets `is_enabled = 0`, flash success "Extension ... disabled."
+- Redirects back to `/admin/extensions/catalog`
+
+**Installed vs Enabled:**
+- `is_installed = 1` — extension files exist on disk in `lib/`
+- `is_enabled = 1` — extension is marked as enabled in the catalog database
+- These are independent states; an installed extension may be disabled
+
+**Important limitation:**
+- The runtime plugin loader does not yet check catalog `is_enabled` state
+- Extension activation is still controlled by filesystem discovery
+- A later task can reconcile catalog state with runtime extension activation
+
 ## Read-Only Limitation
 
 This pass is **read-only discovery and display only**.
@@ -196,10 +235,11 @@ This pass is **read-only discovery and display only**.
 - Local extension catalog submission (pending review)
 - Approval/rejection review workflow for pending submissions
 - Staged install for approved catalog entries (copy from trusted staging directory)
+- Enable/disable installed catalog entries (database lifecycle state only)
 
 ### Deferred
 
-- Enable / disable plugins
+- Runtime loader integration — catalog enabled state does not yet control plugin activation
 - Remote download
 - ZIP archive extraction
 - Uninstall
