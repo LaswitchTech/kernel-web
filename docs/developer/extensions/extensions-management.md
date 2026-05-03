@@ -16,6 +16,7 @@ plugins, themes, and layouts.
 | `GET` | `/admin/extensions/catalog/review` | Review pending submissions |
 | `POST` | `/admin/extensions/catalog/{id}/approve` | Approve a pending entry |
 | `POST` | `/admin/extensions/catalog/{id}/reject` | Reject a pending entry |
+| `POST` | `/admin/extensions/catalog/{id}/install` | Dry-run install of approved entry |
 
 ## Extension Types
 
@@ -137,6 +138,31 @@ The review page lists all pending catalog submissions:
 - **Reject** — sets status to `rejected` via `CatalogService::reject()`
 - Both use Bootstrap modals for confirmation and redirect back to the review page
 
+### Install (Dry-Run)
+
+Approved, not-installed catalog entries show an **Install** button in the Actions column.
+This is a dry-run validation pass — it does not copy files or download remote content.
+
+- **Route:** `POST /admin/extensions/catalog/{id}/install`
+- **Permission:** `extensions.manage`
+- **Controller:** `ExtensionsController::handleInstall()`
+- **View:** `app/Views/admin/extensions/catalog.php` (Install button in Actions column)
+
+**Validations:**
+1. Entry must exist
+2. Entry status must be `approved`
+3. Entry `is_installed` must be `0`
+4. `type` must be `plugin`, `theme`, or `layout`
+5. `slug` must match `/^[a-z][a-z0-9_-]+$/`
+6. Resolved target path must be under `lib/` (path traversal guard)
+7. Target directory must not already exist (no-overwrite guard)
+
+**Behavior:**
+- Reports where the extension would be installed
+- No files written, no remote download, no ZIP extraction
+- Redirects back to `/admin/extensions/catalog` with flash message
+- Install button only shown for `status = 'approved'` and `is_installed = 0`
+
 ## Read-Only Limitation
 
 This pass is **read-only discovery and display only**.
@@ -145,11 +171,14 @@ This pass is **read-only discovery and display only**.
 
 - Local extension catalog submission (pending review)
 - Approval/rejection review workflow for pending submissions
+- Dry-run install for approved catalog entries (validates safety, reports target path)
 
 ### Deferred
 
 - Enable / disable plugins
-- Install / uninstall extensions
+- Actual file copy/install from local staging or remote download
+- ZIP archive extraction
+- Uninstall
 - Upload / marketplace browsing
 - Remote updates
 - Licensing

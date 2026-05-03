@@ -57,6 +57,7 @@
                                 <th>Description</th>
                                 <th>Author</th>
                                 <th>Status</th>
+                                <th>Actions</th>
                                 <th>Installed</th>
                                 <th>Enabled</th>
                             </tr>
@@ -79,6 +80,16 @@
                                     <span class="badge bg-warning text-dark">Pending</span>
                                     <?php else: ?>
                                     <span class="badge bg-danger">Rejected</span>
+                                    <?php endif; ?>
+                                </td>
+                                <td class="text-nowrap">
+                                    <?php if ($ext['status'] === 'approved' && (int) $ext['is_installed'] === 0): ?>
+                                    <form method="POST" action="/admin/extensions/catalog/<?= (int) $ext['id'] ?>/install" style="display:inline;">
+                                        <button type="submit" class="btn btn-sm btn-success"
+                                                onclick="return confirm('Dry-run install for <?= htmlspecialchars($ext['name']) ?> (v<?= htmlspecialchars($ext['version']) ?>).\n\nThis validates all paths and safety checks but does not write files yet.')">
+                                            <i class="bi bi-download me-1"></i>Install
+                                        </button>
+                                    </form>
                                     <?php endif; ?>
                                 </td>
                                 <td class="text-center">

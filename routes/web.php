@@ -39,6 +39,7 @@ $router->post('/admin/extensions/catalog/submit', 'Controllers\Admin\ExtensionsC
 $router->get('/admin/extensions/catalog/review', 'Controllers\Admin\ExtensionsController@review', ['WebAuth', 'WebPermission:extensions.manage']);
 $router->post('/admin/extensions/catalog/{id}/approve', 'Controllers\Admin\ExtensionsController@handleApprove', ['WebAuth', 'WebPermission:extensions.manage']);
 $router->post('/admin/extensions/catalog/{id}/reject', 'Controllers\Admin\ExtensionsController@handleReject', ['WebAuth', 'WebPermission:extensions.manage']);
+$router->post('/admin/extensions/catalog/{id}/install', 'Controllers\Admin\ExtensionsController@handleInstall', ['WebAuth', 'WebPermission:extensions.manage']);
 
 // Admin permissions — full CRUD.
 $router->get('/admin/permissions', 'Controllers\Admin\PermissionController@index', ['WebAuth', 'WebPermission:admin']);

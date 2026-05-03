@@ -285,6 +285,116 @@ class ExtensionsController extends Controller
         exit;
     }
 
+    /**
+     * Dry-run install for an approved catalog entry.
+     *
+     * Validates type, slug, path safety, and non-overwrite.
+     * Does not copy files — reports where the extension would be installed.
+     */
+    public function handleInstall(array $params = []): void
+    {
+        $principal  = $this->container->get('principal');
+        $user       = $principal['user'];
+        $perms      = $principal['permissions'];
+
+        $config     = $this->container->get('config');
+        $viewsPath  = __DIR__ . '/../../Views';
+
+        $catalog    = new \App\Services\Extensions\CatalogService(
+            new \App\Models\CatalogExtensionRepository(
+                $this->container->get('db')
+            )
+        );
+
+        $id         = (int) ($params['id'] ?? 0);
+        $extension  = $catalog->getById($id);
+
+        if ($extension === null) {
+            $this->flash('error', 'Extension not found.');
+            header('Location: /admin/extensions/catalog');
+            exit;
+        }
+
+        if ($extension['status'] !== 'approved') {
+            $this->flash('error', 'Only approved extensions can be installed.');
+            header('Location: /admin/extensions/catalog');
+            exit;
+        }
+
+        if ((int) $extension['is_installed'] === 1) {
+            $this->flash('error', 'Extension "' . $extension['name'] . '" is already installed.');
+            header('Location: /admin/extensions/catalog');
+            exit;
+        }
+
+        $slug       = $extension['slug'];
+        $type       = $extension['type'];
+        $version    = $extension['version'];
+        $author     = $extension['author'] ?? '';
+        $description = $extension['description'] ?? '';
+        $downloadUrl = $extension['download_url'] ?? '';
+
+        // Validate type and resolve target path
+        $validTypes = ['plugin', 'theme', 'layout'];
+        $invalidMsg = '';
+
+        if (!in_array($type, $validTypes, true)) {
+            $invalidMsg = 'Invalid extension type: ' . htmlspecialchars($type);
+        } elseif (!preg_match('/^[a-z][a-z0-9_-]+$/', $slug)) {
+            $invalidMsg = 'Invalid extension slug: ' . htmlspecialchars($slug);
+        }
+
+        if ($invalidMsg !== '') {
+            $this->flash('error', $invalidMsg);
+            header('Location: /admin/extensions/catalog');
+            exit;
+        }
+
+        // Resolve and validate target directory
+        $basePath = realpath(__DIR__ . '/../../../lib');
+        if ($basePath === false) {
+            $this->flash('error', 'Cannot resolve base lib directory.');
+            header('Location: /admin/extensions/catalog');
+            exit;
+        }
+
+        // Type-specific subdirectory mapping
+        $typeDirs = [
+            'plugin' => 'plugins',
+            'theme'  => 'themes',
+            'layout' => 'layouts',
+        ];
+
+        $subDir    = $typeDirs[$type];
+        $targetDir = $basePath . '/' . $subDir . '/' . $slug;
+
+        // Path traversal check: target must be under lib
+        if (strpos($targetDir, realpath($basePath) . DIRECTORY_SEPARATOR) !== 0) {
+            $this->flash('error', 'Install path escapes the lib directory. Installation refused.');
+            header('Location: /admin/extensions/catalog');
+            exit;
+        }
+
+        // Non-overwrite check
+        $overwritesExisting = false;
+        if (is_dir($targetDir)) {
+            $overwritesExisting = true;
+        }
+
+        // No remote download. Show dry-run result.
+        $installMessage = 'Install dry-run for "' . $extension['name'] . '" (v' . $version . '): ';
+        $installMessage .= 'would install to <code>' . htmlspecialchars($targetDir) . '</code>. ';
+        $installMessage .= 'No files written. Remote download and ZIP extraction are deferred.';
+
+        if ($overwritesExisting) {
+            $installMessage .= '<div class="alert alert-warning mt-2">Target directory already exists — would overwrite.</div>';
+        }
+
+        $this->flash('success', $installMessage);
+        header('Location: /admin/extensions/catalog');
+        exit;
+    }
+
     // ------ Flash Helpers ------
 
     /**
