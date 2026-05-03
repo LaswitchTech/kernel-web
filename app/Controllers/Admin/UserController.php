@@ -44,7 +44,7 @@ class UserController extends Controller
         require $viewsPath . '/admin/users.php';
         $content = ob_get_clean();
 
-        require $viewsPath . '/layouts/app.php';
+        require $viewsPath . '/layouts/panel.php';
     }
 
     // -------------------------------------------------------------------------
@@ -65,7 +65,7 @@ class UserController extends Controller
         require $viewsPath . '/admin/user-create.php';
         $content = ob_get_clean();
 
-        require $viewsPath . '/layouts/app.php';
+        require $viewsPath . '/layouts/panel.php';
     }
 
     // -------------------------------------------------------------------------
@@ -136,7 +136,7 @@ class UserController extends Controller
             $content = ob_get_clean();
 
             http_response_code(422);
-            require $viewsPath . '/layouts/app.php';
+            require $viewsPath . '/layouts/panel.php';
             return;
         }
 
@@ -193,7 +193,7 @@ class UserController extends Controller
         require $viewsPath . '/admin/user-edit.php';
         $content = ob_get_clean();
 
-        require $viewsPath . '/layouts/app.php';
+        require $viewsPath . '/layouts/panel.php';
     }
 
     // -------------------------------------------------------------------------
@@ -250,7 +250,7 @@ class UserController extends Controller
             $content = ob_get_clean();
 
             http_response_code(422);
-            require $viewsPath . '/layouts/app.php';
+            require $viewsPath . '/layouts/panel.php';
             return;
         }
 
@@ -291,7 +291,7 @@ class UserController extends Controller
         require $viewsPath . '/admin/user-account-edit.php';
         $content = ob_get_clean();
 
-        require $viewsPath . '/layouts/app.php';
+        require $viewsPath . '/layouts/panel.php';
     }
 
     // -------------------------------------------------------------------------
@@ -359,7 +359,7 @@ class UserController extends Controller
             $content = ob_get_clean();
 
             http_response_code(422);
-            require $viewsPath . '/layouts/app.php';
+            require $viewsPath . '/layouts/panel.php';
             return;
         }
 

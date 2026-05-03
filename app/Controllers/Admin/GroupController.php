@@ -41,7 +41,7 @@ class GroupController extends Controller
         require $viewsPath . '/admin/groups.php';
         $content = ob_get_clean();
 
-        require $viewsPath . '/layouts/app.php';
+        require $viewsPath . '/layouts/panel.php';
     }
 
     // -------------------------------------------------------------------------
@@ -61,7 +61,7 @@ class GroupController extends Controller
         require $viewsPath . '/admin/group-create.php';
         $content = ob_get_clean();
 
-        require $viewsPath . '/layouts/app.php';
+        require $viewsPath . '/layouts/panel.php';
     }
 
     // -------------------------------------------------------------------------
@@ -87,7 +87,7 @@ class GroupController extends Controller
             $content = ob_get_clean();
 
             http_response_code(422);
-            require $viewsPath . '/layouts/app.php';
+            require $viewsPath . '/layouts/panel.php';
             return;
         }
 
@@ -143,7 +143,7 @@ class GroupController extends Controller
         require $viewsPath . '/admin/group-edit.php';
         $content = ob_get_clean();
 
-        require $viewsPath . '/layouts/app.php';
+        require $viewsPath . '/layouts/panel.php';
     }
 
     // -------------------------------------------------------------------------
@@ -208,7 +208,7 @@ class GroupController extends Controller
             $content = ob_get_clean();
 
             http_response_code(422);
-            require $viewsPath . '/layouts/app.php';
+            require $viewsPath . '/layouts/panel.php';
             return;
         }
 

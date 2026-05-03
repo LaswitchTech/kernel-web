@@ -51,7 +51,7 @@ class AdminController extends Controller
         require $viewsPath . '/admin/index.php';
         $content = ob_get_clean();
 
-        require $viewsPath . '/layouts/app.php';
+        require $viewsPath . '/layouts/panel.php';
     }
 
     public function permissions(array $params = []): void
@@ -76,7 +76,7 @@ class AdminController extends Controller
         require $viewsPath . '/admin/permissions.php';
         $content = ob_get_clean();
 
-        require $viewsPath . '/layouts/app.php';
+        require $viewsPath . '/layouts/panel.php';
     }
 
     public function audit(array $params = []): void
@@ -101,6 +101,6 @@ class AdminController extends Controller
         require $viewsPath . '/admin/audit.php';
         $content = ob_get_clean();
 
-        require $viewsPath . '/layouts/app.php';
+        require $viewsPath . '/layouts/panel.php';
     }
 }

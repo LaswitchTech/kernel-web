@@ -61,14 +61,6 @@ $router->get('/admin/groups/{id}/edit', 'Controllers\Admin\GroupController@editF
 $router->post('/admin/groups/{id}', 'Controllers\Admin\GroupController@update', ['WebAuth', 'WebPermission:admin']);
 $router->post('/admin/groups/{id}/delete', 'Controllers\Admin\GroupController@delete', ['WebAuth', 'WebPermission:admin']);
 
-// Admin locations — CRUD routes (kernel-level hierarchical locations).
-$router->get('/admin/locations', 'Controllers\Admin\LocationController@index', ['WebAuth', 'WebPermission:admin']);
-$router->get('/admin/locations/create', 'Controllers\Admin\LocationController@createForm', ['WebAuth', 'WebPermission:admin']);
-$router->post('/admin/locations', 'Controllers\Admin\LocationController@store', ['WebAuth', 'WebPermission:admin']);
-$router->get('/admin/locations/{id}/edit', 'Controllers\Admin\LocationController@editForm', ['WebAuth', 'WebPermission:admin']);
-$router->post('/admin/locations/{id}', 'Controllers\Admin\LocationController@update', ['WebAuth', 'WebPermission:admin']);
-$router->post('/admin/locations/{id}/delete', 'Controllers\Admin\LocationController@delete', ['WebAuth', 'WebPermission:admin']);
-
 // -------------------------------- Chat Module ------
 $router->get('/chat', 'Modules\Chat\Controllers\ChatController@index', ['WebAuth', 'WebPermission:chat.use']);
 $router->get('/chat/rooms/create', 'Modules\Chat\Controllers\ChatController@createForm', ['WebAuth', 'WebPermission:chat.use']);

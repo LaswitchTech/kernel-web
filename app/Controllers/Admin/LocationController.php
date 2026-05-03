@@ -44,7 +44,7 @@ class LocationController extends Controller
         require $viewsPath . '/admin/locations.php';
         $content = ob_get_clean();
 
-        require $viewsPath . '/layouts/app.php';
+        require $viewsPath . '/layouts/panel.php';
     }
 
     // -------------------------------------------------------------------------
@@ -67,7 +67,7 @@ class LocationController extends Controller
         require $viewsPath . '/admin/location-create.php';
         $content = ob_get_clean();
 
-        require $viewsPath . '/layouts/app.php';
+        require $viewsPath . '/layouts/panel.php';
     }
 
     // -------------------------------------------------------------------------
@@ -98,7 +98,7 @@ class LocationController extends Controller
             $content = ob_get_clean();
 
             http_response_code(422);
-            require $viewsPath . '/layouts/app.php';
+            require $viewsPath . '/layouts/panel.php';
             return;
         }
 
@@ -150,7 +150,7 @@ class LocationController extends Controller
         require $viewsPath . '/admin/location-edit.php';
         $content = ob_get_clean();
 
-        require $viewsPath . '/layouts/app.php';
+        require $viewsPath . '/layouts/panel.php';
     }
 
     // -------------------------------------------------------------------------
@@ -199,7 +199,7 @@ class LocationController extends Controller
             $content = ob_get_clean();
 
             http_response_code(422);
-            require $viewsPath . '/layouts/app.php';
+            require $viewsPath . '/layouts/panel.php';
             return;
         }
 

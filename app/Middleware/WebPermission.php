@@ -3,6 +3,7 @@
 namespace App\Middleware;
 
 use App\Core\Container;
+use App\Core\ErrorPage;
 use App\Core\Gate;
 use App\Core\MiddlewareInterface;
 
@@ -52,39 +53,10 @@ class WebPermission implements MiddlewareInterface
         $gate = $this->container->get('gate');
 
         if (!$gate->can($principal, $this->permission)) {
-            http_response_code(403);
-            header('Content-Type: text/html; charset=utf-8');
-            echo $this->render403($this->permission);
+            ErrorPage::render(403, "You do not have the required permission '{$permission}' to view this page.");
             return;
         }
 
         $next($params);
-    }
-
-    private function render403(string $permission): string
-    {
-        return <<<HTML
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>403 Forbidden</title>
-    <link rel="stylesheet" href="/assets/vendor/bootstrap/5.3.3/css/bootstrap.min.css">
-    <link rel="stylesheet" href="/assets/css/app.css">
-</head>
-<body class="d-flex align-items-center justify-content-center min-vh-100 bg-body">
-    <div class="text-center" style="max-width:420px;">
-        <div class="display-1 fw-bold text-muted mb-3">403</div>
-        <h1 class="h4 mb-2">Access Denied</h1>
-        <p class="text-muted mb-4">
-            You do not have the required permission
-            <code>{$permission}</code> to view this page.
-        </p>
-        <a href="/" class="btn btn-primary">Back to Dashboard</a>
-    </div>
-</body>
-</html>
-HTML;
     }
 }

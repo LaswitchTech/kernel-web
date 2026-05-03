@@ -21,9 +21,9 @@ class MenuHelper
      * @param array<string, int> $badges URL-prefix to badge count mapping.
      * @return string
      */
-    public static function renderSidebar(string $navActive, array $permissions, array $badges = []): string
+    public static function renderSidebar(string $navActive, array $permissions, array $badges = [], string $menuName = 'sidebar'): string
     {
-        $items = MenuRegistry::renderItems('sidebar', $permissions);
+        $items = MenuRegistry::renderItems($menuName, $permissions);
 
         $out = '';
 

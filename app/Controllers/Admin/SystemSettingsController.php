@@ -59,7 +59,7 @@ class SystemSettingsController extends Controller
         require $viewsPath . '/admin/settings.php';
         $content = ob_get_clean();
 
-        require $viewsPath . '/layouts/app.php';
+        require $viewsPath . '/layouts/panel.php';
     }
 
     // -------------------------------------------------------------------------
@@ -99,7 +99,7 @@ class SystemSettingsController extends Controller
             $content = ob_get_clean();
 
             http_response_code(422);
-            require $viewsPath . '/layouts/app.php';
+            require $viewsPath . '/layouts/panel.php';
             return;
         }
 

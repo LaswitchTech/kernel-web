@@ -247,15 +247,38 @@ if ($pluginsDir !== false && is_dir($pluginsDir)) {
         ['name' => 'admin-groups', 'label' => 'Groups', 'url' => '/admin/groups', 'icon' => 'bi bi-collection', 'permission' => 'admin', 'order' => 53, 'sections' => []],
         ['name' => 'admin-permissions', 'label' => 'Permissions', 'url' => '/admin/permissions', 'icon' => 'bi bi-shield-check', 'permission' => 'admin', 'order' => 54, 'sections' => []],
         ['name' => 'admin-audit', 'label' => 'Audit Log', 'url' => '/admin/audit', 'icon' => 'bi bi-journal-text', 'permission' => 'admin', 'order' => 55, 'sections' => []],
-        ['name' => 'admin-locations', 'label' => 'Locations', 'url' => '/admin/locations', 'icon' => 'bi bi-geo-alt', 'permission' => 'admin', 'order' => 56, 'sections' => []],
-        ['name' => 'admin-segments', 'label' => 'Segments', 'url' => '/admin/network-segments', 'icon' => 'bi bi-hdd-network', 'permission' => 'admin', 'order' => 57, 'sections' => []],
-        ['name' => 'admin-topology-candidates', 'label' => 'Topo Candidates', 'url' => '/admin/topology-candidates', 'icon' => 'bi bi-diagram-2', 'permission' => 'admin', 'order' => 58, 'sections' => []],
-        ['name' => 'admin-settings', 'label' => 'Settings', 'url' => '/admin/settings', 'icon' => 'bi bi-sliders', 'permission' => 'admin', 'order' => 59, 'sections' => []],
+        ['name' => 'admin-settings', 'label' => 'Settings', 'url' => '/admin/settings', 'icon' => 'bi bi-sliders', 'permission' => 'admin', 'order' => 56, 'sections' => []],
         ['name' => 'admin-extensions', 'label' => 'Extensions', 'url' => '/admin/extensions', 'icon' => 'bi bi-boxes', 'permission' => 'extensions.manage', 'order' => 60, 'sections' => []],
     ];
 
     foreach ($coreMenus as $menuDef) {
         MenuRegistry::add('sidebar', new \App\Core\MenuItem(
+            name:        $menuDef['name'],
+            label:       $menuDef['label'],
+            url:         $menuDef['url'],
+            icon:        $menuDef['icon'],
+            styleClass:  null,
+            permission:  $menuDef['permission'],
+            order:       $menuDef['order'],
+            parentId:    null,
+            source:      'core',
+            sections:    $menuDef['sections'],
+        ));
+    }
+
+    // Admin sidebar — only administration items (no Dashboard, Tools, Chat, Files).
+    $adminMenus = [
+        ['name' => 'admin-overview', 'label' => 'Overview', 'url' => '/admin', 'icon' => 'bi bi-gear', 'permission' => 'admin', 'order' => 10, 'sections' => []],
+        ['name' => 'admin-users', 'label' => 'Users', 'url' => '/admin/users', 'icon' => 'bi bi-people', 'permission' => 'admin', 'order' => 20, 'sections' => []],
+        ['name' => 'admin-groups', 'label' => 'Groups', 'url' => '/admin/groups', 'icon' => 'bi bi-collection', 'permission' => 'admin', 'order' => 30, 'sections' => []],
+        ['name' => 'admin-permissions', 'label' => 'Permissions', 'url' => '/admin/permissions', 'icon' => 'bi bi-shield-check', 'permission' => 'admin', 'order' => 40, 'sections' => []],
+        ['name' => 'admin-audit', 'label' => 'Audit Log', 'url' => '/admin/audit', 'icon' => 'bi bi-journal-text', 'permission' => 'admin', 'order' => 50, 'sections' => []],
+        ['name' => 'admin-settings', 'label' => 'Settings', 'url' => '/admin/settings', 'icon' => 'bi bi-sliders', 'permission' => 'admin', 'order' => 60, 'sections' => []],
+        ['name' => 'admin-extensions', 'label' => 'Extensions', 'url' => '/admin/extensions', 'icon' => 'bi bi-boxes', 'permission' => 'extensions.manage', 'order' => 70, 'sections' => []],
+    ];
+
+    foreach ($adminMenus as $menuDef) {
+        MenuRegistry::add('admin-sidebar', new \App\Core\MenuItem(
             name:        $menuDef['name'],
             label:       $menuDef['label'],
             url:         $menuDef['url'],

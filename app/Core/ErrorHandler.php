@@ -169,36 +169,7 @@ class ErrorHandler
 
     private function respondHtml(int $status, string $message, ?\Throwable $e): void
     {
-        if (!headers_sent()) {
-            header('Content-Type: text/html; charset=utf-8');
-        }
-
-        $safe    = htmlspecialchars($this->debug ? $message : $this->genericMessage($status), ENT_QUOTES, 'UTF-8');
-        $heading = htmlspecialchars($this->genericMessage($status), ENT_QUOTES, 'UTF-8');
-
-        $trace = '';
-        if ($this->debug && $e !== null) {
-            $traceText = htmlspecialchars($e->getTraceAsString(), ENT_QUOTES, 'UTF-8');
-            $fileText  = htmlspecialchars($e->getFile() . ':' . $e->getLine(), ENT_QUOTES, 'UTF-8');
-            $trace = <<<HTML
-                <p><strong>Location:</strong> <code>{$fileText}</code></p>
-                <pre>{$traceText}</pre>
-            HTML;
-        }
-
-        echo <<<HTML
-        <!DOCTYPE html>
-        <html lang="en">
-        <head><meta charset="utf-8"><title>{$status} {$heading}</title>
-        <style>body{font-family:sans-serif;padding:2rem;color:#333}pre{background:#f4f4f4;padding:1rem;overflow:auto}</style>
-        </head>
-        <body>
-          <h1>{$status} — {$heading}</h1>
-          <p>{$safe}</p>
-          {$trace}
-        </body>
-        </html>
-        HTML;
+        ErrorPage::render($status, $this->debug ? $message : null, $this->debug, $e);
     }
 
     private function genericMessage(int $status): string
@@ -208,6 +179,7 @@ class ErrorHandler
             401     => 'Unauthorized',
             403     => 'Forbidden',
             404     => 'Not Found',
+            405     => 'Method Not Allowed',
             422     => 'Unprocessable Entity',
             500     => 'Internal Server Error',
             default => 'Error',

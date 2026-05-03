@@ -41,6 +41,6 @@ class ExtensionsController extends Controller
         require $viewsPath . '/admin/extensions/index.php';
         $content = ob_get_clean();
 
-        require $viewsPath . '/layouts/app.php';
+        require $viewsPath . '/layouts/panel.php';
     }
 }

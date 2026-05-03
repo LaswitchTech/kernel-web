@@ -48,7 +48,7 @@ class PermissionController extends Controller
         require $viewsPath . '/admin/permissions.php';
         $content = ob_get_clean();
 
-        require $viewsPath . '/layouts/app.php';
+        require $viewsPath . '/layouts/panel.php';
     }
 
     // -------------------------------------------------------------------------
@@ -69,7 +69,7 @@ class PermissionController extends Controller
         require $viewsPath . '/admin/permission-create.php';
         $content = ob_get_clean();
 
-        require $viewsPath . '/layouts/app.php';
+        require $viewsPath . '/layouts/panel.php';
     }
 
     // -------------------------------------------------------------------------
@@ -99,7 +99,7 @@ class PermissionController extends Controller
             $content = ob_get_clean();
 
             http_response_code(422);
-            require $viewsPath . '/layouts/app.php';
+            require $viewsPath . '/layouts/panel.php';
             return;
         }
 
@@ -148,7 +148,7 @@ class PermissionController extends Controller
         require $viewsPath . '/admin/permission-edit.php';
         $content = ob_get_clean();
 
-        require $viewsPath . '/layouts/app.php';
+        require $viewsPath . '/layouts/panel.php';
     }
 
     // -------------------------------------------------------------------------
@@ -188,7 +188,7 @@ class PermissionController extends Controller
             $content = ob_get_clean();
 
             http_response_code(422);
-            require $viewsPath . '/layouts/app.php';
+            require $viewsPath . '/layouts/panel.php';
             return;
         }
 
