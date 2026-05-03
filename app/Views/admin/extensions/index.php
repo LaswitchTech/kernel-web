@@ -89,6 +89,9 @@
     <a href="/admin/extensions/catalog" class="btn btn-outline-secondary btn-sm">
         <i class="bi bi-database me-1"></i>Browse Catalog
     </a>
+    <a href="/admin/extensions/catalog/review" class="btn btn-outline-warning btn-sm">
+        <i class="bi bi-eye me-1"></i>Review Submissions
+    </a>
 </div>
 
 <p class="text-muted small">

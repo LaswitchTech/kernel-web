@@ -173,6 +173,118 @@ class ExtensionsController extends Controller
         exit;
     }
 
+    /**
+     * Review pending catalog submissions.
+     */
+    public function review(array $params = []): void
+    {
+        $principal  = $this->container->get('principal');
+        $user       = $principal['user'];
+        $perms      = $principal['permissions'];
+
+        $config     = $this->container->get('config');
+        $viewsPath  = __DIR__ . '/../../Views';
+
+        $catalog    = new \App\Services\Extensions\CatalogService(
+            new \App\Models\CatalogExtensionRepository(
+                $this->container->get('db')
+            )
+        );
+
+        $pending    = $catalog->listPending();
+
+        $pageTitle    = 'Review Submissions';
+        $activeSection = 'Admin Extensions';
+        $appName      = $config['name'] ?? 'Kernel-Web';
+        $displayName  = $user['display_name'] ?? $user['username'];
+        $permissions  = $perms;
+        $flash        = $this->popFlash();
+
+        ob_start();
+        require $viewsPath . '/admin/extensions/review.php';
+        $content = ob_get_clean();
+
+        require $viewsPath . '/layouts/panel.php';
+    }
+
+    /**
+     * Approve a pending catalog entry.
+     */
+    public function handleApprove(array $params = []): void
+    {
+        $principal  = $this->container->get('principal');
+        $user       = $principal['user'];
+        $perms      = $principal['permissions'];
+
+        $config     = $this->container->get('config');
+        $viewsPath  = __DIR__ . '/../../Views';
+
+        $catalog    = new \App\Services\Extensions\CatalogService(
+            new \App\Models\CatalogExtensionRepository(
+                $this->container->get('db')
+            )
+        );
+
+        $id         = (int) ($params['id'] ?? 0);
+        $extension  = $catalog->getById($id);
+
+        if ($extension === null) {
+            $this->flash('error', 'Extension not found.');
+            header('Location: /admin/extensions/catalog/review');
+            exit;
+        }
+
+        $result = $catalog->approve($id);
+
+        if (!$result['success']) {
+            $this->flash('error', implode('; ', $result['errors']));
+        } else {
+            $this->flash('success', 'Extension "' . $extension['name'] . '" approved.');
+        }
+
+        header('Location: /admin/extensions/catalog/review');
+        exit;
+    }
+
+    /**
+     * Reject a pending catalog entry.
+     */
+    public function handleReject(array $params = []): void
+    {
+        $principal  = $this->container->get('principal');
+        $user       = $principal['user'];
+        $perms      = $principal['permissions'];
+
+        $config     = $this->container->get('config');
+        $viewsPath  = __DIR__ . '/../../Views';
+
+        $catalog    = new \App\Services\Extensions\CatalogService(
+            new \App\Models\CatalogExtensionRepository(
+                $this->container->get('db')
+            )
+        );
+
+        $id         = (int) ($params['id'] ?? 0);
+        $extension  = $catalog->getById($id);
+
+        if ($extension === null) {
+            $this->flash('error', 'Extension not found.');
+            header('Location: /admin/extensions/catalog/review');
+            exit;
+        }
+
+        $result = $catalog->reject($id);
+
+        if (!$result['success']) {
+            $this->flash('error', implode('; ', $result['errors']));
+        } else {
+            $this->flash('success', 'Extension "' . $extension['name'] . '" rejected.');
+        }
+
+        header('Location: /admin/extensions/catalog/review');
+        exit;
+    }
+
     // ------ Flash Helpers ------
 
     /**

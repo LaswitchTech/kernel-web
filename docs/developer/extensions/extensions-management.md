@@ -8,16 +8,19 @@ plugins, themes, and layouts.
 ## Routes
 
 | Method | Path | Description |
-|--------|------|-------------|
+|--------|--|--- |
 | `GET` | `/admin/extensions` | Filesystem-discovered extensions |
 | `GET` | `/admin/extensions/catalog` | Catalog-managed extensions |
 | `GET` | `/admin/extensions/catalog/submit` | Submission form (new entry) |
 | `POST` | `/admin/extensions/catalog/submit` | Create catalog entry (pending) |
+| `GET` | `/admin/extensions/catalog/review` | Review pending submissions |
+| `POST` | `/admin/extensions/catalog/{id}/approve` | Approve a pending entry |
+| `POST` | `/admin/extensions/catalog/{id}/reject` | Reject a pending entry |
 
 ## Extension Types
 
 | Type | Directory | Manifest File |
-|------|-----------|------------|
+|------|-----------|------|------|
 | plugin | `lib/plugins/{Name}/` | `plugin.json` |
 | theme | `lib/themes/{Name}/` | `theme.json` |
 | layout | `lib/layouts/{Name}/` | `layout.json` |
@@ -83,7 +86,7 @@ A developer/admin can submit a new extension into the local catalog for review:
 
 **Required fields:**
 | Field | Rule |
-|-------|------|
+|--|--|
 | `name` | required, non-empty |
 | `slug` | required, `/^[a-z][a-z0-9_-]*$/`, must be unique |
 | `type` | must be `plugin`, `theme`, or `layout` |
@@ -91,7 +94,7 @@ A developer/admin can submit a new extension into the local catalog for review:
 
 **Optional fields:**
 | Field | Default | Rule |
-|-------|---------|------|
+|-------|--|--- |
 | `description` | `''` | free text |
 | `author` | `''` | free text |
 | `download_url` | `''` | URL |
@@ -106,6 +109,34 @@ A developer/admin can submit a new extension into the local catalog for review:
 - Success redirects to `/admin/extensions/catalog` with a flash message
 - HTTP 422 is returned on validation failure
 
+### Status Lifecycle
+
+| Status | Description |
+|---|---|
+| `pending` | Newly submitted entry awaiting review |
+| `approved` | Reviewed and approved — available for future installation |
+| `rejected` | Reviewed and rejected — entry is removed from the catalog |
+
+**Transitions:**
+- `pending` --[approve]--> `approved` (via `CatalogService::approve()`)
+- `pending` --[reject]--> `rejected` (via `CatalogService::reject()`)
+- Once a status is no longer `pending`, it cannot be changed (non-reversible in current pass)
+
+### Review Page
+
+The review page lists all pending catalog submissions:
+
+- **Route:** `GET /admin/extensions/catalog/review`
+- **Permission:** `extensions.manage`
+- **Controller:** `ExtensionsController::review()`
+- **Service:** `CatalogService::listPending()`
+- **View:** `app/Views/admin/extensions/review.php`
+
+**Actions on each entry:**
+- **Approve** — sets status to `approved` via `CatalogService::approve()`
+- **Reject** — sets status to `rejected` via `CatalogService::reject()`
+- Both use Bootstrap modals for confirmation and redirect back to the review page
+
 ## Read-Only Limitation
 
 This pass is **read-only discovery and display only**.
@@ -113,10 +144,10 @@ This pass is **read-only discovery and display only**.
 ### Implemented
 
 - Local extension catalog submission (pending review)
+- Approval/rejection review workflow for pending submissions
 
 ### Deferred
 
-- Approval / rejection workflow
 - Enable / disable plugins
 - Install / uninstall extensions
 - Upload / marketplace browsing
@@ -125,6 +156,7 @@ This pass is **read-only discovery and display only**.
 - Dependency resolution UI
 - Theme switching
 - Layout switching
+- Non-reversible status transitions (pending --> approved can be changed back)
 
 ## Catalog vs Filesystem Discovery
 
@@ -137,4 +169,7 @@ See [catalog.md](catalog.md) for the full catalog reference.
 - `app/Models/CatalogExtensionRepository.php` — catalog repository
 - `app/Controllers/Admin/ExtensionsController.php` — admin controller
 - `app/Views/admin/extensions/index.php` — admin view template
+- `app/Views/admin/extensions/catalog.php` — catalog view template
+- `app/Views/admin/extensions/submit.php` — submission form template
+- `app/Views/admin/extensions/review.php` — review page template
 - `routes/web.php` — route registration with permission middleware
