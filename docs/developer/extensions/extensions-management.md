@@ -227,6 +227,65 @@ Installed catalog extensions can be enabled or disabled. This controls the `is_e
 - Extensions without a catalog entry (no catalog record or not installed) fall back to manifest `enabled`
 - The override is implemented in `PluginLoader::getCatalogEnabledState()`
 
+## Lifecycle Hooks
+
+Plugins can declare lifecycle hooks in `plugin.json` to execute custom code at key moments:
+
+```json
+{
+    "lifecycle": {
+        "install": "Plugins\\MyPlugin\\Lifecycle@install",
+        "enable": "Plugins\\MyPlugin\\Lifecycle@enable",
+        "disable": "Plugins\\MyPlugin\\Lifecycle@disable"
+    }
+}
+```
+
+### Callback Signature
+
+Each hook receives four arguments:
+
+```php
+public static function install(string $name, string $path, array $context, ?Container $container): void
+```
+
+| Parameter    | Description                                    |
+|--------------|------|--------------------|
+| `$name`      | Plugin name from manifest                      |
+| `$path`      | Plugin base directory on disk                  |
+| `$context`   | Additional context (currently empty array)     |
+| `$container` | Application DI container (optional, may be null) |
+
+### Install Hook
+
+Triggered after staged file copy succeeds but before `is_installed` is updated in the catalog.
+
+- Runs **before** the kernel's migration system (migrations declared in `plugin.json` run after the hook)
+- Use for: initializing plugin data, setting up defaults, custom setup logic
+- Migrations declared in `plugin.json` run after the install hook completes
+
+### Enable Hook
+
+Triggered when catalog `is_enabled` transitions from `0` to `1`.
+
+- The plugin must already be loaded into the registry
+- Use for: registering routes, registering menu items, caching warmup
+
+### Disable Hook
+
+Triggered when catalog `is_enabled` transitions from `1` to `0`.
+
+- The plugin remains in the registry (catalog state controls activation)
+- Use for: unregistering hooks, clearing caches, releasing resources
+
+### Safety
+
+- Lifecycle hooks are **optional** — missing entries are silently skipped
+- Callback must be in the `Plugins\` namespace
+- Class and method existence are validated before invocation
+- Exceptions are caught and logged — hooks never crash the application
+- Hooks are never triggered during the discovery phase
+
 ## Implemented
 
 - Local extension catalog submission (pending review)

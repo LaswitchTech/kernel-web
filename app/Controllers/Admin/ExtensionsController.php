@@ -402,6 +402,53 @@ class ExtensionsController extends Controller
             exit;
         }
 
+        // Run install lifecycle hook and migrations.
+        $pluginsDir = realpath(__DIR__ . '/../../../lib/plugins');
+        if ($pluginsDir !== false && is_dir($pluginsDir)) {
+            $loader = new \App\Core\Plugins\PluginLoader($pluginsDir, $this->container);
+
+            // Run the plugin's install lifecycle hook.
+            $installOk = $loader->runLifecycleHook($extension['name'], 'install');
+
+            // Run migrations declared by the plugin (read from plugin.json).
+            $pluginJsonPath = $targetDir . '/plugin.json';
+            if (is_file($pluginJsonPath)) {
+                $pluginData = json_decode(file_get_contents($pluginJsonPath), true);
+                $migrations = $pluginData['migrations'] ?? [];
+                if (!empty($migrations)) {
+                    $migrationRunner = new \App\Core\MigrationRunner(
+                        $this->container->get('db'),
+                        $targetDir . '/migrations'
+                    );
+                    foreach ($migrationRunner->pending() as $migrationFile) {
+                        $migrationName = basename($migrationFile, '.php');
+                        $migrationClass = $this->migrationClassFromName($migrationName);
+                        require_once $migrationFile;
+
+                        if (!class_exists($migrationClass)) {
+                            $this->flash('error', "Migration class '{$migrationClass}' not found in " . basename($migrationFile));
+                            header('Location: /admin/extensions/catalog');
+                            exit;
+                        }
+
+                        $migration = new $migrationClass($this->container->get('db'));
+                        if (!($migration instanceof \App\Core\Migration)) {
+                            $this->flash('error', "Migration '{$migrationClass}' must extend App\\Core\\Migration");
+                            header('Location: /admin/extensions/catalog');
+                            exit;
+                        }
+
+                        $migration->up();
+                        $migrationRunner->record($migrationName);
+                    }
+                }
+            }
+
+            if (!$installOk) {
+                $this->flash('error', 'Extension "' . $extension['name'] . '" installed but the install hook failed. Check the logs for details.');
+            }
+        }
+
         // Mark as installed in the catalog
         $catalog->markInstalled($id);
 
@@ -576,6 +623,9 @@ class ExtensionsController extends Controller
             exit;
         }
 
+        // Run enable lifecycle hook.
+        $this->triggerLifecycle($extension['slug'], 'enable');
+
         $catalog->markEnabled($id);
 
         $this->flash('success', 'Extension "' . $extension['name'] . '" enabled.');
@@ -624,11 +674,38 @@ class ExtensionsController extends Controller
             exit;
         }
 
+        // Run disable lifecycle hook.
+        $this->triggerLifecycle($extension['slug'], 'disable');
+
         $catalog->markDisabled($id);
 
         $this->flash('success', 'Extension "' . $extension['name'] . '" disabled.');
         header('Location: /admin/extensions/catalog');
         exit;
+    }
+
+    /**
+     * Trigger the lifecycle hook for a plugin identified by slug.
+     */
+    private function triggerLifecycle(string $slug, string $event): void
+    {
+        $pluginsDir = realpath(__DIR__ . '/../../../lib/plugins');
+        if ($pluginsDir === false || !is_dir($pluginsDir)) {
+            return;
+        }
+
+        $loader = new \App\Core\Plugins\PluginLoader($pluginsDir, $this->container);
+        $loader->runLifecycleHook($slug, $event);
+    }
+
+    /**
+     * Derive a migration class name from its filename.
+     * 0001_create_users -> CreateUsersTable
+     */
+    private function migrationClassFromName(string $name): string
+    {
+        $stripped = preg_replace('/^\d+_/', '', $name);
+        return str_replace('_', '', ucwords($stripped, '_'));
     }
 
     // ------ Flash Helpers ------

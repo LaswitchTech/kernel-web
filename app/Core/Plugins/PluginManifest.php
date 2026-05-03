@@ -26,6 +26,7 @@ class PluginManifest
     private array  $services;
     private array  $hooks;
     private array  $menus;
+    private array  $lifecycle;
 
     /**
      * @param array $data  Decoded plugin.json contents
@@ -58,6 +59,7 @@ class PluginManifest
         $this->services         = isset($data['services']) ? (array) $data['services'] : [];
         $this->hooks            = isset($data['hooks']) ? (array) $data['hooks'] : [];
         $this->menus            = isset($data['menus']) ? (array) $data['menus'] : [];
+        $this->lifecycle        = isset($data['lifecycle']) ? (array) $data['lifecycle'] : [];
     }
 
     // ------ Properties ------
@@ -75,6 +77,7 @@ class PluginManifest
     public function services(): array { return $this->services; }
     public function hooks(): array { return $this->hooks; }
     public function menus(): array { return $this->menus; }
+    public function lifecycle(): array { return $this->lifecycle; }
 
     /**
      * Set the directory path where this plugin's plugin.json lives.
@@ -122,6 +125,7 @@ class PluginManifest
             'services'    => $this->services,
             'hooks'       => $this->hooks,
             'menus'       => $this->menus,
+            'lifecycle'   => $this->lifecycle,
         ];
     }
 }

@@ -316,6 +316,99 @@ class PluginLoader
     }
 
     /**
+     * Run a lifecycle hook for a specific plugin.
+     *
+     * @param string $pluginName  Plugin name (from manifest)
+     * @param string $event       Lifecycle event: install, enable, disable
+     * @param array $context      Additional context for the hook
+     * @return bool True if the hook exists and executed (or was not defined), false if it failed
+     */
+    public function runLifecycleHook(string $pluginName, string $event, array $context = []): bool
+    {
+        $manifest = $this->registry->getByName($pluginName);
+        if ($manifest === null) {
+            return false;
+        }
+
+        $hooks = $manifest->lifecycle();
+        if (!isset($hooks[$event])) {
+            return true;
+        }
+
+        $callback = $hooks[$event];
+
+        // Validate namespace — only allow Plugins\ namespace.
+        if (!str_starts_with($callback, 'Plugins\\')) {
+            $this->logLifecycleError($pluginName, $event, 'Hook namespace is not allowed.');
+            return false;
+        }
+
+        // Extract class and method from "Namespace\\Class@method" format.
+        $atPos = strrpos($callback, '@');
+        if ($atPos === false) {
+            $this->logLifecycleError($pluginName, $event, 'Invalid callback format (missing @).');
+            return false;
+        }
+
+        $class = substr($callback, 0, $atPos);
+        $method = substr($callback, $atPos + 1);
+
+        if (!class_exists($class)) {
+            $this->logLifecycleError($pluginName, $event, "Class '{$class}' not found.");
+            return false;
+        }
+
+        if (!method_exists($class, $method)) {
+            $this->logLifecycleError($pluginName, $event, "Method '{$method}' not found in '{$class}'.");
+            return false;
+        }
+
+        if (!is_callable([$class, $method])) {
+            $this->logLifecycleError($pluginName, $event, "Handler '{$class}@{$method}' is not callable.");
+            return false;
+        }
+
+        try {
+            // Pass container as last argument if available.
+            $args = [$pluginName, $manifest->basePath(), $context];
+            if ($this->container !== null) {
+                $args[] = $this->container;
+            }
+
+            call_user_func_array([$class, $method], $args);
+            return true;
+        } catch (\Throwable $e) {
+            $this->logLifecycleError($pluginName, $event, $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Run lifecycle hooks for all enabled plugins.
+     *
+     * @return array Plugin name => result map
+     */
+    public function runAllLifecycleHooks(string $event, array $context = []): array
+    {
+        $results = [];
+        foreach ($this->registry->getEnabled() as $plugin) {
+            $results[$plugin->name()] = $this->runLifecycleHook($plugin->name(), $event, $context);
+        }
+        return $results;
+    }
+
+    /**
+     * Log a lifecycle hook error.
+     */
+    private function logLifecycleError(string $plugin, string $event, string $message): void
+    {
+        $logger = $this->container?->get('logger') ?? null;
+        if ($logger !== null) {
+            $logger->error("Lifecycle hook '{$event}' for plugin '{$plugin}' failed: {$message}");
+        }
+    }
+
+    /**
      * Get all permissions declared by all enabled plugins.
      *
      * Each plugin permissions array is a list of permission strings.

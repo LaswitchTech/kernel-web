@@ -136,12 +136,17 @@ Each plugin has a `plugin.json` at its root:
     "migrations": [],
     "services": {},
     "hooks": [],
-    "menus": []
+    "menus": [],
+    "lifecycle": {
+        "install": "Plugins\\MyPlugin\\Lifecycle@install",
+        "enable": "Plugins\\MyPlugin\\Lifecycle@enable",
+        "disable": "Plugins\\MyPlugin\\Lifecycle@disable"
+    }
 }
 ```
 
 **Required fields:** `name`, `version`
-**Optional fields:** `description`, `enabled` (default: `true`), `requires`, `dependencies`, `permissions`, `routes`, `migrations`, `services`, `hooks`, `menus`
+**Optional fields:** `description`, `enabled` (default: `true`), `requires`, `dependencies`, `permissions`, `routes`, `migrations`, `services`, `hooks`, `menus`, `lifecycle`
 
 ### Discovery
 - Scan `/lib/plugins/*/plugin.json`
@@ -198,6 +203,50 @@ This resolves to `App\Plugins\{Name}\{Controller}` via the Router's handler reso
 }
 ```
 Keys in `args` that match container bindings are resolved as dependencies.
+
+### Lifecycle Hooks
+
+Plugins can declare optional lifecycle hooks in `plugin.json` to execute custom code
+at key moments:
+
+```json
+"lifecycle": {
+    "install": "Plugins\\MyPlugin\\Lifecycle@install",
+    "enable": "Plugins\\MyPlugin\\Lifecycle@enable",
+    "disable": "Plugins\\MyPlugin\\Lifecycle@disable"
+}
+```
+
+Each hook is a fully qualified class@method callback. The callback receives:
+
+```php
+public static function install(string $name, string $path, array $context, ?Container $container): void
+```
+
+| Parameter    | Description                              |
+|--------------|------------------------------------------|
+| `$name`      | Plugin name from manifest                |
+| `$path`      | Plugin base directory                    |
+| `$context`   | Additional context (currently empty array) |
+| `$container` | Application DI container (optional)      |
+
+#### Execution Timing
+
+| Hook     | When Triggered                                           |
+|----------|----------------------------------------------------------|
+| `install` | After staged file copy, before catalog `is_installed` update |
+| `enable`  | When catalog `is_enabled` transitions from 0 to 1         |
+| `disable` | When catalog `is_enabled` transitions from 1 to 0         |
+
+The install hook runs alongside the kernel's migration system. Migrations declared in the plugin's `plugin.json` execute after the lifecycle hook completes.
+
+#### Safety Rules
+
+- Hooks are **optional** — missing or malformed entries are silently ignored
+- Callback must be in the `Plugins\` namespace (enforced at execution time)
+- Class and method existence are validated before invocation
+- Exceptions are caught and logged — hooks never crash the application
+- Hooks run **after** the plugin is loaded into the registry (not during discovery)
 
 ### Extension Points (deferred)
 - Plugin migration auto-execution (hook: `runMigrations()`)
