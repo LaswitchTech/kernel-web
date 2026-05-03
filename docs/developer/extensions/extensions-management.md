@@ -221,25 +221,22 @@ Installed catalog extensions can be enabled or disabled. This controls the `is_e
 - `is_enabled = 1` — extension is marked as enabled in the catalog database
 - These are independent states; an installed extension may be disabled
 
-**Important limitation:**
-- The runtime plugin loader does not yet check catalog `is_enabled` state
-- Extension activation is still controlled by filesystem discovery
-- A later task can reconcile catalog state with runtime extension activation
+**Runtime integration:**
+- The plugin loader checks catalog `is_enabled` when a catalog entry exists for an installed extension
+- Catalog `is_enabled` takes precedence over the manifest's `enabled` field
+- Extensions without a catalog entry (no catalog record or not installed) fall back to manifest `enabled`
+- The override is implemented in `PluginLoader::getCatalogEnabledState()`
 
-## Read-Only Limitation
-
-This pass is **read-only discovery and display only**.
-
-### Implemented
+## Implemented
 
 - Local extension catalog submission (pending review)
 - Approval/rejection review workflow for pending submissions
 - Staged install for approved catalog entries (copy from trusted staging directory)
-- Enable/disable installed catalog entries (database lifecycle state only)
+- Enable/disable installed catalog entries (database lifecycle state + runtime integration)
+- Runtime plugin activation controlled by catalog `is_enabled` for installed catalog extensions
 
-### Deferred
+## Deferred
 
-- Runtime loader integration — catalog enabled state does not yet control plugin activation
 - Remote download
 - ZIP archive extraction
 - Uninstall

@@ -3,6 +3,7 @@
 namespace App\Core\Plugins;
 
 use App\Core\Container;
+use App\Models\CatalogExtensionRepository;
 
 /**
  * Discovers, validates, and loads plugins from /lib/plugins/.
@@ -35,6 +36,13 @@ class PluginLoader
 
     /**
      * Discover and validate all plugins in /lib/plugins/.
+     *
+     * Discovery flow:
+     *   1) Scan each subdirectory of /lib/plugins/ for plugin.json
+     *   2) Validate each manifest
+     *   3) Check dependencies
+     *   4) Check catalog installed state (overrides manifest enabled)
+     *   5) Build registry (enabled / disabled / invalid)
      *
      * @return PluginRegistry
      */
@@ -144,9 +152,16 @@ class PluginLoader
             return;
         }
 
+        // --- Catalog enabled-state override ---
+        // If a catalog entry exists and is installed, the catalog's is_enabled
+        // takes precedence over the manifest's enabled field.
+
+        $catalogSlug = basename($dir);
+        $catalogState = $this->getCatalogEnabledState($catalogSlug);
+
         // --- Valid plugin ---
 
-        if ($manifest->enabled()) {
+        if ($catalogState ?? $manifest->enabled()) {
             $this->registry->enable($manifest->name());
         } else {
             $this->registry->addDiscovered($manifest);
@@ -271,6 +286,33 @@ class PluginLoader
         }
 
         return $count;
+    }
+
+    /**
+     * Check the catalog for an installed extension's enabled state.
+     *
+     * Returns the catalog is_enabled value if the extension is installed,
+     * or null if no catalog entry exists (falling back to manifest).
+     */
+    private function getCatalogEnabledState(string $slug): ?bool
+    {
+        try {
+            $repo = new CatalogExtensionRepository($this->container->get('db'));
+            $entry = $repo->findBySlug($slug);
+
+            if ($entry === null) {
+                return null;
+            }
+
+            if ((int) ($entry['is_installed'] ?? 0) !== 1) {
+                return null;
+            }
+
+            return (bool) ($entry['is_enabled'] ?? 0);
+        } catch (\Throwable) {
+            // Catalog table may not exist yet; fall back to manifest.
+            return null;
+        }
     }
 
     /**
