@@ -34,6 +34,8 @@ $router->post('/admin/settings', 'Controllers\Admin\SystemSettingsController@upd
 // Admin Extensions — read-only listing of discovered extensions.
 $router->get('/admin/extensions', 'Controllers\Admin\ExtensionsController@index', ['WebAuth', 'WebPermission:extensions.manage']);
 $router->get('/admin/extensions/catalog', 'Controllers\Admin\ExtensionsController@catalog', ['WebAuth', 'WebPermission:extensions.manage']);
+$router->get('/admin/extensions/catalog/submit', 'Controllers\Admin\ExtensionsController@submitForm', ['WebAuth', 'WebPermission:extensions.manage']);
+$router->post('/admin/extensions/catalog/submit', 'Controllers\Admin\ExtensionsController@handleSubmit', ['WebAuth', 'WebPermission:extensions.manage']);
 
 // Admin permissions — full CRUD.
 $router->get('/admin/permissions', 'Controllers\Admin\PermissionController@index', ['WebAuth', 'WebPermission:admin']);

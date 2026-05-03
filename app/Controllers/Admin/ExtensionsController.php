@@ -76,4 +76,120 @@ class ExtensionsController extends Controller
 
         require $viewsPath . '/layouts/panel.php';
     }
+
+    /**
+     * Show local catalog submission form.
+     */
+    public function submitForm(array $params = []): void
+    {
+        $principal  = $this->container->get('principal');
+        $user       = $principal['user'];
+        $perms      = $principal['permissions'];
+
+        $config     = $this->container->get('config');
+        $viewsPath  = __DIR__ . '/../../Views';
+
+        $pageTitle    = 'Submit Extension';
+        $activeSection = 'Admin Extensions';
+        $appName      = $config['name'] ?? 'Kernel-Web';
+        $displayName  = $user['display_name'] ?? $user['username'];
+        $permissions  = $perms;
+        $errors       = [];
+        $old          = [];
+        $flash        = $this->popFlash();
+
+        ob_start();
+        require $viewsPath . '/admin/extensions/submit.php';
+        $content = ob_get_clean();
+
+        require $viewsPath . '/layouts/panel.php';
+    }
+
+    /**
+     * Handle local catalog submission.
+     */
+    public function handleSubmit(array $params = []): void
+    {
+        $principal  = $this->container->get('principal');
+        $user       = $principal['user'];
+        $perms      = $principal['permissions'];
+
+        $config     = $this->container->get('config');
+        $viewsPath  = __DIR__ . '/../../Views';
+
+        $catalog    = new \App\Services\Extensions\CatalogService(
+            new \App\Models\CatalogExtensionRepository(
+                $this->container->get('db')
+            )
+        );
+
+        $old = [
+            'name'         => trim($_POST['name']         ?? ''),
+            'slug'         => trim($_POST['slug']         ?? ''),
+            'type'         => trim($_POST['type']         ?? 'plugin'),
+            'version'      => trim($_POST['version']      ?? ''),
+            'description'  => trim($_POST['description']  ?? ''),
+            'author'       => trim($_POST['author']       ?? ''),
+            'download_url' => trim($_POST['download_url'] ?? ''),
+            'repo_url'     => trim($_POST['repo_url']     ?? ''),
+            'requirements' => trim($_POST['requirements'] ?? ''),
+            'dependencies' => trim($_POST['dependencies'] ?? ''),
+            'checksum'     => trim($_POST['checksum']     ?? ''),
+        ];
+
+        $result = $catalog->create([
+            'name'         => $old['name'],
+            'slug'         => $old['slug'],
+            'type'         => $old['type'],
+            'version'      => $old['version'],
+            'description'  => $old['description'],
+            'author'       => $old['author'],
+            'download_url' => $old['download_url'],
+            'repo_url'     => $old['repo_url'] === '' ? null : $old['repo_url'],
+            'requirements' => $old['requirements'] === '' ? '[]' : $old['requirements'],
+            'dependencies' => $old['dependencies'] === '' ? '[]' : $old['dependencies'],
+        ]);
+
+        if (!$result['success']) {
+            $errors   = $result['errors'];
+            $pageTitle  = 'Submit Extension';
+            $activeSection = 'Admin Extensions';
+            $appName    = $config['name'] ?? 'Kernel-Web';
+            $displayName = $user['display_name'] ?? $user['username'];
+            $permissions = $perms;
+            $flash      = null;
+
+            ob_start();
+            require $viewsPath . '/admin/extensions/submit.php';
+            $content = ob_get_clean();
+
+            http_response_code(422);
+            require $viewsPath . '/layouts/panel.php';
+            return;
+        }
+
+        $this->flash('success', 'Extension "' . $old['name'] . '" submitted for review.');
+        header('Location: /admin/extensions/catalog');
+        exit;
+    }
+
+    // ------ Flash Helpers ------
+
+    /**
+     * Write a flash message to the session for the next request.
+     */
+    private function flash(string $type, string $message): void
+    {
+        $_SESSION['admin_flash'] = ['type' => $type, 'message' => $message];
+    }
+
+    /**
+     * Read and clear the flash message from the session.
+     */
+    private function popFlash(): ?array
+    {
+        $flash = $_SESSION['admin_flash'] ?? null;
+        unset($_SESSION['admin_flash']);
+        return $flash;
+    }
 }

@@ -36,6 +36,9 @@
         <div class="card">
             <div class="card-header d-flex align-items-center justify-content-between">
                 <span class="fw-semibold small">Catalog Extensions (<?= count($extensions) ?>)</span>
+                <a href="/admin/extensions/catalog/submit" class="btn btn-sm btn-outline-primary">
+                    <i class="bi bi-plus-lg"></i> Submit Extension
+                </a>
             </div>
             <div class="card-body p-0">
                 <div class="table-responsive">
