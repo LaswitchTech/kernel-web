@@ -50,6 +50,7 @@ Before making architectural, structural, or system-level changes:
 2. Follow its direction
 3. Update it if the design changes
 4. Update `/docs` when implementation details change
+5. Check `ROADMAP.md` to ensure the task aligns with current priorities
 
 Do not duplicate large design explanations in this file.
 
@@ -64,6 +65,7 @@ The plan must include:
 - why it is being changed
 - which files are expected to be touched
 - any risks or assumptions
+- Ensure the task aligns with the current priority level in `ROADMAP.md`
 
 Keep plans concise, but specific.
 
@@ -99,6 +101,7 @@ Use this split:
 ```text
 CLAUDE.md → HOW to work
 DESIGN.md → WHAT is being built
+ROADMAP.md → WHAT is planned next (priorities and sequencing)
 /docs     → IMPLEMENTED behavior and reference documentation
 ```
 
@@ -108,6 +111,7 @@ Examples:
 - Implemented plugin loader behavior → update `/docs`
 - Rule that Claude must commit after each run → keep in `CLAUDE.md`
 - Rule that plugins live in `/lib/plugins/{Name}` → keep in `DESIGN.md`
+- New feature prioritization or sequencing → update `ROADMAP.md`
 
 ---
 
@@ -133,6 +137,7 @@ Always update documentation when changes affect:
 Documentation responsibilities:
 
 - `DESIGN.md` documents design intent and architecture decisions
+- `ROADMAP.md` documents priorities, sequencing, and upcoming work
 - `/docs` documents implemented behavior, setup, usage, APIs, and reference material
 - `CLAUDE.md` documents workflow and contribution behavior
 
