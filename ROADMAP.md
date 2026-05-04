@@ -19,7 +19,7 @@ Foundational work that should happen before major feature development.
 - [ ] Add tests for route registration, plugin lifecycle, and migrations
 - [ ] Document menu registry and hook registry in `/docs`
 - [ ] Finalize and stabilize the `panel.php` layout
-- [ ] Add a `blank.php` layout override example for auth pages
+- [x] Add a `blank.php` layout override example for auth pages — polished (local assets, hooks)
 - [ ] Review and clean up any remaining NetMon-specific code in core
 - [ ] Document validation error convention (keyed field errors)
 
@@ -99,7 +99,7 @@ These are planned or requested but are out of scope for the current development 
 | Plugin system | Implemented | Discovery, manifest, lifecycle hooks, registry |
 | Extension catalog | Partially implemented | Browse, submit, review, approve, install, enable/disable |
 | Menu system | Implemented | Registry, sidebar, user-menu, admin-menu locations |
-| Layout system | Partially implemented | `app.php` (app), `panel.php` (admin), `blank.php` (base) |
+| Layout system | Implemented | `app.php` (app), `panel.php` (admin), `blank.php` (auth, local assets, hooks) |
 | Theme system | Partially implemented | Bootstrap 5, LESS, dark/light mode |
 | Auth system | Partially implemented | Users, groups, permissions, tokens, sessions |
 | Organizations | Planned | Design phase — optional, plugin-based scoping |
