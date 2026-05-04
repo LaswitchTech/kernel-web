@@ -756,6 +756,134 @@ Created by migration `0049_create_catalog_extensions_table.php`.
 
 ---
 
+## UI Design Standards
+
+### DataTables Table Standard
+
+Any interface that displays tabular data should use DataTables by default.
+
+**Rules:**
+- All admin and plugin tables should initialize DataTables where appropriate
+- Table actions such as "Create", "Add", "Export", or similar should prioritize DataTables Buttons where appropriate
+- Avoid placing unrelated action buttons randomly outside the table when they belong to table-level actions
+- DataTables libraries are already loaded in the panel layout (jQuery 3.7.1, DataTables 1.13.8 + Responsive 2.5.0 + Buttons 2.4.2)
+- Initialize via `$.fn.dataTable()` or the shared `datatables-init.js` helper
+
+**Exception:** Lists that are not tabular (e.g., notification feeds, chat messages) do not require DataTables.
+
+### Topbar User Menu
+
+The panel layout includes a user menu in the topbar (topbar-actions dropdown, right side).
+
+**Currently implemented:**
+- User avatar (first letter of display name)
+- Username display
+- Profile link (`/profile`)
+- Sign out button (`/auth/logout`, POST)
+
+**Planned additions:**
+- Account settings link
+- Admin panel shortcut (visible only to administrators or users with `admin.access` permission)
+- Admin shortcut must:
+  - Point to `/admin`
+  - Only be visible to administrators or users with the proper admin permission
+  - Not appear in the app (non-admin) layout
+
+The user menu is rendered in `panel.php` and populated via `MenuRegistry` with a `user-menu` menu location.
+
+### Panel Breadcrumbs
+
+The reusable `panel` layout should always support breadcrumbs.
+
+**Rules:**
+- Controllers pass `$breadcrumbs` to the view as an array of `['label' => string, 'url' => string|null]`
+- Admin pages provide breadcrumb data from their controller
+- Application/plugin pages also provide breadcrumb data
+- Breadcrumbs render via `MenuHelper::renderBreadcrumbs($breadcrumbs)` (to be implemented) or direct Bootstrap breadcrumb markup
+- Breadcrumbs are shown consistently near the top of the content area
+- Breadcrumb generation remains simple and explicit for now — no dynamic breadcrumb registry
+
+### Layout Regions (Summary)
+
+| Region | Location | Purpose |
+|--------|----------|---------|
+| Sidebar | Left panel | Navigation (via MenuRegistry `sidebar`) |
+| Topbar | Top bar | Title, theme toggle, notifications, user menu |
+| Content | Main area | Page-specific content |
+| Footer | Bottom of page | Copyright, plugin hooks |
+
+### Design Patterns
+
+- Use Bootstrap 5 components where available
+- Use Bootstrap Icons for icons
+- Dark mode support via `data-bs-theme` attribute
+- Theme persistence via `localStorage`
+- Maintain responsive design across breakpoints
+
+---
+
+## Administration System Design
+
+### Purpose
+
+The administration system provides user and group management, permission management, system settings, and extension management.
+
+### Admin Layout
+
+- Route prefix: `/admin/*`
+- Middleware: `WebAuth` + `WebPermission:admin.access` (or equivalent per-resource)
+- Uses the `panel.php` layout
+- Admin sidebar populated via MenuRegistry (`admin-sidebar`)
+
+### Updates Module (Future)
+
+Administration should eventually include an Updates section that separates update checks into three categories:
+
+| Category | Source | Description |
+|------|----|-----|
+| Kernel updates | Remote repository / release tags | Kernel-Web core version updates |
+| Application updates | Local application override or config | Application-specific patches or hotfixes |
+| Extension updates | Extension catalog | Installed extension version checks |
+
+**Design Rules:**
+- Updates should be a future admin module/foundation area
+- Do not implement updates until the remote catalog and update infrastructure exists
+- Extension update checks depend on the remote catalog sync system
+
+---
+
+## Developer Mode Design
+
+### Purpose
+
+Developer mode provides additional tools available only during development.
+
+### Trigger
+
+Developer mode is activated when `config/app.php` `debug` is `true` (controlled by `APP_DEBUG` environment variable).
+
+### Developer Tools
+
+When enabled, the following tools may be available:
+
+| Tool | Description |
+|------|-------------|
+| Plugin scaffold | Create a new plugin scaffold |
+| Theme scaffold | Create a new theme scaffold |
+| Layout scaffold | Create a new layout scaffold |
+| Example templates | Copy example code/templates |
+| Repository config | Configure or initialize a local repository |
+| Extension assist | Assist with extension development |
+
+**Rules:**
+- Developer tools should only appear in developer mode
+- Developer tools should not appear in production
+- Developer tools must not expose unsafe actions publicly
+- Developer tools should be gated behind `extensions.manage` or a dedicated `dev.tools` permission
+- No developer tool should perform destructive operations without confirmation
+
+---
+
 ## Design Evolution Rule
 
 Whenever a structural or architectural change is made:
