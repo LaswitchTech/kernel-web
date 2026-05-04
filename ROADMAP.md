@@ -21,6 +21,7 @@ Foundational work that should happen before major feature development.
 - [ ] Finalize and stabilize the `panel.php` layout
 - [ ] Add a `blank.php` layout override example for auth pages
 - [ ] Review and clean up any remaining NetMon-specific code in core
+- [ ] Document validation error convention (keyed field errors)
 
 ---
 
@@ -110,6 +111,7 @@ These are planned or requested but are out of scope for the current development 
 | Updates module | Not implemented | Documented for Phase 2 |
 | Documentation plugin | Not implemented | Documented for Phase 2 |
 | Setup session | Fixed | Session cookie config applied from auth.php |
+| Validation convention | Implemented | Keyed field errors, documented in /docs/developer/kernel/validation.md |
 | GitHub workflows | Implemented | CI (PHP lint, JSON validate) + release workflow |
 | Contributing docs | Implemented | Documented in /docs/contributing.md |
 | Runtime DB safety | Hardened | DB files excluded from public/, .gitignore updated |

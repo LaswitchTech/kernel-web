@@ -104,7 +104,6 @@ class PermissionController extends Controller
             $pageTitle     = 'New Permission';
             $activeSection = 'Admin Permissions';
             $flash         = null;
-            $errors        = [];
 
             $breadcrumbs = [
                 ['label' => 'Administration', 'url' => '/admin'],
@@ -206,7 +205,6 @@ class PermissionController extends Controller
             $pageTitle     = 'Edit Permission';
             $activeSection = 'Admin Permissions';
             $flash         = null;
-            $errors        = [];
 
             $breadcrumbs = [
                 ['label' => 'Administration', 'url' => '/admin'],

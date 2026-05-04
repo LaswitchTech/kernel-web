@@ -369,20 +369,20 @@ class CatalogService
 
         if (isset($data['slug']) && $data['slug'] !== '') {
             if (!preg_match('/^[a-z][a-z0-9_-]*$/', $data['slug'])) {
-                $errors[] = 'Slug must start with a lowercase letter and contain only lowercase letters, digits, hyphens, and underscores.';
+                $errors['slug'] = 'Slug must start with a lowercase letter and contain only lowercase letters, digits, hyphens, and underscores.';
             }
         }
 
         if (isset($data['type']) && !in_array($data['type'], self::VALID_TYPES, true)) {
-            $errors[] = 'Type must be one of: plugin, theme, layout.';
+            $errors['type'] = 'Type must be one of: plugin, theme, layout.';
         }
 
         if (isset($data['version']) && !preg_match('/^\d+\.\d+\.\d+$/', $data['version'])) {
-            $errors[] = 'Version must be in semantic versioning format (e.g. 1.0.0).';
+            $errors['version'] = 'Version must be in semantic versioning format (e.g. 1.0.0).';
         }
 
         if (isset($data['status']) && !in_array($data['status'], self::VALID_STATUSES, true)) {
-            $errors[] = 'Status must be one of: pending, approved, rejected.';
+            $errors['status'] = 'Status must be one of: pending, approved, rejected.';
         }
 
         return $errors;

@@ -98,7 +98,6 @@ class SystemSettingsController extends Controller
             $pageTitle     = 'System Settings';
             $activeSection = 'Admin Settings';
             $flash         = null;
-            $errors        = [];
 
             $breadcrumbs = [
                 ['label' => 'Administration', 'url' => '/admin'],
