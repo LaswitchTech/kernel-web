@@ -37,6 +37,11 @@ class GroupController extends Controller
         $activeSection = 'Admin Groups';
         $flash         = $this->popFlash();
 
+        $breadcrumbs = [
+            ['label' => 'Administration', 'url' => '/admin'],
+            ['label' => 'Groups', 'url' => null],
+        ];
+
         ob_start();
         require $viewsPath . '/admin/groups.php';
         $content = ob_get_clean();
@@ -56,6 +61,12 @@ class GroupController extends Controller
         $activeSection = 'Admin Groups';
         $errors        = [];
         $old           = [];
+
+        $breadcrumbs = [
+            ['label' => 'Administration', 'url' => '/admin'],
+            ['label' => 'Groups', 'url' => '/admin/groups'],
+            ['label' => 'New Group', 'url' => null],
+        ];
 
         ob_start();
         require $viewsPath . '/admin/group-create.php';
@@ -81,6 +92,13 @@ class GroupController extends Controller
             $pageTitle     = 'New Group';
             $activeSection = 'Admin Groups';
             $old           = ['name' => $name, 'description' => $description];
+            $errors        = $this->validateGroup($name, $description);
+
+            $breadcrumbs = [
+                ['label' => 'Administration', 'url' => '/admin'],
+                ['label' => 'Groups', 'url' => '/admin/groups'],
+                ['label' => 'New Group', 'url' => null],
+            ];
 
             ob_start();
             require $viewsPath . '/admin/group-create.php';
@@ -138,6 +156,12 @@ class GroupController extends Controller
         $errors        = [];
         $old           = [];
         $flash         = $this->popFlash();
+
+        $breadcrumbs = [
+            ['label' => 'Administration', 'url' => '/admin'],
+            ['label' => 'Groups', 'url' => '/admin/groups'],
+            ['label' => 'Edit Group', 'url' => null],
+        ];
 
         ob_start();
         require $viewsPath . '/admin/group-edit.php';
@@ -202,6 +226,12 @@ class GroupController extends Controller
             $activeSection = 'Admin Groups';
             $old           = ['name' => $name, 'description' => $description];
             $flash         = null;
+
+            $breadcrumbs = [
+                ['label' => 'Administration', 'url' => '/admin'],
+                ['label' => 'Groups', 'url' => '/admin/groups'],
+                ['label' => 'Edit Group', 'url' => null],
+            ];
 
             ob_start();
             require $viewsPath . '/admin/group-edit.php';

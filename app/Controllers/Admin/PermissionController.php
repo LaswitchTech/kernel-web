@@ -44,6 +44,11 @@ class PermissionController extends Controller
         $activeSection = 'Admin Permissions';
         $flash         = $this->popFlash();
 
+        $breadcrumbs = [
+            ['label' => 'Administration', 'url' => '/admin'],
+            ['label' => 'Permissions', 'url' => null],
+        ];
+
         ob_start();
         require $viewsPath . '/admin/permissions.php';
         $content = ob_get_clean();
@@ -64,6 +69,12 @@ class PermissionController extends Controller
         $errors        = [];
         $old           = [];
         $flash         = $this->popFlash();
+
+        $breadcrumbs = [
+            ['label' => 'Administration', 'url' => '/admin'],
+            ['label' => 'Permissions', 'url' => '/admin/permissions'],
+            ['label' => 'New Permission', 'url' => null],
+        ];
 
         ob_start();
         require $viewsPath . '/admin/permission-create.php';
@@ -93,6 +104,13 @@ class PermissionController extends Controller
             $pageTitle     = 'New Permission';
             $activeSection = 'Admin Permissions';
             $flash         = null;
+            $errors        = [];
+
+            $breadcrumbs = [
+                ['label' => 'Administration', 'url' => '/admin'],
+                ['label' => 'Permissions', 'url' => '/admin/permissions'],
+                ['label' => 'New Permission', 'url' => null],
+            ];
 
             ob_start();
             require $viewsPath . '/admin/permission-create.php';
@@ -144,6 +162,12 @@ class PermissionController extends Controller
         ];
         $flash         = $this->popFlash();
 
+        $breadcrumbs = [
+            ['label' => 'Administration', 'url' => '/admin'],
+            ['label' => 'Permissions', 'url' => '/admin/permissions'],
+            ['label' => 'Edit Permission', 'url' => null],
+        ];
+
         ob_start();
         require $viewsPath . '/admin/permission-edit.php';
         $content = ob_get_clean();
@@ -182,6 +206,13 @@ class PermissionController extends Controller
             $pageTitle     = 'Edit Permission';
             $activeSection = 'Admin Permissions';
             $flash         = null;
+            $errors        = [];
+
+            $breadcrumbs = [
+                ['label' => 'Administration', 'url' => '/admin'],
+                ['label' => 'Permissions', 'url' => '/admin/permissions'],
+                ['label' => 'Edit Permission', 'url' => null],
+            ];
 
             ob_start();
             require $viewsPath . '/admin/permission-edit.php';

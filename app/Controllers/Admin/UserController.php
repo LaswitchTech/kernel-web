@@ -40,6 +40,11 @@ class UserController extends Controller
         $activeSection = 'Admin Users';
         $flash         = $this->popFlash();
 
+        $breadcrumbs = [
+            ['label' => 'Administration', 'url' => '/admin'],
+            ['label' => 'Users', 'url' => null],
+        ];
+
         ob_start();
         require $viewsPath . '/admin/users.php';
         $content = ob_get_clean();
@@ -60,6 +65,12 @@ class UserController extends Controller
         $errors        = [];
         $old           = [];
         $flash         = $this->popFlash();
+
+        $breadcrumbs = [
+            ['label' => 'Administration', 'url' => '/admin'],
+            ['label' => 'Users', 'url' => '/admin/users'],
+            ['label' => 'Create', 'url' => null],
+        ];
 
         ob_start();
         require $viewsPath . '/admin/user-create.php';
@@ -189,6 +200,12 @@ class UserController extends Controller
         $errors        = [];
         $flash         = $this->popFlash();
 
+        $breadcrumbs = [
+            ['label' => 'Administration', 'url' => '/admin'],
+            ['label' => 'Users', 'url' => '/admin/users'],
+            ['label' => 'Edit', 'url' => null],
+        ];
+
         ob_start();
         require $viewsPath . '/admin/user-edit.php';
         $content = ob_get_clean();
@@ -286,6 +303,12 @@ class UserController extends Controller
             'email'        => $editUser['email'],
         ];
         $flash         = $this->popFlash();
+
+        $breadcrumbs = [
+            ['label' => 'Administration', 'url' => '/admin'],
+            ['label' => 'Users', 'url' => '/admin/users'],
+            ['label' => 'Edit Account', 'url' => null],
+        ];
 
         ob_start();
         require $viewsPath . '/admin/user-account-edit.php';

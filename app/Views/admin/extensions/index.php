@@ -40,7 +40,7 @@
     </div>
     <div class="card-body p-0">
         <div class="table-responsive">
-            <table class="table table-hover mb-0 w-100">
+            <table id="admin-extensions-<?= $type ?>-table" class="table table-hover mb-0 w-100">
                 <thead>
                     <tr>
                         <th>Name</th>
@@ -82,6 +82,14 @@
         </div>
     </div>
 </div>
+<script>
+KernelWeb.dt.init('#admin-extensions-<?= $type ?>-table', {
+    order: [[0, 'asc']],
+    columnDefs: [
+        { orderable: false, targets: [4] }
+    ]
+});
+</script>
 <?php endif; ?>
 <?php endforeach; ?>
 

@@ -12,9 +12,9 @@ Foundational work that should happen before major feature development.
 - [x] Complete extension catalog enable/disable workflow
 - [x] Validate full extension lifecycle (install → enable → disable)
 - [ ] Verify full browser flow after install (login → admin → extensions → install → verify)
-- [ ] Standardize DataTables usage in all admin tables
-- [ ] Add breadcrumbs to panel layout
-- [ ] Add admin panel shortcut to topbar user menu (admin-only)
+- [x] Standardize DataTables usage in all admin tables
+- [x] Add breadcrumbs to panel layout
+- [x] Add admin panel shortcut to topbar user menu (admin-only)
 - [ ] Ensure all admin pages use panel layout consistently
 - [ ] Add tests for route registration, plugin lifecycle, and migrations
 - [ ] Document menu registry and hook registry in `/docs`
@@ -49,7 +49,7 @@ Features that depend on Phase 2 foundations being in place.
 - [ ] Kernel update system (version check, download, apply)
 - [ ] Application update system (local override patches)
 - [ ] Theme/layout runtime management (switch without manual file operations)
-- [ ] DataTables standardization everywhere (consistent configuration, shared init)
+- [x] DataTables standardization everywhere (consistent configuration, shared init)
 - [ ] Plugin marketplace foundation (extension listing, version tracking)
 - [ ] Developer mode tools implementation (scaffold generator, example templates)
 - [ ] Extension installation progress tracking (large extensions)

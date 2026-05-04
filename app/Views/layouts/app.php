@@ -200,7 +200,14 @@ echo \App\Core\MenuHelper::renderSidebar($navActive, $permissions ?? [], $sideba
                     </a>
                     <ul class="dropdown-menu dropdown-menu-end">
                         <li><h6 class="dropdown-header"><?= htmlspecialchars($displayName) ?></h6></li>
+<?php if (isset($permissions) && in_array('admin.access', $permissions, true)): ?>
+                        <li>
+                            <a class="dropdown-item" href="/admin">
+                                <i class="bi bi-gear me-2"></i>Admin Panel
+                            </a>
+                        </li>
                         <li><hr class="dropdown-divider"></li>
+<?php endif; ?>
                         <li>
                             <a class="dropdown-item" href="/profile">
                                 <i class="bi bi-person me-2"></i>Profile

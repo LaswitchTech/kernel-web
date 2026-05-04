@@ -47,7 +47,7 @@
             </div>
             <div class="card-body p-0">
                 <div class="table-responsive">
-                    <table class="table table-hover mb-0 w-100">
+                    <table id="admin-catalog-table" class="table table-hover mb-0 w-100">
                         <thead>
                             <tr>
                                 <th>Name</th>
@@ -84,28 +84,28 @@
                                 </td>
                                 <td class="text-nowrap">
                                     <?php if ((int) $ext['is_installed'] === 0): ?>
-                                        <?php if ($ext['status'] === 'approved'): ?>
-                                        <form method="POST" action="/admin/extensions/catalog/<?= (int) $ext['id'] ?>/install" style="display:inline;">
-                                            <button type="submit" class="btn btn-sm btn-success"
-                                                    onclick="return confirm('Install <?= htmlspecialchars($ext['name']) ?> (v<?= htmlspecialchars($ext['version']) ?>) from staging.\n\nPlace extension files in /storage/extension-staging/<?= htmlspecialchars($ext['slug']) ?>/ first.')">
-                                                <i class="bi bi-download me-1"></i>Install
-                                            </button>
-                                        </form>
-                                        <?php endif; ?>
+                                    <?php if ($ext['status'] === 'approved'): ?>
+                                    <form method="POST" action="/admin/extensions/catalog/<?= (int) $ext['id'] ?>/install" style="display:inline;">
+                                        <button type="submit" class="btn btn-sm btn-success"
+                                                onclick="return confirm('Install <?= htmlspecialchars($ext['name']) ?> (v<?= htmlspecialchars($ext['version']) ?>) from staging.\n\nPlace extension files in /storage/extension-staging/<?= htmlspecialchars($ext['slug']) ?>/ first.')">
+                                            <i class="bi bi-download me-1"></i>Install
+                                        </button>
+                                    </form>
+                                    <?php endif; ?>
                                     <?php elseif ((int) $ext['is_enabled'] === 0): ?>
-                                        <form method="POST" action="/admin/extensions/catalog/<?= (int) $ext['id'] ?>/enable" style="display:inline;">
-                                            <button type="submit" class="btn btn-sm btn-outline-success"
-                                                    onclick="return confirm('Enable <?= htmlspecialchars($ext['name']) ?>?')">
-                                                <i class="bi bi-play-fill me-1"></i>Enable
-                                            </button>
-                                        </form>
+                                    <form method="POST" action="/admin/extensions/catalog/<?= (int) $ext['id'] ?>/enable" style="display:inline;">
+                                        <button type="submit" class="btn btn-sm btn-outline-success"
+                                                onclick="return confirm('Enable <?= htmlspecialchars($ext['name']) ?>?')">
+                                            <i class="bi bi-play-fill me-1"></i>Enable
+                                        </button>
+                                    </form>
                                     <?php else: ?>
-                                        <form method="POST" action="/admin/extensions/catalog/<?= (int) $ext['id'] ?>/disable" style="display:inline;">
-                                            <button type="submit" class="btn btn-sm btn-outline-danger"
-                                                    onclick="return confirm('Disable <?= htmlspecialchars($ext['name']) ?>?')">
-                                                <i class="bi bi-pause-fill me-1"></i>Disable
-                                            </button>
-                                        </form>
+                                    <form method="POST" action="/admin/extensions/catalog/<?= (int) $ext['id'] ?>/disable" style="display:inline;">
+                                        <button type="submit" class="btn btn-sm btn-outline-danger"
+                                                onclick="return confirm('Disable <?= htmlspecialchars($ext['name']) ?>?')">
+                                            <i class="bi bi-pause-fill me-1"></i>Disable
+                                        </button>
+                                    </form>
                                     <?php endif; ?>
                                 </td>
                                 <td class="text-center">
@@ -130,6 +130,14 @@
             </div>
         </div>
     </div>
+    <script>
+    KernelWeb.dt.init('#admin-catalog-table', {
+        order: [[0, 'asc']],
+        columnDefs: [
+            { orderable: false, targets: [7, 8, 9] }
+        ]
+    });
+    </script>
     <?php endif; ?>
 
     <p class="text-muted small">

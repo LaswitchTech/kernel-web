@@ -780,28 +780,27 @@ The panel layout includes a user menu in the topbar (topbar-actions dropdown, ri
 - Username display
 - Profile link (`/profile`)
 - Sign out button (`/auth/logout`, POST)
+- Admin panel shortcut (visible only to users with `admin.access` permission, points to `/admin`)
 
 **Planned additions:**
 - Account settings link
-- Admin panel shortcut (visible only to administrators or users with `admin.access` permission)
-- Admin shortcut must:
-  - Point to `/admin`
-  - Only be visible to administrators or users with the proper admin permission
-  - Not appear in the app (non-admin) layout
 
 The user menu is rendered in `panel.php` and populated via `MenuRegistry` with a `user-menu` menu location.
 
 ### Panel Breadcrumbs
 
-The reusable `panel` layout should always support breadcrumbs.
+**Currently implemented.**
+
+The reusable `panel` layout renders breadcrumbs via direct Bootstrap breadcrumb markup (not `MenuHelper`).
 
 **Rules:**
 - Controllers pass `$breadcrumbs` to the view as an array of `['label' => string, 'url' => string|null]`
+- `url => null` marks the current (active) page
+- First entry is the admin landing page (`/admin`), rendered as a home icon link
 - Admin pages provide breadcrumb data from their controller
 - Application/plugin pages also provide breadcrumb data
-- Breadcrumbs render via `MenuHelper::renderBreadcrumbs($breadcrumbs)` (to be implemented) or direct Bootstrap breadcrumb markup
 - Breadcrumbs are shown consistently near the top of the content area
-- Breadcrumb generation remains simple and explicit for now — no dynamic breadcrumb registry
+- Breadcrumb generation remains simple and explicit — no dynamic breadcrumb registry
 
 ### Layout Regions (Summary)
 

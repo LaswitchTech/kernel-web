@@ -55,6 +55,11 @@ class SystemSettingsController extends Controller
         $errors        = [];
         $flash         = $this->popFlash();
 
+        $breadcrumbs = [
+            ['label' => 'Administration', 'url' => '/admin'],
+            ['label' => 'System Settings', 'url' => null],
+        ];
+
         ob_start();
         require $viewsPath . '/admin/settings.php';
         $content = ob_get_clean();
@@ -93,6 +98,12 @@ class SystemSettingsController extends Controller
             $pageTitle     = 'System Settings';
             $activeSection = 'Admin Settings';
             $flash         = null;
+            $errors        = [];
+
+            $breadcrumbs = [
+                ['label' => 'Administration', 'url' => '/admin'],
+                ['label' => 'System Settings', 'url' => null],
+            ];
 
             ob_start();
             require $viewsPath . '/admin/settings.php';

@@ -47,6 +47,10 @@ class AdminController extends Controller
         $groupCount      = count($groups);
         $permissionCount = count($permList);
 
+        $breadcrumbs = [
+            ['label' => 'Administration', 'url' => null],
+        ];
+
         ob_start();
         require $viewsPath . '/admin/index.php';
         $content = ob_get_clean();
@@ -72,6 +76,11 @@ class AdminController extends Controller
         $displayName   = $user['display_name'] ?? $user['username'];
         $permissions   = $perms;
 
+        $breadcrumbs = [
+            ['label' => 'Administration', 'url' => '/admin'],
+            ['label' => 'Permissions', 'url' => null],
+        ];
+
         ob_start();
         require $viewsPath . '/admin/permissions.php';
         $content = ob_get_clean();
@@ -96,6 +105,11 @@ class AdminController extends Controller
         $appName       = $config['name'] ?? 'Kernel-Web';
         $displayName   = $user['display_name'] ?? $user['username'];
         $permissions   = $perms;
+
+        $breadcrumbs = [
+            ['label' => 'Administration', 'url' => '/admin'],
+            ['label' => 'Audit Log', 'url' => null],
+        ];
 
         ob_start();
         require $viewsPath . '/admin/audit.php';

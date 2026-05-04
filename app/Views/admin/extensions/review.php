@@ -1,3 +1,10 @@
+<?php if ($flash): ?>
+<div class="alert alert-<?= $flash['type'] === 'success' ? 'success' : 'danger' ?> alert-dismissible mb-4" role="alert">
+    <?= htmlspecialchars($flash['message']) ?>
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+</div>
+<?php endif; ?>
+
 <div class="row g-3 mb-4">
     <div class="col-12">
         <div class="card">
@@ -14,7 +21,7 @@
             <?php else: ?>
             <div class="card-body p-0">
                 <div class="table-responsive">
-                    <table class="table table-hover mb-0 w-100">
+                    <table id="admin-review-table" class="table table-hover mb-0 w-100">
                         <thead>
                             <tr>
                                 <th>Name</th>
@@ -82,7 +89,7 @@
                                             </div>
                                             <div class="modal-body">
                                                 <p>Are you sure you want to reject <strong><?= htmlspecialchars($ext['name']) ?></strong>?</p>
-                                                <p class="mb-0 text-muted small">This will set the extension status to <span class="badge bg-danger">Rejected</span>.</p>
+                                                <p class="mb-0 text-muted small">This will set the extension extension status to <span class="badge bg-danger">Rejected</span>.</p>
                                             </div>
                                             <div class="modal-footer">
                                                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
@@ -98,6 +105,14 @@
                     </table>
                 </div>
             </div>
+            <script>
+            KernelWeb.dt.init('#admin-review-table', {
+                order: [[0, 'asc']],
+                columnDefs: [
+                    { orderable: false, targets: [6] }
+                ]
+            });
+            </script>
             <?php endif; ?>
         </div>
     </div>

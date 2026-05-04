@@ -136,7 +136,6 @@ echo \App\Core\MenuHelper::renderSidebar($navActive, $permissions ?? [], [], 'ad
                     </a>
                     <ul class="dropdown-menu dropdown-menu-end">
                         <li><h6 class="dropdown-header"><?= htmlspecialchars($displayName) ?></h6></li>
-                        <li><hr class="dropdown-divider"></li>
                         <li>
                             <a class="dropdown-item" href="/profile">
                                 <i class="bi bi-person me-2"></i>Profile
@@ -155,6 +154,31 @@ echo \App\Core\MenuHelper::renderSidebar($navActive, $permissions ?? [], [], 'ad
 
         <!-- Page content -->
         <main class="app-content">
+<?php if (isset($breadcrumbs) && is_array($breadcrumbs) && !empty($breadcrumbs)): ?>
+            <nav aria-label="breadcrumb" class="mb-3">
+                <ol class="breadcrumb mb-0">
+                    <li class="breadcrumb-item">
+                        <a href="/admin" class="text-decoration-none">
+                            <i class="bi bi-house"></i> Admin
+                        </a>
+                    </li>
+                    <?php foreach ($breadcrumbs as $i => $crumb): ?>
+                    <?php $last = ($i === count($breadcrumbs) - 1); ?>
+                    <?php if ($last): ?>
+                    <li class="breadcrumb-item active" aria-current="page">
+                        <?= htmlspecialchars($crumb['label']) ?>
+                    </li>
+                    <?php else: ?>
+                    <li class="breadcrumb-item">
+                        <a href="<?= htmlspecialchars($crumb['url'] ?? '#') ?>" class="text-decoration-none">
+                            <?= htmlspecialchars($crumb['label']) ?>
+                        </a>
+                    </li>
+                    <?php endif; ?>
+                    <?php endforeach; ?>
+                </ol>
+            </nav>
+<?php endif; ?>
             <?= $content ?>
         </main>
 

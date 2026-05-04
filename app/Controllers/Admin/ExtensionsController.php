@@ -37,6 +37,10 @@ class ExtensionsController extends Controller
             $extensions = (new ExtensionDiscoveryService($basePath))->discover();
         }
 
+        $breadcrumbs = [
+            ['label' => 'Extensions', 'url' => null],
+        ];
+
         ob_start();
         require $viewsPath . '/admin/extensions/index.php';
         $content = ob_get_clean();
@@ -70,6 +74,11 @@ class ExtensionsController extends Controller
         $displayName = $user['display_name'] ?? $user['username'];
         $permissions = $perms;
 
+        $breadcrumbs = [
+            ['label' => 'Extensions', 'url' => '/admin/extensions'],
+            ['label' => 'Catalog', 'url' => null],
+        ];
+
         ob_start();
         require $viewsPath . '/admin/extensions/catalog.php';
         $content = ob_get_clean();
@@ -97,6 +106,12 @@ class ExtensionsController extends Controller
         $errors       = [];
         $old          = [];
         $flash        = $this->popFlash();
+
+        $breadcrumbs = [
+            ['label' => 'Extensions', 'url' => '/admin/extensions'],
+            ['label' => 'Catalog', 'url' => '/admin/extensions/catalog'],
+            ['label' => 'Submit', 'url' => null],
+        ];
 
         ob_start();
         require $viewsPath . '/admin/extensions/submit.php';
@@ -199,6 +214,12 @@ class ExtensionsController extends Controller
         $displayName  = $user['display_name'] ?? $user['username'];
         $permissions  = $perms;
         $flash        = $this->popFlash();
+
+        $breadcrumbs = [
+            ['label' => 'Extensions', 'url' => '/admin/extensions'],
+            ['label' => 'Catalog', 'url' => '/admin/extensions/catalog'],
+            ['label' => 'Review', 'url' => null],
+        ];
 
         ob_start();
         require $viewsPath . '/admin/extensions/review.php';
