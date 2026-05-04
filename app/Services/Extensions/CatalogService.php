@@ -40,9 +40,8 @@ class CatalogService
         }
 
         $slug = $this->slugify($data['slug'] ?? '');
-        $now = date('Y-m-d H:i:s');
 
-        $this->repo->create([
+        $id = $this->repo->create([
             'name'         => $data['name'] ?? '',
             'slug'         => $slug,
             'type'         => $data['type'] ?? 'plugin',
@@ -57,7 +56,7 @@ class CatalogService
             'checksum'     => null,
         ]);
 
-        return ['success' => true, 'id' => (int) $this->repo->lastInsertId()];
+        return ['success' => true, 'id' => (int) $id];
     }
 
     // ------ Update ------
