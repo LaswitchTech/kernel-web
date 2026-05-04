@@ -51,19 +51,30 @@ class SetupController
         };
     }
 
+    /**
+     * Ensure the setup session is active with the correct cookie name.
+     * Must be called before any endpoint that reads/writes $_SESSION.
+     *
+     * Only starts the session if it hasn't been started already,
+     * so calling it from multiple handlers is safe.
+     */
+    private function ensureSetupSession(): void
+    {
+        // Always re-apply session config (safe if already started)
+        $this->applySessionConfig();
+
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
+        }
+    }
+
     // -------------------------------------------------------------------------
     // GET /setup — render wizard shell
     // -------------------------------------------------------------------------
 
     private function handleGetWizard(): void
     {
-        // Apply session cookie config BEFORE starting the session
-        $this->applySessionConfig();
-
-        // Start session after cookie params are configured
-        if (session_status() === PHP_SESSION_NONE) {
-            session_start();
-        }
+        $this->ensureSetupSession();
 
         // Only regenerate session ID on first visit.
         // Prevents data loss from page reloads or AJAX races.
@@ -170,6 +181,7 @@ class SetupController
 
     private function handlePostCheck(): void
     {
+        $this->ensureSetupSession();
         $this->requireCsrf();
 
         $env = $this->setup->checkEnvironment();
@@ -189,6 +201,7 @@ class SetupController
 
     private function handlePostDb(): void
     {
+        $this->ensureSetupSession();
         $this->requireCsrf();
 
         $data   = $this->jsonInput();
@@ -218,6 +231,7 @@ class SetupController
 
     private function handlePostConfig(): void
     {
+        $this->ensureSetupSession();
         $this->requireCsrf();
 
         $data     = $this->jsonInput();
@@ -270,6 +284,7 @@ class SetupController
 
     private function handlePostAdmin(): void
     {
+        $this->ensureSetupSession();
         $this->requireCsrf();
 
         $data     = $this->jsonInput();
@@ -330,6 +345,7 @@ class SetupController
 
     private function handlePostInstall(): void
     {
+        $this->ensureSetupSession();
         $this->requireCsrf();
 
         $data    = $this->jsonInput();
