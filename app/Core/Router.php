@@ -158,6 +158,17 @@ class Router
         return [$pattern, $paramNames];
     }
 
+    /**
+     * Redirect to a URL.
+     *
+     * Sends a 302 redirect and exits. Should only be called from controllers.
+     */
+    public function redirect(string $url): void
+    {
+        header('Location: ' . $url, true, 302);
+        exit;
+    }
+
     private function call(string $handler, array $middleware, array $params): void
     {
         $action = function (array $p) use ($handler): void {

@@ -53,7 +53,7 @@ class WebPermission implements MiddlewareInterface
         $gate = $this->container->get('gate');
 
         if (!$gate->can($principal, $this->permission)) {
-            ErrorPage::render(403, "You do not have the required permission '{$permission}' to view this page.");
+            ErrorPage::render(403, "You do not have the required permission '{$this->permission}' to view this page.");
             return;
         }
 

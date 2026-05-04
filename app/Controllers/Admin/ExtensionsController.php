@@ -368,7 +368,7 @@ class ExtensionsController extends Controller
         }
 
         // Resolve staging base directory
-        $stagingBase = realpath(__DIR__ . '/../../../../storage/extension-staging');
+        $stagingBase = realpath(__DIR__ . '/../../../storage/extension-staging');
         if ($stagingBase === false) {
             $this->flash('error', 'Staging directory does not exist. Create <code>/storage/extension-staging/</code> and place extension files there.');
             header('Location: /admin/extensions/catalog');

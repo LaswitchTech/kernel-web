@@ -19,7 +19,7 @@ class HomeController extends Controller
         $user           = $auth->user();
         $appName        = $config['name'] ?? 'Kernel-Web';
         $isInstalled    = (bool) ($config['installed'] ?? false);
-        $installUrl     = '/setup'; // unified install route
+        $installUrl     = '/install'; // unified install route
         $isAuthenticated = $auth->check();
 
         ob_start();
@@ -42,6 +42,6 @@ class HomeController extends Controller
      */
     public function install(array $params = []): void
     {
-        $this->container->get('router')->redirect('/install');
+        $this->container->get('router')->redirect('/setup');
     }
 }
