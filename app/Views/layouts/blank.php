@@ -4,8 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= htmlspecialchars($pageTitle ?? '') ?></title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/assets/vendor/bootstrap/5.3.3/css/bootstrap.min.css">
+    <link rel="stylesheet" href="/assets/vendor/bootstrap-icons/1.11.3/bootstrap-icons.min.css">
+    <!-- App theme -->
+    <link rel="stylesheet" href="/assets/css/app.css">
+
+    <!-- Custom auth page centering -->
     <style>
         body {
             display: flex;
@@ -18,8 +22,12 @@
             margin: 2rem auto;
         }
     </style>
+
+    <?php echo \App\Core\HookRegistry::render('layout.head'); ?>
 </head>
 <body>
 <?= $content ?>
+
+<?php echo \App\Core\HookRegistry::render('layout.body.end'); ?>
 </body>
 </html>
