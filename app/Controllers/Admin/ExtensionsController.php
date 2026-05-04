@@ -660,6 +660,116 @@ class ExtensionsController extends Controller
     }
 
     /**
+     * Uninstall an installed catalog extension.
+     *
+     * Safety:
+     *   - Requires extension to be disabled (is_enabled = 0)
+     *   - Validates extension directory exists under lib/{type}s/{slug}
+     *   - Uses realpath() prefix check to prevent path traversal
+     *   - Runs uninstall lifecycle hook if defined
+     *   - Removes extension files from disk
+     *   - Does NOT delete catalog record (preserves history)
+     *   - Sets is_installed = 0, is_enabled = 0
+     */
+    public function handleUninstall(array $params = []): void
+    {
+        $principal  = $this->container->get('principal');
+        $user       = $principal['user'];
+        $perms      = $principal['permissions'];
+
+        $config     = $this->container->get('config');
+        $viewsPath  = $this->viewsPath();
+
+        $catalog    = new \App\Services\Extensions\CatalogService(
+            new \App\Models\CatalogExtensionRepository(
+                $this->container->get('db')
+            )
+        );
+
+        $id         = (int) ($params['id'] ?? 0);
+        $extension  = $catalog->getById($id);
+
+        if ($extension === null) {
+            $this->flash('error', 'Extension not found.');
+            header('Location: /admin/extensions/catalog');
+            exit;
+        }
+
+        if ((int) $extension['is_installed'] !== 1) {
+            $this->flash('error', 'Extension "' . $extension['name'] . '" is not installed.');
+            header('Location: /admin/extensions/catalog');
+            exit;
+        }
+
+        if ((int) $extension['is_enabled'] === 1) {
+            $this->flash('error', 'Extension "' . $extension['name'] . '" must be disabled before uninstalling.');
+            header('Location: /admin/extensions/catalog');
+            exit;
+        }
+
+        $slug   = $extension['slug'];
+        $type   = $extension['type'];
+
+        if (!in_array($type, ['plugin', 'theme', 'layout'], true)) {
+            $this->flash('error', 'Invalid extension type: ' . htmlspecialchars($type));
+            header('Location: /admin/extensions/catalog');
+            exit;
+        }
+
+        if (!preg_match('/^[a-z][a-z0-9_-]+$/', $slug)) {
+            $this->flash('error', 'Invalid extension slug: ' . htmlspecialchars($slug));
+            header('Location: /admin/extensions/catalog');
+            exit;
+        }
+
+        // Resolve and validate extension directory with realpath safety.
+        $libBase = realpath(__DIR__ . '/../../../lib');
+        if ($libBase === false) {
+            $this->flash('error', 'Cannot resolve base lib directory.');
+            header('Location: /admin/extensions/catalog');
+            exit;
+        }
+
+        $typeDirs = ['plugin' => 'plugins', 'theme' => 'themes', 'layout' => 'layouts'];
+        $targetDir = $libBase . '/' . $typeDirs[$type] . '/' . $slug;
+
+        // Confirm target is under lib base.
+        if (strpos($targetDir, $libBase . '/') !== 0) {
+            $this->flash('error', 'Extension directory path is outside the trusted lib directory. Uninstall refused.');
+            header('Location: /admin/extensions/catalog');
+            exit;
+        }
+
+        if (!is_dir($targetDir)) {
+            $this->flash('error', 'Extension directory not found: <code>' . htmlspecialchars($targetDir) . '</code>. Cannot uninstall missing extension.');
+            header('Location: /admin/extensions/catalog');
+            exit;
+        }
+
+        // Run uninstall lifecycle hook (optional).
+        $hookOk = $this->triggerUninstallLifecycle($extension['name'], $extension['slug']);
+        if (!$hookOk) {
+            $this->flash('error', 'Extension "' . $extension['name'] . '" uninstall hook failed. Check the logs for details. Files may remain on disk.');
+            header('Location: /admin/extensions/catalog');
+            exit;
+        }
+
+        // Remove extension directory from disk.
+        if (!$this->removeExtensionDir($targetDir)) {
+            $this->flash('error', 'Failed to remove extension directory: <code>' . htmlspecialchars($targetDir) . '</code>. Check file permissions.');
+            header('Location: /admin/extensions/catalog');
+            exit;
+        }
+
+        // Mark as uninstalled in catalog (preserve record).
+        $catalog->markAsUninstalled($id);
+
+        $this->flash('success', 'Extension "' . $extension['name'] . '" uninstalled.');
+        header('Location: /admin/extensions/catalog');
+        exit;
+    }
+
+    /**
      * Disable an installed catalog extension.
      *
      * Sets is_enabled = 0 in the catalog database.
@@ -671,7 +781,7 @@ class ExtensionsController extends Controller
         $perms      = $principal['permissions'];
 
         $config     = $this->container->get('config');
-        $viewsPath  = __DIR__ . '/../../Views';
+        $viewsPath  = $this->viewsPath();
 
         $catalog    = new \App\Services\Extensions\CatalogService(
             new \App\Models\CatalogExtensionRepository(
@@ -722,6 +832,87 @@ class ExtensionsController extends Controller
 
         $loader = new \App\Core\Plugins\PluginLoader($pluginsDir, $this->container);
         $loader->runLifecycleHook($slug, $event);
+    }
+
+    /**
+     * Trigger the uninstall lifecycle hook for a specific extension.
+     *
+     * Only runs for plugins (themes/layouts have no lifecycle hooks).
+     * The hook is optional — returns true if not defined.
+     * Returns false if the hook is defined but failed.
+     *
+     * @return bool True on success or no hook defined, false on failure
+     */
+    private function triggerUninstallLifecycle(string $name, string $slug): bool
+    {
+        $pluginsDir = realpath(__DIR__ . '/../../../lib/plugins');
+        if ($pluginsDir === false || !is_dir($pluginsDir)) {
+            return true;
+        }
+
+        $loader = new \App\Core\Plugins\PluginLoader($pluginsDir, $this->container);
+        return $loader->runLifecycleHook($slug, 'uninstall');
+    }
+
+    /**
+     * Get the views directory path.
+     */
+    private function viewsPath(): string
+    {
+        return __DIR__ . '/../../Views';
+    }
+
+    /**
+     * Remove a directory tree with safety checks.
+     *
+     * Only deletes directories under the trusted lib/ base.
+     * Skips symbolic links to prevent traversal attacks.
+     */
+    private function removeExtensionDir(string $dir): bool
+    {
+        $libBase = realpath(__DIR__ . '/../../../lib');
+        if ($libBase === false) {
+            return false;
+        }
+
+        $resolved = realpath($dir);
+        if ($resolved === false || !is_dir($resolved)) {
+            return false;
+        }
+
+        // Safety: must be under lib/ base.
+        if (strpos($resolved, $libBase . '/') !== 0) {
+            return false;
+        }
+
+        $files = scandir($resolved);
+        if ($files === false) {
+            return false;
+        }
+
+        foreach ($files as $file) {
+            if ($file === '.' || $file === '..') {
+                continue;
+            }
+
+            $path = $resolved . '/' . $file;
+
+            if (is_link($path)) {
+                // Skip symbolic links to prevent traversal attacks.
+                continue;
+            }
+
+            if (is_dir($path)) {
+                if (!$this->removeDir($path)) {
+                    return false;
+                }
+            } else {
+                @unlink($path);
+            }
+        }
+
+        @rmdir($resolved);
+        return true;
     }
 
     /**

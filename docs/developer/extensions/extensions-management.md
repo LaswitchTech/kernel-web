@@ -19,6 +19,7 @@ plugins, themes, and layouts.
 | `POST` | `/admin/extensions/catalog/{id}/install` | Staged install of approved entry |
 | `POST` | `/admin/extensions/catalog/{id}/enable` | Enable an installed entry |
 | `POST` | `/admin/extensions/catalog/{id}/disable` | Disable an installed entry |
+| `POST` | `/admin/extensions/catalog/{id}/uninstall` | Uninstall an installed entry |
 
 ## Extension Types
 
@@ -227,6 +228,49 @@ Installed catalog extensions can be enabled or disabled. This controls the `is_e
 - Extensions without a catalog entry (no catalog record or not installed) fall back to manifest `enabled`
 - The override is implemented in `PluginLoader::getCatalogEnabledState()`
 
+### Uninstall
+
+Uninstall removes an installed extension's files from disk while preserving the catalog record for history.
+
+- **Route:** `POST /admin/extensions/catalog/{id}/uninstall`
+- **Permission:** `extensions.manage`
+- **Controller:** `ExtensionsController::handleUninstall()`
+- **Service:** `CatalogService::canUninstall()` (validation) + `CatalogService::markAsUninstalled()` (metadata)
+- **View:** `app/Views/admin/extensions/catalog.php` (Uninstall button in new Uninstall column)
+
+**UI visibility:**
+- **Uninstall** button — `is_installed = 1` AND `is_enabled = 0` (installed but disabled only)
+- Button is **not** shown when enabled — extensions must be disabled first
+
+**Preconditions (all must pass):**
+1. Catalog entry exists
+2. `is_installed = 1`
+3. `is_enabled = 0` — uninstall blocked if extension is enabled
+4. `type` must be `plugin`, `theme`, or `layout`
+5. `slug` must match `/^[a-z][a-z0-9_-]+$/`
+6. Extension directory exists under `lib/{type}s/{slug}`
+7. Resolved path is under trusted `lib/` base (`realpath()` prefix check)
+
+**Uninstall process:**
+1. All preconditions validated
+2. Run optional `uninstall` lifecycle hook (for plugins only — themes/layouts have no lifecycle hooks)
+3. If uninstall hook fails: abort, flash error, files may remain on disk
+4. Recursively remove extension directory from disk (symbolic links skipped)
+5. Set `is_installed = 0` and `is_enabled = 0` in catalog (record preserved)
+6. Flash success "Extension ... uninstalled.", redirect to `/admin/extensions/catalog`
+
+**Catalog record preservation:**
+- The catalog entry is **never deleted** during uninstall
+- `is_installed` and `is_enabled` are set to `0`
+- The record remains as an audit trail
+
+**Safety rules:**
+- `realpath()` used on all directory paths — never trust user input
+- Path prefix check ensures removal only under `lib/` base
+- Symbolic links are skipped during removal to prevent traversal
+- Kernel/core paths are outside `lib/` — never affected
+- Catalog records are preserved (no `DELETE` from `catalog_extensions`)
+
 ## Lifecycle Hooks
 
 Plugins can declare lifecycle hooks in `plugin.json` to execute custom code at key moments:
@@ -236,7 +280,8 @@ Plugins can declare lifecycle hooks in `plugin.json` to execute custom code at k
     "lifecycle": {
         "install": "Plugins\\MyPlugin\\Lifecycle@install",
         "enable": "Plugins\\MyPlugin\\Lifecycle@enable",
-        "disable": "Plugins\\MyPlugin\\Lifecycle@disable"
+        "disable": "Plugins\\MyPlugin\\Lifecycle@disable",
+        "uninstall": "Plugins\\MyPlugin\\Lifecycle@uninstall"
     }
 }
 ```
@@ -278,6 +323,16 @@ Triggered when catalog `is_enabled` transitions from `1` to `0`.
 - The plugin remains in the registry (catalog state controls activation)
 - Use for: unregistering hooks, clearing caches, releasing resources
 
+### Uninstall Hook
+
+Triggered when an installed catalog extension is uninstalled.
+
+- Only runs for plugins — themes/layouts have no lifecycle hooks
+- The hook is optional — missing entries are silently skipped (treated as success)
+- If the uninstall hook fails: the uninstall is aborted, files may remain on disk
+- The hook runs **before** files are removed (so the plugin can perform cleanup)
+- Use for: removing plugin data, clearing user data, cleanup tasks
+
 ### Safety
 
 - Lifecycle hooks are **optional** — missing entries are silently skipped
@@ -293,12 +348,12 @@ Triggered when catalog `is_enabled` transitions from `1` to `0`.
 - Staged install for approved catalog entries (copy from trusted staging directory)
 - Enable/disable installed catalog entries (database lifecycle state + runtime integration)
 - Runtime plugin activation controlled by catalog `is_enabled` for installed catalog extensions
+- Uninstall installed catalog entries (disable-first rule, lifecycle hook, file removal, catalog preservation)
 
 ## Deferred
 
 - Remote download
 - ZIP archive extraction
-- Uninstall
 - Upload / marketplace browsing
 - Remote updates
 - Licensing

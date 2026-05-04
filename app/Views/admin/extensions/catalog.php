@@ -58,6 +58,7 @@
                                 <th>Author</th>
                                 <th>Status</th>
                                 <th>Actions</th>
+                                <th>Uninstall</th>
                                 <th>Installed</th>
                                 <th>Enabled</th>
                             </tr>
@@ -108,6 +109,16 @@
                                     </form>
                                     <?php endif; ?>
                                 </td>
+                                <td class="text-nowrap">
+                                    <?php if ((int) $ext['is_installed'] === 1 && (int) $ext['is_enabled'] === 0): ?>
+                                    <form method="POST" action="/admin/extensions/catalog/<?= (int) $ext['id'] ?>/uninstall" style="display:inline;">
+                                        <button type="submit" class="btn btn-sm btn-outline-warning"
+                                                onclick="return confirm('Uninstall <?= htmlspecialchars($ext['name']) ?>?\n\nThis will remove all extension files from disk. The catalog record will be preserved for history.')">
+                                            <i class="bi bi-trash me-1"></i>Uninstall
+                                        </button>
+                                    </form>
+                                    <?php endif; ?>
+                                    </td>
                                 <td class="text-center">
                                     <?php if ((int) $ext['is_installed'] === 1): ?>
                                     <i class="bi bi-check-circle text-success"></i>
@@ -134,7 +145,7 @@
     KernelWeb.dt.init('#admin-catalog-table', {
         order: [[0, 'asc']],
         columnDefs: [
-            { orderable: false, targets: [7, 8, 9] }
+            { orderable: false, targets: [7, 8, 9, 10] }
         ]
     });
     </script>

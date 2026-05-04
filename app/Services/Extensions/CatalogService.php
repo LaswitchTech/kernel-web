@@ -248,6 +248,81 @@ class CatalogService
         return ['success' => true];
     }
 
+    // ------ Uninstall ------
+
+    /**
+     * Validate that an extension can be uninstalled.
+     *
+     * Checks:
+     *   - Extension exists in catalog
+     *   - Extension is installed (is_installed = 1)
+     *   - Extension is disabled (is_enabled = 0)
+     *   - Extension type is valid
+     *   - Extension directory exists on disk
+     *
+     * @param int $id
+     * @return array{success: bool, errors?: string[]}
+     */
+    public function canUninstall(int $id): array
+    {
+        $extension = $this->repo->findById($id);
+        if ($extension === null) {
+            return ['success' => false, 'errors' => ['Extension not found']];
+        }
+
+        if ((int) ($extension['is_installed'] ?? 0) !== 1) {
+            return ['success' => false, 'errors' => ['Extension "' . $extension['name'] . '" is not installed.']];
+        }
+
+        if ((int) ($extension['is_enabled'] ?? 0) !== 0) {
+            return ['success' => false, 'errors' => ['Extension "' . $extension['name'] . '" must be disabled before uninstalling.']];
+        }
+
+        $validTypes = ['plugin', 'theme', 'layout'];
+        if (!in_array($extension['type'], $validTypes, true)) {
+            return ['success' => false, 'errors' => ['Invalid extension type: ' . $extension['type']]];
+        }
+
+        if (!preg_match('/^[a-z][a-z0-9_-]+$/', $extension['slug'] ?? '')) {
+            return ['success' => false, 'errors' => ['Invalid extension slug: ' . $extension['slug']]];
+        }
+
+        // Check that the extension directory exists on disk.
+        $basePath = __DIR__ . '/../../../lib';
+        $baseReal = realpath($basePath);
+        if ($baseReal === false) {
+            return ['success' => false, 'errors' => ['Cannot resolve base lib directory.']];
+        }
+
+        $typeDirs = ['plugin' => 'plugins', 'theme' => 'themes', 'layout' => 'layouts'];
+        $targetDir = $baseReal . '/' . $typeDirs[$extension['type']] . '/' . $extension['slug'];
+
+        if (!is_dir($targetDir)) {
+            return ['success' => false, 'errors' => ['Extension directory not found: ' . $targetDir]];
+        }
+
+        return ['success' => true];
+    }
+
+    /**
+     * Mark a catalog extension as uninstalled (metadata only).
+     *
+     * Sets is_installed = 0 and is_enabled = 0.
+     * Preserves the catalog record for history.
+     *
+     * @return array{success: bool, errors?: string[]}
+     */
+    public function markAsUninstalled(int $id): array
+    {
+        $extension = $this->repo->findById($id);
+        if ($extension === null) {
+            return ['success' => false, 'errors' => ['Extension not found']];
+        }
+
+        $this->repo->markUninstalled($id);
+        return ['success' => true];
+    }
+
     // ------ Delete ------
 
     /**

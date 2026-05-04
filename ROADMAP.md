@@ -31,7 +31,7 @@ Foundational work that should happen before major feature development.
 
 Core infrastructure improvements that unlock future feature work.
 
-- [ ] Extension uninstall workflow (reverse of install: run down migrations, disable hooks, remove files)
+- [x] Extension uninstall workflow (reverse of install: run down migrations, disable hooks, remove files)
 - [ ] Extension dependency resolver (detect and install/update dependencies automatically or warn)
 - [ ] Extension update checks (local → catalog → remote)
 - [ ] Documentation plugin (render markdown docs at clean routes)
@@ -99,7 +99,7 @@ These are planned or requested but are out of scope for the current development 
 | Area | Status | Notes |
 |------|--------|-------|
 | Plugin system | Implemented | Discovery, manifest, lifecycle hooks, registry |
-| Extension catalog | Partially implemented | Browse, submit, review, approve, install, enable/disable |
+| Extension catalog | Partially implemented | Browse, submit, review, approve, install, enable/disable, uninstall |
 | Menu system | Implemented | Registry, sidebar, user-menu, admin-menu locations |
 | Layout system | Implemented | `app.php` (app), `panel.php` (admin), `blank.php` (auth, local assets, hooks) |
 | Theme system | Partially implemented | Bootstrap 5, LESS, dark/light mode |
