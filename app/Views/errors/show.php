@@ -6,7 +6,7 @@
     <title><?= $status ?> — <?= htmlspecialchars($heading) ?></title>
     <link rel="stylesheet" href="/assets/vendor/bootstrap/5.3.3/css/bootstrap.min.css">
     <style>
-        .error-card { max-width: 520px; margin: 6rem auto; }
+        .error-card { max-width: 720px; margin: 6rem auto; }
         .error-code { font-size: 5rem; font-weight: 800; line-height: 1; }
         .error-icon { font-size: 2.5rem; }
         pre { background: var(--bs-body-bg); border: 1px solid var(--bs-border-color); }
