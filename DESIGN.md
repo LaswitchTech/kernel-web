@@ -396,6 +396,43 @@ Items are automatically filtered by the user's permissions at render time.
 ### Rule
 > Auth must be provider-agnostic
 
+### Organization Scoping (Future)
+
+Organizations are a future optional concept for grouping users and data.
+
+**Design Constraints:**
+- Organizations must NOT be mandatory in kernel core
+- Auth system must remain compatible with optional organization scoping
+- Kernel users table must NOT require organization columns at install time
+- Organization scoping belongs in a plugin or application layer, not kernel core
+- Future multi-tenant behavior must be compatible with optional organization support
+
+**Concepts to support:**
+- Internal organizations
+- Prospects
+- Clients
+- Freight forwarders
+- Customs brokers
+- Customs offices
+- Vendors
+- Partners
+- Other business entities
+
+**Organizations plugin should define:**
+- `organizations` table (application-level)
+- `organization_users` pivot table
+- `organization_roles` table (optional, future)
+- Optional `organization_id` columns on plugin tables for ownership
+
+**Open Design Questions:**
+- Single organization vs. multiple organizations per user
+- Organization roles and role hierarchy
+- Organization-level permissions (can a permission be scoped to an organization?)
+- Whether organization scoping belongs in middleware or repository layer
+- Whether prospects/clients/vendors should be organization types or plugin-specific classifications
+- How organization membership affects auth tokens and sessions
+- Whether organizations should have hierarchy (parent/child relationships)
+
 ---
 
 ## Landing Page Design
@@ -598,6 +635,9 @@ After the NetMon cleanup pass, the kernel contains:
 ### Admin (Kernel-Level)
 - User management, Group management, Permission management
 - System settings management
+
+### Future
+- Organizations (optional, plugin-based)
 
 All NetMon-specific infrastructure (devices, monitoring, alerts, discovery, topology) has been removed.
 NetMon is a future application built on Kernel-Web, not part of the kernel itself.
@@ -818,6 +858,52 @@ The reusable `panel` layout renders breadcrumbs via direct Bootstrap breadcrumb 
 - Dark mode support via `data-bs-theme` attribute
 - Theme persistence via `localStorage`
 - Maintain responsive design across breakpoints
+
+### Theme Preview Page
+
+A theme preview page provides a comprehensive view of Bootstrap components rendered with the current theme.
+
+**Purpose:**
+- Help developers review styling during theme development
+- Help users/admins preview themes before applying them
+- Serve as a visual regression / smoke-test page for themes
+- Provide a consistent reference for component styling across themes
+
+**Design Direction:**
+- May live under admin or theme preview routes (e.g., `/admin/themes/preview` or `/preview`)
+- Should be available outside developer mode if safe (no sensitive data exposure)
+- Should not expose sensitive data (real user data, passwords, tokens, etc.)
+- Should support theme switching via a query parameter (e.g., `?theme=dark`) to compare themes without applying
+- Should use the panel/layout/theme system for rendering
+- All components should use placeholder/safe data only
+
+**Bootstrap Components to Include:**
+
+| Category | Components |
+|---|---|
+| Typography | Headings, lead text, blockquote, list group, code, table |
+| Buttons | Primary/secondary/success/danger/warning/info/light/dark, outline variants, sizes, pill/toggle |
+| Alerts | Primary/success/danger/warning/info/light/dark, dismissible, with icons |
+| Badges | All contextual variants, pills |
+| Cards | Text, images, horizontal, grid layouts |
+| Forms | Text input, textarea, select, checkbox, radio, switch, range, file input, input group |
+| Tables | Striped, hover, responsive |
+| Navs | Tabs, pills, vertical tabs, breadcrumb, pagination |
+| Modals | Basic, centered, scrollable, form-in-modal |
+| Dropdowns | Menu items, divider, button dropdown |
+| Accordions | Collapsible sections |
+| Progress | Basic, striped, animated |
+| Toasts | Dismissible toast notifications |
+
+**Theme Switching (Future):**
+- Query parameter `?theme={slug}` swaps the active theme for preview only
+- Does not persist or modify any server-side state
+- Useful for comparing multiple themes side-by-side during development
+
+**Security:**
+- All data must be safe placeholders
+- No real user names, emails, or sensitive content
+- No authentication required if served publicly, but the page should be usable without auth for theme development
 
 ---
 

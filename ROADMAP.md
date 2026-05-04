@@ -37,6 +37,10 @@ Core infrastructure improvements that unlock future feature work.
 - [ ] Plugin/theme/layout scaffold generator (bootstrap new extensions)
 - [ ] Remote catalog sync (periodic fetch of extension listings from a remote server)
 - [ ] Extension manifest validation improvements (semver, dependency format)
+- [ ] Organizations system design (optional, plugin-based data scoping)
+- [ ] Theme preview page design (Bootstrap components reference)
+- [ ] Organizations plugin foundation (organizations table, organization_users pivot, user membership)
+- [ ] Theme preview page implementation (Bootstrap components reference, theme switching)
 
 ---
 
@@ -69,6 +73,7 @@ Major architectural additions requiring significant infrastructure.
 - [ ] Plugin signing / checksum verification
 - [ ] Distributed authentication sharing (across multiple kernel instances)
 - [ ] Extension analytics / telemetry
+- [ ] Multi-tenant data scoping (organization-level query filtering, middleware)
 
 ---
 
@@ -96,6 +101,8 @@ These are planned or requested but are out of scope for the current development 
 | Layout system | Partially implemented | `app.php` (app), `panel.php` (admin), `blank.php` (base) |
 | Theme system | Partially implemented | Bootstrap 5, LESS, dark/light mode |
 | Auth system | Partially implemented | Users, groups, permissions, tokens, sessions |
+| Organizations | Planned | Design phase — optional, plugin-based scoping |
+| Theme preview | Planned | Design phase — Bootstrap components reference |
 | Plugin migrations | Implemented | Migration runner, catalog integration |
 | Breadcrumbs | Not implemented | Documented for Phase 1 |
 | DataTables | Loaded but not standardized | Libraries present in panel layout |
