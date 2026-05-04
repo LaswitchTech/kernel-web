@@ -333,25 +333,25 @@ class CatalogService
         $errors = [];
 
         if (empty($data['name'] ?? '')) {
-            $errors[] = 'Name is required.';
+            $errors['name'] = 'Name is required.';
         }
 
         $slug = $data['slug'] ?? '';
         if (empty($slug)) {
-            $errors[] = 'Slug is required.';
+            $errors['slug'] = 'Slug is required.';
         } elseif (!preg_match('/^[a-z][a-z0-9_-]*$/', $slug)) {
-            $errors[] = 'Slug must start with a lowercase letter and contain only lowercase letters, digits, hyphens, and underscores.';
+            $errors['slug'] = 'Slug must start with a lowercase letter and contain only lowercase letters, digits, hyphens, and underscores.';
         } elseif ($this->repo->slugExists($slug)) {
-            $errors[] = 'A catalog entry with this slug already exists.';
+            $errors['slug'] = 'A catalog entry with this slug already exists.';
         }
 
         $type = $data['type'] ?? '';
         if (!in_array($type, self::VALID_TYPES, true)) {
-            $errors[] = 'Type must be one of: plugin, theme, layout.';
+            $errors['type'] = 'Type must be one of: plugin, theme, layout.';
         }
 
         if (!preg_match('/^\d+\.\d+\.\d+$/', $data['version'] ?? '')) {
-            $errors[] = 'Version must be in semantic versioning format (e.g. 1.0.0).';
+            $errors['version'] = 'Version must be in semantic versioning format (e.g. 1.0.0).';
         }
 
         return $errors;

@@ -473,6 +473,11 @@ class ExtensionsController extends Controller
         // Mark as installed in the catalog
         $catalog->markInstalled($id);
 
+        // Clean up staging directory after successful install
+        if (is_dir($resolvedSource)) {
+            $this->removeDir($resolvedSource);
+        }
+
         $this->flash('success', 'Extension "' . $extension['name'] . '" (v' . $extension['version'] . ') installed to <code>' . htmlspecialchars($targetDir) . '</code>.');
         header('Location: /admin/extensions/catalog');
         exit;
