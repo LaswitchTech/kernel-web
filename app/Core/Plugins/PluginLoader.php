@@ -158,10 +158,16 @@ class PluginLoader
 
         $catalogSlug = basename($dir);
         $catalogState = $this->getCatalogEnabledState($catalogSlug);
+        $effectiveEnabled = $catalogState ?? $manifest->enabled();
 
         // --- Valid plugin ---
 
-        if ($catalogState ?? $manifest->enabled()) {
+        if ($effectiveEnabled) {
+            // Catalog says enabled but manifest may have disabled it.
+            // Ensure the manifest is in the discovered bucket first so enable() works.
+            if ($catalogState !== null && $catalogState !== $manifest->enabled()) {
+                $this->registry->addDiscovered($manifest);
+            }
             $this->registry->enable($manifest->name());
         } else {
             $this->registry->addDiscovered($manifest);
@@ -325,6 +331,9 @@ class PluginLoader
      */
     public function runLifecycleHook(string $pluginName, string $event, array $context = []): bool
     {
+        // Ensure registry is populated (newly installed plugins may not be loaded yet).
+        $this->load();
+
         $manifest = $this->registry->getByName($pluginName);
         if ($manifest === null) {
             return false;
@@ -337,9 +346,9 @@ class PluginLoader
 
         $callback = $hooks[$event];
 
-        // Validate namespace — only allow Plugins\ namespace.
-        if (!str_starts_with($callback, 'Plugins\\')) {
-            $this->logLifecycleError($pluginName, $event, 'Hook namespace is not allowed.');
+        // Validate namespace — only allow App\Plugins\ namespace.
+        if (!str_starts_with($callback, 'App\\Plugins\\')) {
+            $this->logLifecycleError($pluginName, $event, 'Hook namespace is not allowed (must be App\\Plugins\\...).');
             return false;
         }
 
@@ -354,8 +363,12 @@ class PluginLoader
         $method = substr($callback, $atPos + 1);
 
         if (!class_exists($class)) {
-            $this->logLifecycleError($pluginName, $event, "Class '{$class}' not found.");
-            return false;
+            // Try to force-load the plugin's src directory.
+            $this->discoverPluginSrcForClass($class);
+            if (!class_exists($class)) {
+                $this->logLifecycleError($pluginName, $event, "Class '{$class}' not found.");
+                return false;
+            }
         }
 
         if (!method_exists($class, $method)) {
@@ -369,6 +382,9 @@ class PluginLoader
         }
 
         try {
+            // Inject kernel root into context for reliable path resolution.
+            $context['kernelRoot'] = dirname(dirname(dirname($manifest->basePath())));
+
             // Pass container as last argument if available.
             $args = [$pluginName, $manifest->basePath(), $context];
             if ($this->container !== null) {
@@ -402,9 +418,51 @@ class PluginLoader
      */
     private function logLifecycleError(string $plugin, string $event, string $message): void
     {
-        $logger = $this->container?->get('logger') ?? null;
-        if ($logger !== null) {
-            $logger->error("Lifecycle hook '{$event}' for plugin '{$plugin}' failed: {$message}");
+        if ($this->container !== null && $this->container->has('logger')) {
+            $this->container->get('logger')->error("Lifecycle hook '{$event}' for plugin '{$plugin}' failed: {$message}");
+        }
+    }
+
+    /**
+     * Ensure the plugin's src directory is available for autoloading.
+     *
+     * Called when a lifecycle hook class cannot be found. This helps when
+     * a newly installed plugin's src directory hasn't been registered yet.
+     */
+    private function discoverPluginSrcForClass(string $class): void
+    {
+        // Strip App\Plugins\ prefix.
+        if (!str_starts_with($class, 'App\\Plugins\\')) {
+            return;
+        }
+        $relative = substr($class, strlen('App\\Plugins\\'));
+        $parts = explode('\\', $relative);
+
+        // The class might be App\Plugins\LifecycleTest\Lifecycle
+        // First, try to find the plugin directory (case-insensitive).
+        if (count($parts) < 2) {
+            return;
+        }
+        $className = end($parts);
+
+        foreach (new \DirectoryIterator($this->pluginsDir) as $entry) {
+            if (!$entry->isDir() || $entry->isDot()) continue;
+            $srcDir = $entry->getPathname() . '/src';
+            if (!is_dir($srcDir)) continue;
+
+            // Try at the src root (e.g., src/Lifecycle.php).
+            $file = $srcDir . '/' . $className . '.php';
+            if (is_file($file)) {
+                require $file;
+                return;
+            }
+
+            // Try nested under plugin dir name (autoloader's default).
+            $nested = $srcDir . '/' . str_replace('\\', '/', $relative) . '.php';
+            if (is_file($nested)) {
+                require $nested;
+                return;
+            }
         }
     }
 
