@@ -109,6 +109,10 @@ These are planned or requested but are out of scope for the current development 
 | Developer mode | Not implemented | Gated by `APP_DEBUG` |
 | Updates module | Not implemented | Documented for Phase 2 |
 | Documentation plugin | Not implemented | Documented for Phase 2 |
+| Setup session | Fixed | Session cookie config applied from auth.php |
+| GitHub workflows | Implemented | CI (PHP lint, JSON validate) + release workflow |
+| Contributing docs | Implemented | Documented in /docs/contributing.md |
+| Runtime DB safety | Hardened | DB files excluded from public/, .gitignore updated |
 | OAuth | Deferred | See Deferred section |
 | Licensing | Deferred | See Deferred section |
 

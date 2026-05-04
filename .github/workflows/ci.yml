@@ -1,0 +1,70 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [dev, stable]
+
+permissions:
+  contents: read
+
+jobs:
+  php-syntax:
+    name: PHP Syntax Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          coverage: none
+
+      - name: Lint PHP files
+        run: |
+          find . -name '*.php' -not -path './vendor/*' -not -path './.git/*' -print0 \
+            | xargs -0 -n1 php -l \
+            | grep -v 'No syntax errors' \
+            && exit 1 \
+            || exit 0
+
+  json-manifests:
+    name: Validate Manifests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate JSON manifests
+        run: |
+          errors=0
+          for f in $(find . -name 'plugin.json' -o -name 'theme.json' -o -name 'layout.json' | grep -v '.git'); do
+            if ! python3 -c "import json, sys; json.load(open(sys.argv[1]))" "$f" 2>&1; then
+              echo "INVALID: $f"
+              errors=$((errors + 1))
+            fi
+          done
+          if [ "$errors" -gt 0 ]; then
+            echo "$errors manifest(s) failed validation"
+            exit 1
+          fi
+          echo "All manifests valid"
+
+  gitignore:
+    name: Check .gitignore
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Check runtime DB files are not tracked
+        run: |
+          tracked=$(git ls-files --cached 'public/*.sqlite' 'storage/*.sqlite' 'data/*.db' 2>/dev/null)
+          if [ -n "$tracked" ]; then
+            echo "ERROR: Runtime database files are tracked by git:"
+            echo "$tracked"
+            exit 1
+          fi
+          echo "No runtime database files tracked"

@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Kernel-Web Documentation
+    url: https://kernel-web.readthedocs.io/
+    about: Please read the documentation before filing an issue.
+  - name: Kernel-Web Discussion
+    url: https://github.com/LaswitchTech/kernel-web/discussions
+    about: Ask questions and share ideas in GitHub Discussions.

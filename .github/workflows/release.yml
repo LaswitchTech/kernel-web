@@ -1,0 +1,67 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get tag name
+        id: tag
+        run: echo "tag=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+
+      - name: Generate changelog
+        id: changelog
+        run: |
+          PREV_TAG=$(git describe --tags --abbrev=0 "${{ steps.tag.outputs.tag }}^" 2>/dev/null || echo "")
+          if [ -n "$PREV_TAG" ]; then
+            CHANGELOG=$(git log --oneline --no-merges "$PREV_TAG"..${{ steps.tag.outputs.tag }})
+          else
+            CHANGELOG=$(git log --oneline --no-merges -20)
+          fi
+          echo "changelog<<EOF" >> $GITHUB_OUTPUT
+          echo "$CHANGELOG" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Create ZIP archive
+        run: |
+          cd ..
+          zip -r "kernel-web-${{ steps.tag.outputs.tag }}.zip" "kernel-web" \
+            -x "*.git/*" \
+            ".env" \
+            ".env.*" \
+            "config/local.php" \
+            "data/*.db" \
+            "data/*.db-shm" \
+            "data/*.db-wal" \
+            "storage/*" \
+            "public/*.sqlite*" \
+            "storage/extension-staging/*" \
+            "vendor/*" \
+            "node_modules/*" \
+            "*.log"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ steps.tag.outputs.tag }}
+          name: Release ${{ steps.tag.outputs.tag }}
+          body: |
+            ## Changes
+
+            ${{ steps.changelog.outputs.changelog }}
+          draft: false
+          prerelease: false
+          files: kernel-web-${{ steps.tag.outputs.tag }}.zip

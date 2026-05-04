@@ -28,10 +28,6 @@ class SetupController
 
     public function __construct(string $rootPath)
     {
-        if (session_status() === PHP_SESSION_NONE) {
-            session_start();
-        }
-
         $this->setup      = new SetupService($rootPath);
         $this->viewsPath  = __DIR__ . '/../Views';
         $this->rootPath   = $rootPath;
@@ -61,12 +57,25 @@ class SetupController
 
     private function handleGetWizard(): void
     {
-        // Regenerate session ID to prevent fixation attacks
-        session_regenerate_id(true);
+        // Apply session cookie config BEFORE starting the session
+        $this->applySessionConfig();
 
-        $_SESSION['__setup'] = [
-            'token' => bin2hex(random_bytes(32)),
-        ];
+        // Start session after cookie params are configured
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
+        }
+
+        // Only regenerate session ID on first visit.
+        // Prevents data loss from page reloads or AJAX races.
+        if (empty($_SESSION['__setup']['token'])) {
+            session_regenerate_id(true);
+        }
+
+        if (empty($_SESSION['__setup'])) {
+            $_SESSION['__setup'] = [
+                'token' => bin2hex(random_bytes(32)),
+            ];
+        }
 
         $csrfToken  = $_SESSION['__setup']['token'];
         $currentUrl = Env::get('APP_URL', 'http://localhost');
@@ -75,6 +84,44 @@ class SetupController
         http_response_code(200);
         header('Content-Type: text/html; charset=utf-8');
         require $this->viewsPath . '/wizard.php';
+    }
+
+    /**
+     * Apply session cookie configuration from config/auth.php.
+     * Falls back to safe defaults if the config is unavailable.
+     */
+    private function applySessionConfig(): void
+    {
+        $authConfig = [];
+        $authPath   = __DIR__ . '/../../../../config/auth.php';
+        if (is_file($authPath)) {
+            $authConfig = include $authPath;
+        }
+
+        $sessionCfg = $authConfig['session'] ?? [
+            'name'     => 'kernel_web_session',
+            'lifetime' => 7200,
+            'secure'   => false,
+        ];
+
+        $lifetime = (int) ($sessionCfg['lifetime'] ?? 7200);
+        $secure   = !empty($sessionCfg['secure']);
+        $name     = (string) ($sessionCfg['name'] ?? 'kernel_web_session');
+
+        // Ensure secure flag is forced over HTTPS
+        if (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') {
+            $secure = true;
+        }
+
+        session_name($name);
+
+        session_set_cookie_params([
+            'lifetime' => $lifetime,
+            'path'     => '/',
+            'secure'   => $secure,
+            'httponly' => true,
+            'samesite' => 'Lax',
+        ]);
     }
 
     // -------------------------------------------------------------------------

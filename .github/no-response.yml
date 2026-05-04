@@ -1,0 +1,13 @@
+# Kernel-Web uses the no-response bot to gently close issues that have not received a
+# response from the reporter after a request for more information.
+# This keeps the issue tracker manageable and encourages well-formed bug reports.
+
+# Number of days of inactivity before closing the issue
+closeComment: >
+  This issue has been automatically closed because there have been no updates from the reporter.
+  If you are still experiencing this problem with the latest version of Kernel-Web,
+  please comment with the requested information and we will re-open the issue.
+  Thank you!
+daysUntilClose: 14
+issueConfig:
+  label: "needs info"

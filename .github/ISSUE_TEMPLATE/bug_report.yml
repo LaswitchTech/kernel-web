@@ -1,0 +1,102 @@
+name: Bug Report
+about: Report a bug or regression in Kernel-Web
+title: "Bug: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to file a bug report. Fill out each section below.
+
+  - type: input
+    id: kernel_version
+    attributes:
+      label: Kernel-Web version
+      description: Commit hash, branch, or version tag.
+      placeholder: "e.g. v1.0.0 or a1b2c3d"
+    validations:
+      required: true
+
+  - type: input
+    id: php_version
+    attributes:
+      label: PHP version
+      description: Output of `php -v`
+      placeholder: "e.g. 8.2.0"
+    validations:
+      required: true
+
+  - type: input
+    id: database
+    attributes:
+      label: Database type and version
+      description: SQLite version or MySQL/MariaDB version
+      placeholder: "e.g. SQLite 3.40.1"
+    validations:
+      required: true
+
+  - type: input
+    id: web_server
+    attributes:
+      label: Web server and OS
+      description: Server software and operating system
+      placeholder: "e.g. Apache 2.4 / Ubuntu 22.04"
+    validations:
+      required: true
+
+  - type: textarea
+    id: browser
+    attributes:
+      label: Browser and OS (if UI-related)
+      description: Affected browser and operating system
+      placeholder: "e.g. Chrome 120 / macOS 14"
+    validations:
+      required: false
+
+  - type: textarea
+    id: installed_extensions
+    attributes:
+      label: Installed extensions / plugins / themes
+      description: List any installed plugins, themes, or layouts
+      placeholder: "e.g. notes 0.1.0, tasks 0.1.0"
+    validations:
+      required: false
+
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps to reproduce
+      description: How do you trigger this bug? Walk through the steps.
+      placeholder: |
+        1. Go to '/admin'
+        2. Click on 'Extensions'
+        3. See error
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+      description: What should happen?
+      placeholder: "The extension list should load without errors."
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+      description: What actually happens?
+      placeholder: "A 403 Forbidden page is displayed."
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant logs / screenshots
+      description: Paste any relevant error logs or upload screenshots.
+      render: text
+    validations:
+      required: false
