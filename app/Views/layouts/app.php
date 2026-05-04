@@ -25,8 +25,8 @@
     <link rel="stylesheet" href="/assets/vendor/datatables/1.13.8/css/dataTables.bootstrap5.min.css">
     <link rel="stylesheet" href="/assets/vendor/datatables-responsive/2.5.0/css/responsive.bootstrap5.min.css">
     <link rel="stylesheet" href="/assets/vendor/datatables-buttons/2.4.2/css/buttons.bootstrap5.min.css">
-    <!-- App theme -->
-    <link rel="stylesheet" href="/assets/css/app.css">
+    <!-- App theme — dynamically compiled LESS -->
+    <link rel="stylesheet" href="/css">
 
     <?php
     // Hook: layout.head — plugins can inject meta tags, CSS links, etc.

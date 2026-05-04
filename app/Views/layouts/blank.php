@@ -6,8 +6,8 @@
     <title><?= htmlspecialchars($pageTitle ?? '') ?></title>
     <link rel="stylesheet" href="/assets/vendor/bootstrap/5.3.3/css/bootstrap.min.css">
     <link rel="stylesheet" href="/assets/vendor/bootstrap-icons/1.11.3/bootstrap-icons.min.css">
-    <!-- App theme -->
-    <link rel="stylesheet" href="/assets/css/app.css">
+    <!-- App theme — dynamically compiled LESS -->
+    <link rel="stylesheet" href="/css">
 
     <!-- Custom auth page centering -->
     <style>

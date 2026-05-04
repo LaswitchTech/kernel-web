@@ -33,6 +33,7 @@ Core infrastructure improvements that unlock future feature work.
 
 - [x] Extension uninstall workflow (reverse of install: run down migrations, disable hooks, remove files)
 - [ ] Extension dependency resolver (detect and install/update dependencies automatically or warn)
+- [x] Dynamic LESS compilation (wikimedia/less.php, /css route, cache, theme/layout/plugin merge)
 - [ ] Extension update checks (local → catalog → remote)
 - [ ] Documentation plugin (render markdown docs at clean routes)
 - [ ] Extensions UI polish (improved listing, filtering, status indicators)
@@ -110,6 +111,7 @@ These are planned or requested but are out of scope for the current development 
 | Breadcrumbs | Implemented | Documented in /docs/developer/breadcrumbs.md |
 | DataTables | Standardized | Consistent configuration across all admin tables |
 | Developer mode | Not implemented | Gated by `APP_DEBUG` |
+| LESS compilation | Implemented | Hybrid: npm build + PHP dynamic merge at /css |
 | Updates module | Not implemented | Documented for Phase 2 |
 | Documentation plugin | Not implemented | Documented for Phase 2 |
 | Setup session | Fixed | Session cookie config applied from auth.php |

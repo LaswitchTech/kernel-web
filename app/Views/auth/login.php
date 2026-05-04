@@ -9,8 +9,8 @@
     <link rel="stylesheet" href="/assets/vendor/bootstrap/5.3.3/css/bootstrap.min.css">
     <!-- Bootstrap Icons 1.11.3 -->
     <link rel="stylesheet" href="/assets/vendor/bootstrap-icons/1.11.3/bootstrap-icons.min.css">
-    <!-- App theme -->
-    <link rel="stylesheet" href="/assets/css/app.css">
+    <!-- App theme — dynamically compiled LESS -->
+    <link rel="stylesheet" href="/css">
 </head>
 <body>
 

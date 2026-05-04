@@ -907,6 +907,76 @@ A theme preview page provides a comprehensive view of Bootstrap components rende
 
 ---
 
+## CSS Compilation System
+
+### Overview
+
+Kernel-Web uses a hybrid approach for CSS delivery:
+
+| Mode | Source | How |
+|------|--------|-----|
+| Production | npm-compiled static CSS (`public/assets/css/app.less → app.css`) | `npm run build:css` |
+| Development | Dynamic merge — static kernel CSS + parsed theme/layout/plugin LESS | `GET /css` route |
+
+### Route
+
+- **Path:** `GET /css`
+- **Content-Type:** `text/css`
+- **Middleware:** `SessionAuth` (auth required)
+- **Cache-Control:** `public, max-age=3600`
+- **Controller:** `CssController@show`
+- **Service:** `LessCompiler` (in `app/Services/LessCompiler.php`)
+
+### Load Order
+
+1. **Kernel base CSS** — static `public/assets/css/app.css` (compiled from `public/assets/less/app.less`)
+2. **Theme LESS** — active theme's `less/app.less` (parsed and merged)
+3. **Layout LESS** — active layout's `app.less` (parsed and merged)
+4. **Plugin LESS** — enabled plugin's `less/app.less` (parsed and merged)
+
+### Import Order (kernel base LESS source)
+
+```
+variables          → compile-time constants
+themes/dark        → dark theme tokens (:root)
+themes/light       → light theme tokens ([data-bs-theme="light"])
+base               → global resets
+layout             → app shell structure
+bootstrap-overrides → Bootstrap component token mappings
+components/*       → sidebar, topbar, cards, tables, forms, footer, admin
+modules/*          → chat, file-manager
+```
+
+### Why Hybrid?
+
+The kernel base LESS uses `calc(var(--css-var) / 2)` and other modern CSS
+features not supported by wikimedia/less.php (lessphp). The npm/Node.js LESS
+compiler handles all features correctly. The PHP layer augments the static
+kernel CSS with dynamic theme/layout/plugin LESS.
+
+### Layout Integration
+
+All layouts reference `/css` instead of a static file:
+
+```html
+<link rel="stylesheet" href="/css">
+```
+
+Files updated:
+- `app/Views/layouts/panel.php`
+- `app/Views/layouts/app.php`
+- `app/Views/layouts/blank.php`
+- `app/Views/auth/login.php`
+
+### Build Commands
+
+| Command | Description |
+|---------|-------------|
+| `npm run build:css` | Compile LESS → static CSS (production) |
+| `npm run watch:css` | Watch and rebuild on changes (development) |
+
+---
+
 ## Administration System Design
 
 ### Purpose

@@ -107,6 +107,9 @@ $router->get('/api/notifications/recent', 'Modules\Notifications\Controllers\Not
 // Chat JSON API — SessionAuth for AJAX callers.
 $router->get('/api/chat/unread', 'Modules\Chat\Controllers\ChatController@unreadCount', ['SessionAuth']);
 
+// -------------------------------- CSS (dynamically compiled from LESS) ------
+$router->get('/css', 'CssController@show', ['SessionAuth']);
+
 // -------------------------------- Authentication (public) ------
 $router->get('/signin', 'AuthController@loginForm');
 $router->post('/auth/login', 'AuthController@login');
