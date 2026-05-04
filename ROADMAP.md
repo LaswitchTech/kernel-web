@@ -104,7 +104,7 @@ These are planned or requested but are out of scope for the current development 
 | Organizations | Planned | Design phase — optional, plugin-based scoping |
 | Theme preview | Planned | Design phase — Bootstrap components reference |
 | Plugin migrations | Implemented | Migration runner, catalog integration |
-| Breadcrumbs | Not implemented | Documented for Phase 1 |
+| Breadcrumbs | Implemented | Documented in /docs/developer/breadcrumbs.md |
 | DataTables | Loaded but not standardized | Libraries present in panel layout |
 | Developer mode | Not implemented | Gated by `APP_DEBUG` |
 | Updates module | Not implemented | Documented for Phase 2 |
