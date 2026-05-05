@@ -49,15 +49,18 @@ div.dt-container {
     }
 
     // ── Buttons container ──
+    // When topStart is null (no buttons), the area is not rendered at all.
+    // Keep this rule as a safety net for edge cases.
     div.dt-layout-start {
-        // Hide buttons area when no buttons rendered
-        &:has(> .dt-buttons:empty) {
-            display: none;
-        }
+        > .dt-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.25rem;
 
-        // Collapse empty button groups
-        > .dt-buttons:empty {
-            display: none !important;
+            // Hide button group when it has no visible child elements
+            &:has(> button.btn:empty, > .btn:empty) {
+                display: none !important;
+            }
         }
     }
 

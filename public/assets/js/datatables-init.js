@@ -77,7 +77,21 @@
     function init(selector, options) {
         var tableEl = $(selector).first();
         if (tableEl.length === 0) return null;
-        return new DataTable(tableEl[0], $.extend(true, {}, DEFAULTS, options || {}));
+
+        // Merge view options onto defaults
+        var config = $.extend(true, {}, DEFAULTS, options || {});
+
+        // Wire custom buttons into layout.topStart.
+        // The 'buttons' option is a separate DT2 config key; it does NOT
+        // auto-wire into the layout API.  We must pass buttons explicitly:
+        //   layout.topStart: { buttons: buttons }
+        var buttons = config.buttons && config.buttons.length ? config.buttons : null;
+        if (!config.layout) config.layout = {};
+        config.layout.topStart = buttons
+            ? { buttons: buttons }
+            : null;
+
+        return new DataTable(tableEl[0], config);
     }
 
     function initCompact(selector, options) {
