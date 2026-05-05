@@ -26,11 +26,13 @@
     }
 
     // ── Defaults ──
-    // Top row  : [Buttons / actions (left)]  [Search ~25% (right)]
-    // Table    : rt
-    // Bottom row: [Show N (left)]  [Info (centre)]  [Pagination (right)]
+    // DOM layout:
+    //   Top row    : Buttons (left)  |  Search (right)
+    //   Table      : rt
+    //   Bottom row : Length (left)  |  Info (center)  |  Pagination (right)
+    // Bootstrap utility classes provide gutter + vertical margins between rows.
     var DOM_FULL =
-        "<'row g-2 align-items-center mb-2'<'col-auto'B><'col-sm-4 ms-auto'f>>" +
+        "<'row g-2 align-items-center mb-2'<'col-auto'B><'col-sm-3 ms-auto'f>>" +
         "rt" +
         "<'row g-2 align-items-center mt-2'<'col-sm-4'l><'col-sm-4 text-center'i><'col-sm-4'p>>";
 
@@ -40,6 +42,8 @@
         responsive : true,
         dom        : DOM_FULL,
         buttons    : [],
+        // Default button style: Bootstrap Icons + visually hidden label + aria-label
+        // Override per-table with { text: '<i class="bi bi-XXX"></i> <span class="visually-hidden">Label</span>', ariaLabel: 'Label', className: 'btn-sm btn-outline-secondary' }
         language   : {
             emptyTable        : 'No data available.',
             zeroRecords       : 'No matching records found.',

@@ -43,7 +43,15 @@ div.dataTables_wrapper {
         margin-top: 0.5rem;
     }
 
-    // ── Hide the Buttons container when no buttons are injected ──────────
+    // ── Control rows — comfortable spacing between controls and table ────
+    .dt-top,
+    .dt-bot {
+        // Ensure the Bootstrap grid row gets vertical breathing room
+        padding-top:    0.25rem;
+        padding-bottom: 0.25rem;
+    }
+
+    // ── Hide the Buttons container when no buttons are injected ───
     // Prevents empty left-side gap when a table has no action buttons.
     .dt-buttons:empty {
         display: none;

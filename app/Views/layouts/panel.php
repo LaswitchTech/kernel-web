@@ -21,7 +21,9 @@
     <link rel="stylesheet" href="/assets/vendor/bootstrap/5.3.3/css/bootstrap.min.css">
     <!-- Bootstrap Icons 1.11.3 -->
     <link rel="stylesheet" href="/assets/vendor/bootstrap-icons/1.11.3/bootstrap-icons.min.css">
-    <!-- DataTables 2.3.8 + Buttons 3.2.6 + Responsive 3.0.8 + Select 3.1.3 + StateRestore 1.4.3 + RowGroup 1.6.0 + Scroller 2.4.3 + ColumnControl 1.2.1 (core CSS embedded in JS) -->
+    <!-- DataTables 2.3.8 + Buttons 3.2.6 + Responsive 3.0.8 + Select 3.1.3 + StateRestore 1.4.3 + RowGroup 1.6.0 + Scroller 2.4.3 + ColumnControl 1.2.1
+         Core CSS embedded in JS. Extension CSS + BS5 integration files below. -->
+    <link rel="stylesheet" href="/assets/vendor/datatables/2.3.8/css/dataTables.bootstrap5.min.css">
     <link rel="stylesheet" href="/assets/vendor/datatables-buttons/3.2.6/css/buttons.bootstrap5.min.css">
     <link rel="stylesheet" href="/assets/vendor/datatables-responsive/3.0.8/css/responsive.bootstrap5.min.css">
     <link rel="stylesheet" href="/assets/vendor/datatables-select/3.1.3/css/select.bootstrap5.min.css">
@@ -211,23 +213,33 @@ echo \App\Core\MenuHelper::renderSidebar($navActive, $permissions ?? [], [], 'ad
 <script src="/assets/vendor/bootstrap/5.3.3/js/bootstrap.bundle.min.js"></script>
 <!-- jQuery 3.7.1 (required by DataTables) -->
 <script src="/assets/vendor/jquery/3.7.1/jquery.min.js"></script>
-<!-- DataTables 2.3.8 (Bootstrap 5 classes built into core, CSS embedded in JS) -->
+<!-- Export support deps — required by Buttons HTML5 -->
+<script src="/assets/vendor/jszip/3.10.1/jszip.min.js"></script>
+<script src="/assets/vendor/pdfmake/0.2.7/pdfmake.min.js"></script>
+<script src="/assets/vendor/pdfmake/0.2.7/vfs_fonts.js"></script>
+<!-- DataTables 2.3.8 (Bootstrap 5 classes built into core) -->
 <script src="/assets/vendor/datatables/2.3.8/js/dataTables.min.js"></script>
-<!-- DataTables Buttons 3.2.6 -->
+<script src="/assets/vendor/datatables/2.3.8/js/dataTables.bootstrap5.min.js"></script>
+<!-- Buttons 3.2.6 — core + BS5 integration + export extensions -->
 <script src="/assets/vendor/datatables-buttons/3.2.6/js/dataTables.buttons.min.js"></script>
 <script src="/assets/vendor/datatables-buttons/3.2.6/js/buttons.bootstrap5.min.js"></script>
-<!-- DataTables Responsive 3.0.8 -->
+<script src="/assets/vendor/datatables-buttons/3.2.6/js/buttons.html5.min.js"></script>
+<script src="/assets/vendor/datatables-buttons/3.2.6/js/buttons.print.min.js"></script>
+<script src="/assets/vendor/datatables-buttons/3.2.6/js/buttons.colVis.min.js"></script>
+<!-- Responsive 3.0.8 -->
 <script src="/assets/vendor/datatables-responsive/3.0.8/js/dataTables.responsive.min.js"></script>
 <script src="/assets/vendor/datatables-responsive/3.0.8/js/responsive.bootstrap5.min.js"></script>
-<!-- DataTables Select 3.1.3 -->
+<!-- Select 3.1.3 -->
 <script src="/assets/vendor/datatables-select/3.1.3/js/dataTables.select.min.js"></script>
-<!-- DataTables StateRestore 1.4.3 -->
+<script src="/assets/vendor/datatables-select/3.1.3/js/select.bootstrap5.min.js"></script>
+<!-- StateRestore 1.4.3 (BS5 built into core) -->
 <script src="/assets/vendor/datatables-staterestore/1.4.3/js/dataTables.stateRestore.min.js"></script>
-<!-- DataTables RowGroup 1.6.0 -->
+<!-- RowGroup 1.6.0 (BS5 built into core) -->
 <script src="/assets/vendor/datatables-rowgroup/1.6.0/js/dataTables.rowGroup.min.js"></script>
-<!-- DataTables Scroller 2.4.3 -->
+<!-- Scroller 2.4.3 -->
 <script src="/assets/vendor/datatables-scroller/2.4.3/js/dataTables.scroller.min.js"></script>
-<!-- DataTables ColumnControl 1.2.1 -->
+<script src="/assets/vendor/datatables-scroller/2.4.3/js/scroller.bootstrap5.min.js"></script>
+<!-- ColumnControl 1.2.1 (BS5 built into core) -->
 <script src="/assets/vendor/datatables-columncontrol/1.2.1/js/dataTables.columnControl.min.js"></script>
 <!-- App shared JS -->
 <script src="/assets/js/datatables-init.js"></script>
