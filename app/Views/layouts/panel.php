@@ -51,7 +51,8 @@ if (!isset($displayName) || $displayName === '') {
 
 // $activeSection may be set by controllers to mark a nav item as active
 // independently of $pageTitle (e.g. sub-pages like Add/Edit Device).
-$navActive = $activeSection ?? $pageTitle;
+// If not set, fall back to the current request URI for URL matching.
+$navActive = $activeSection ?? $_SERVER['REQUEST_URI'] ?? '/';
 ?>
 
 <!-- Overlay for mobile sidebar -->

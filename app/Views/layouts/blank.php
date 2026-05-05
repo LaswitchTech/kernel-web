@@ -21,6 +21,27 @@
             max-width: 640px;
             margin: 2rem auto;
         }
+
+        /* Landing page cards: transparent bg so dark mode text stays readable */
+        .landing-card .card-body {
+            background: transparent;
+        }
+        .landing-card .card {
+            background: transparent;
+        }
+        .landing-card a.card {
+            background: var(--bs-tertiary-bg);
+            border-color: var(--bs-border-color);
+            color: var(--bs-body-color);
+            transition: background 0.15s ease, border-color 0.15s ease;
+        }
+        .landing-card a.card:hover {
+            background: var(--bs-secondary-bg);
+            border-color: var(--bs-border-color-state, var(--bs-border-color));
+        }
+        .landing-card a.card .text-muted {
+            color: var(--bs-secondary-color) !important;
+        }
     </style>
 
     <?php echo \App\Core\HookRegistry::render('layout.head'); ?>

@@ -48,7 +48,7 @@ class AdminController extends Controller
         $permissionCount = count($permList);
 
         $breadcrumbs = [
-            ['label' => 'Administration', 'url' => null],
+            ['label' => 'Administration', 'url' => '/admin'],
         ];
 
         ob_start();

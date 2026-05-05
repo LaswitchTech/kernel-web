@@ -86,8 +86,7 @@
         errorBox.classList.add('d-none');
     }
 
-    form.addEventListener('submit', async function (e) {
-        e.preventDefault();
+    form.addEventListener('submit', async function () {
         hideError();
 
         const identity = document.getElementById('identity').value.trim();

@@ -268,20 +268,22 @@ if ($pluginsDir !== false && is_dir($pluginsDir)) {
 
     // Admin sidebar — only administration items (no Dashboard, Tools, Chat, Files).
     $adminMenus = [
+        // Standalone: Overview.
+        ['name' => 'admin-overview', 'label' => 'Overview', 'url' => '/admin', 'icon' => 'bi bi-gear', 'permission' => 'admin', 'order' => 5, 'sections' => []],
+
         // Identity & Access section.
         ['name' => '__section__identity', 'label' => 'Identity & Access', 'url' => null, 'icon' => null, 'permission' => null, 'order' => 10,
          'sections' => [['label' => 'Identity & Access', 'order' => 10]]],
-        ['name' => 'admin-overview', 'label' => 'Overview', 'url' => '/admin', 'icon' => 'bi bi-gear', 'permission' => 'admin', 'order' => 15, 'sections' => []],
-        ['name' => 'admin-users', 'label' => 'Users', 'url' => '/admin/users', 'icon' => 'bi bi-people', 'permission' => 'admin', 'order' => 20, 'sections' => []],
-        ['name' => 'admin-groups', 'label' => 'Groups', 'url' => '/admin/groups', 'icon' => 'bi bi-collection', 'permission' => 'admin', 'order' => 30, 'sections' => []],
-        ['name' => 'admin-permissions', 'label' => 'Permissions', 'url' => '/admin/permissions', 'icon' => 'bi bi-shield-check', 'permission' => 'admin', 'order' => 40, 'sections' => []],
+        ['name' => 'admin-users', 'label' => 'Users', 'url' => '/admin/users', 'icon' => 'bi bi-people', 'permission' => 'admin', 'order' => 15, 'sections' => []],
+        ['name' => 'admin-groups', 'label' => 'Groups', 'url' => '/admin/groups', 'icon' => 'bi bi-collection', 'permission' => 'admin', 'order' => 20, 'sections' => []],
+        ['name' => 'admin-permissions', 'label' => 'Permissions', 'url' => '/admin/permissions', 'icon' => 'bi bi-shield-check', 'permission' => 'admin', 'order' => 25, 'sections' => []],
 
         // System section.
-        ['name' => '__section__system', 'label' => 'System', 'url' => null, 'icon' => null, 'permission' => null, 'order' => 50,
-         'sections' => [['label' => 'System', 'order' => 50]]],
-        ['name' => 'admin-audit', 'label' => 'Audit Log', 'url' => '/admin/audit', 'icon' => 'bi bi-journal-text', 'permission' => 'admin', 'order' => 55, 'sections' => []],
-        ['name' => 'admin-settings', 'label' => 'Settings', 'url' => '/admin/settings', 'icon' => 'bi bi-sliders', 'permission' => 'admin', 'order' => 60, 'sections' => []],
-        ['name' => 'admin-extensions', 'label' => 'Extensions', 'url' => '/admin/extensions', 'icon' => 'bi bi-boxes', 'permission' => 'extensions.manage', 'order' => 70, 'sections' => []],
+        ['name' => '__section__system', 'label' => 'System', 'url' => null, 'icon' => null, 'permission' => null, 'order' => 30,
+         'sections' => [['label' => 'System', 'order' => 30]]],
+        ['name' => 'admin-settings', 'label' => 'Settings', 'url' => '/admin/settings', 'icon' => 'bi bi-sliders', 'permission' => 'admin', 'order' => 35, 'sections' => []],
+        ['name' => 'admin-audit', 'label' => 'Audit Log', 'url' => '/admin/audit', 'icon' => 'bi bi-journal-text', 'permission' => 'admin', 'order' => 40, 'sections' => []],
+        ['name' => 'admin-extensions', 'label' => 'Extensions', 'url' => '/admin/extensions', 'icon' => 'bi bi-boxes', 'permission' => 'extensions.manage', 'order' => 45, 'sections' => []],
     ];
 
     foreach ($adminMenus as $menuDef) {
@@ -299,20 +301,32 @@ if ($pluginsDir !== false && is_dir($pluginsDir)) {
         ));
     }
 
-    // Developer Tools section — only in debug mode (APP_DEBUG=true).
+    // Developer section — visible always; Developer Tools item only in debug mode.
+    MenuRegistry::add('admin-sidebar', new \App\Core\MenuItem(
+        name:        '__section__developer',
+        label:       'Developer',
+        url:         null,
+        icon:        null,
+        styleClass:  null,
+        permission:  null,
+        order:       80,
+        parentId:    null,
+        source:      'core',
+        sections:    [['label' => 'Developer', 'order' => 80]],
+    ));
+    MenuRegistry::add('admin-sidebar', new \App\Core\MenuItem(
+        name:        'admin-theme-preview',
+        label:       'Theme Preview',
+        url:         '/admin/themes/preview',
+        icon:        'bi bi-palette',
+        styleClass:  null,
+        permission:  'admin',
+        order:       85,
+        parentId:    null,
+        source:      'core',
+        sections:    [],
+    ));
     if (!empty($appCfg['debug'])) {
-        MenuRegistry::add('admin-sidebar', new \App\Core\MenuItem(
-            name:        '__section__developer',
-            label:       'Developer',
-            url:         null,
-            icon:        null,
-            styleClass:  null,
-            permission:  null,
-            order:       90,
-            parentId:    null,
-            source:      'core',
-            sections:    [['label' => 'Developer', 'order' => 90]],
-        ));
         MenuRegistry::add('admin-sidebar', new \App\Core\MenuItem(
             name:        'admin-developer',
             label:       'Developer Tools',
@@ -320,7 +334,7 @@ if ($pluginsDir !== false && is_dir($pluginsDir)) {
             icon:        'bi bi-terminal',
             styleClass:  null,
             permission:  'admin',
-            order:       95,
+            order:       90,
             parentId:    null,
             source:      'core',
             sections:    [],

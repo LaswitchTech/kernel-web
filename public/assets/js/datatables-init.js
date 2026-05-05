@@ -9,13 +9,33 @@
  * per-table overrides (e.g. custom column order, pageLength) are easy.
  *
  * Depends on: jQuery, DataTables 1.13.x, DataTables Buttons 2.4.x
+ *
+ * Deferred init:
+ *   If a view calls KernelWeb.dt.init() before this file loads, the call is
+ *   silently queued and replayed after this script finishes executing.
  */
 (function (window, $) {
     'use strict';
 
     window.KernelWeb = window.KernelWeb || {};
 
-    // ── Layout ──────────────────────────────────────────────────────────────
+    // ── Stub (queued init calls until this file loads) ──
+    var _queue = [];
+    window.KernelWeb.dt = {
+        init: function(selector, options) {
+            _queue.push(function() {
+                return $(selector).DataTable($.extend(true, {}, _DEFAULTS, options || {}));
+            });
+        },
+        initCompact: function(selector, options) {
+            _queue.push(function() {
+                return $(selector).DataTable($.extend(true, {}, _COMPACT_DEFAULTS, options || {}));
+            });
+        },
+        _q: _queue
+    };
+
+    // ── Defaults ──
     // Top row  : [Buttons / actions (left)]  [Search ~25% (right)]
     // Table    : rt
     // Bottom row: [Show N (left)]  [Info (centre)]  [Pagination (right)]
@@ -24,42 +44,32 @@
         "rt" +
         "<'row g-2 align-items-center mt-2'<'col-sm-4'l><'col-sm-4 text-center'i><'col-sm-4'p>>";
 
-    // ── Defaults ─────────────────────────────────────────────────────────────
-    var DEFAULTS = {
+    var _DEFAULTS = {
         pageLength : 25,
         lengthMenu : [10, 25, 50, 100],
         responsive : true,
         dom        : DOM_FULL,
-        buttons    : [],   // reserved for future export / action buttons
+        buttons    : [],
         language   : {
             emptyTable        : 'No records to display.',
             zeroRecords       : 'No matching records found.',
-            info              : 'Showing _START_\u2013_END_ of _TOTAL_',
+            info              : 'Showing _START_–_END_ of _TOTAL_',
             infoEmpty         : 'No entries',
             infoFiltered      : '(filtered from _MAX_)',
             lengthMenu        : 'Show _MENU_',
             search            : '',
-            searchPlaceholder : 'Search\u2026',
+            searchPlaceholder : 'Search…',
             paginate          : {
-                first    : '\u00AB',
-                previous : '\u2039',
-                next     : '\u203A',
-                last     : '\u00BB',
+                first    : '«',
+                previous : '‹',
+                next     : '›',
+                last     : '»',
             },
         },
     };
 
-    // Compact preset: styled table only, no controls at all.
-    //
-    // buttons: null  — prevents the Buttons extension from initialising.
-    //   With buttons:[] (inherited from DEFAULTS) the extension's init.dt
-    //   handler fires and creates a dead container even though dom:'t' has
-    //   no B slot.  null is falsy so the handler skips.
-    //
-    // responsive: false  — prevents the Responsive extension from wrapping
-    //   compact tables in extra divs; these tables have few columns and
-    //   don't need column-collapse behaviour.
-    var COMPACT_DEFAULTS = $.extend(true, {}, DEFAULTS, {
+    // Compact preset: styled table only, no controls.
+    var _COMPACT_DEFAULTS = $.extend(true, {}, _DEFAULTS, {
         paging    : false,
         searching : false,
         info      : false,
@@ -68,39 +78,21 @@
         responsive: false,
     });
 
-    // ── Public API ────────────────────────────────────────────────────────────
-
-    /**
-     * Initialize a full DataTable (search + pagination + length + buttons).
-     * @param  {string|jQuery} selector
-     * @param  {object}        [options]  Per-table overrides
-     * @return {DataTables.Api}
-     *
-     * IMPORTANT — injecting content into the Buttons area:
-     *   Do NOT use the `initComplete` callback for this.  In DataTables 1.13.x,
-     *   `_fnCallbackFire` calls initComplete with `this = settings.oApi`
-     *   (internal _fn* functions), NOT the public DataTables API object.
-     *   Calling `this.table()` inside initComplete therefore throws:
-     *     TypeError: this.table is not a function
-     *
-     *   Instead, capture the return value of init() and use the public API:
-     *     var dt = KernelWeb.dt.init('#my-table', { ... });
-     *     dt.buttons().container().prepend('<button>...</button>');
-     */
+    // ── Real implementations ──
     function init(selector, options) {
-        return $(selector).DataTable($.extend(true, {}, DEFAULTS, options || {}));
+        return $(selector).DataTable($.extend(true, {}, _DEFAULTS, options || {}));
     }
 
-    /**
-     * Initialize a compact summary DataTable (table only, no controls).
-     * @param  {string|jQuery} selector
-     * @param  {object}        [options]  Per-table overrides
-     * @return {DataTables.Api}
-     */
     function initCompact(selector, options) {
-        return $(selector).DataTable($.extend(true, {}, COMPACT_DEFAULTS, options || {}));
+        return $(selector).DataTable($.extend(true, {}, _COMPACT_DEFAULTS, options || {}));
     }
 
+    // Replace stub with real implementations.
     window.KernelWeb.dt = { init: init, initCompact: initCompact };
+
+    // ── Drain queued calls from views that loaded before this file ──
+    var q = _queue;
+    _queue = null;
+    for (var i = 0; i < q.length; i++) { q[i](); }
 
 }(window, jQuery));

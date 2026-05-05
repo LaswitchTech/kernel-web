@@ -37,6 +37,7 @@
 
             <?php if ($action): ?>
                 <a href="<?= $action['href'] ?>" class="btn btn-primary"><?= $action['label'] ?></a>
+                <button type="button" class="btn btn-outline-secondary" onclick="history.back()">Go Back</button>
             <?php elseif ($suggestion): ?>
                 <p class="text-muted small"><?= $suggestion ?></p>
             <?php endif; ?>

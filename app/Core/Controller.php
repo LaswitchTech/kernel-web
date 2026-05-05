@@ -32,7 +32,7 @@ abstract class Controller
     }
 
     /**
-     * Retrieve a value from the raw request body (JSON payload).
+     * Retrieve a value from the raw request body (JSON payload) or $_POST.
      * Returns null if the key is absent or the body is not valid JSON.
      */
     protected function input(string $key, mixed $default = null): mixed
@@ -44,7 +44,8 @@ abstract class Controller
             $body = json_decode($raw, true) ?? [];
         }
 
-        return $body[$key] ?? $default;
+        // Fallback to $_POST (handles standard form POST submissions).
+        return $body[$key] ?? ($_POST[$key] ?? $default);
     }
 
     /**
@@ -53,5 +54,15 @@ abstract class Controller
     protected function param(string $key, mixed $default = null): mixed
     {
         return $_REQUEST[$key] ?? $default;
+    }
+
+    /**
+     * Pop a flash message from the session.
+     */
+    protected function popFlash(): ?array
+    {
+        $flash = $_SESSION['admin_flash'] ?? null;
+        unset($_SESSION['admin_flash']);
+        return $flash;
     }
 }

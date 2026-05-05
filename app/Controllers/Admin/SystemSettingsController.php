@@ -50,14 +50,14 @@ class SystemSettingsController extends Controller
             'check_interval'     => $service->getInt('monitoring.check_interval'),
         ];
 
-        $pageTitle     = 'System Settings';
-        $activeSection = 'Admin Settings';
+        $pageTitle     = 'Settings';
+        $activeSection = '/admin/settings';
         $errors        = [];
         $flash         = $this->popFlash();
 
         $breadcrumbs = [
             ['label' => 'Administration', 'url' => '/admin'],
-            ['label' => 'System Settings', 'url' => null],
+            ['label' => 'Settings', 'url' => null],
         ];
 
         ob_start();
@@ -95,13 +95,13 @@ class SystemSettingsController extends Controller
                 'check_interval' => $input['check_interval'] !== '' ? (int) $input['check_interval'] : $service->getInt('monitoring.check_interval'),
             ];
 
-            $pageTitle     = 'System Settings';
-            $activeSection = 'Admin Settings';
+            $pageTitle     = 'Settings';
+            $activeSection = '/admin/settings';
             $flash         = null;
 
             $breadcrumbs = [
                 ['label' => 'Administration', 'url' => '/admin'],
-                ['label' => 'System Settings', 'url' => null],
+                ['label' => 'Settings', 'url' => null],
             ];
 
             ob_start();

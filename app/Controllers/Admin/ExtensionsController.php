@@ -38,6 +38,7 @@ class ExtensionsController extends Controller
         }
 
         $breadcrumbs = [
+            ['label' => 'Administration', 'url' => '/admin'],
             ['label' => 'Extensions', 'url' => null],
         ];
 
@@ -75,6 +76,7 @@ class ExtensionsController extends Controller
         $permissions = $perms;
 
         $breadcrumbs = [
+            ['label' => 'Administration', 'url' => '/admin'],
             ['label' => 'Extensions', 'url' => '/admin/extensions'],
             ['label' => 'Catalog', 'url' => null],
         ];
@@ -108,6 +110,7 @@ class ExtensionsController extends Controller
         $flash        = $this->popFlash();
 
         $breadcrumbs = [
+            ['label' => 'Administration', 'url' => '/admin'],
             ['label' => 'Extensions', 'url' => '/admin/extensions'],
             ['label' => 'Catalog', 'url' => '/admin/extensions/catalog'],
             ['label' => 'Submit', 'url' => null],
@@ -216,6 +219,7 @@ class ExtensionsController extends Controller
         $flash        = $this->popFlash();
 
         $breadcrumbs = [
+            ['label' => 'Administration', 'url' => '/admin'],
             ['label' => 'Extensions', 'url' => '/admin/extensions'],
             ['label' => 'Catalog', 'url' => '/admin/extensions/catalog'],
             ['label' => 'Review', 'url' => null],
