@@ -8,9 +8,6 @@
 <div class="card">
     <div class="card-header d-flex align-items-center justify-content-between">
         <span class="fw-semibold small">All Permissions</span>
-        <a href="/admin/permissions/create" class="btn btn-sm btn-primary">
-            <i class="bi bi-plus-lg me-1"></i>New Permission
-        </a>
     </div>
     <div class="card-body p-0">
         <div class="table-responsive">
@@ -61,6 +58,9 @@ KernelWeb.dt.init('#admin-permissions-table', {
     order: [[0, 'asc']],
     columnDefs: [
         { orderable: false, targets: [4] }
+    ],
+    buttons: [
+        { extend: 'create', text: '<i class="bi bi-plus-lg me-1"></i>New Permission', className: 'btn-sm btn-primary', url: '/admin/permissions/create' }
     ]
 });
 </script>

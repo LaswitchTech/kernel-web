@@ -41,7 +41,7 @@
         dom        : DOM_FULL,
         buttons    : [],
         language   : {
-            emptyTable        : 'No records to display.',
+            emptyTable        : 'No data available.',
             zeroRecords       : 'No matching records found.',
             info              : 'Showing _START_–_END_ of _TOTAL_',
             infoEmpty         : 'No entries',

@@ -8,9 +8,6 @@
 <div class="card">
     <div class="card-header d-flex align-items-center justify-content-between">
         <span class="fw-semibold small">All Users</span>
-        <a href="/admin/users/create" class="btn btn-sm btn-primary">
-            <i class="bi bi-person-plus me-1"></i>Create User
-        </a>
     </div>
     <div class="card-body p-0">
         <div class="table-responsive">
@@ -84,6 +81,9 @@ KernelWeb.dt.init('#admin-users-table', {
     order: [[0, 'asc']],
     columnDefs: [
         { orderable: false, targets: [3, 5] }
+    ],
+    buttons: [
+        { extend: 'create', text: '<i class="bi bi-person-plus me-1"></i>Create User', className: 'btn-sm btn-primary', url: '/admin/users/create' }
     ]
 });
 </script>

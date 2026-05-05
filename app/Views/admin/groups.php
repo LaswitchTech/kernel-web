@@ -12,9 +12,6 @@ $systemGroups = \App\Models\GroupRepository::SYSTEM_GROUPS;
 <div class="card">
     <div class="card-header d-flex align-items-center justify-content-between">
         <span class="fw-semibold small">All Groups</span>
-        <a href="/admin/groups/create" class="btn btn-primary btn-sm">
-            <i class="bi bi-plus-lg me-1"></i>New Group
-        </a>
     </div>
     <div class="card-body p-0">
         <div class="table-responsive">
@@ -89,6 +86,9 @@ KernelWeb.dt.init('#admin-groups-table', {
     order: [[0, 'asc']],
     columnDefs: [
         { orderable: false, targets: [2, 3, 5] }
+    ],
+    buttons: [
+        { extend: 'create', text: '<i class="bi bi-plus-lg me-1"></i>New Group', className: 'btn-sm btn-primary', url: '/admin/groups/create' }
     ]
 });
 
