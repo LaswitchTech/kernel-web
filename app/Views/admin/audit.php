@@ -49,11 +49,7 @@
                     </tr>
                     <?php endforeach; ?>
                     <?php if (empty($auditRows)): ?>
-                    <tr>
-                        <td colspan="5" class="text-center text-muted small fst-italic py-4">
-                            No audit log entries yet.
-                        </td>
-                    </tr>
+                    <!-- DataTables will render its own empty state -->
                     <?php endif; ?>
                 </tbody>
             </table>
@@ -66,6 +62,9 @@ KernelWeb.dt.init('#admin-audit-table', {
     order: [[0, 'desc']],
     columnDefs: [
         { orderable: false, targets: [4] }
-    ]
+    ],
+    language: {
+        emptyTable: 'No data available.'
+    }
 });
 </script>

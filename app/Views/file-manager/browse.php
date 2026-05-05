@@ -127,11 +127,7 @@
                 </thead>
                 <tbody>
                     <?php if (empty($entries)): ?>
-                    <tr>
-                        <td colspan="6" class="text-center text-muted small fst-italic py-4">
-                            This folder is empty.
-                        </td>
-                    </tr>
+                    <!-- DataTables will render its own empty state -->
                     <?php endif; ?>
                     <?php foreach ($entries as $e):
                         $isDir     = $e['type'] === 'dir';
@@ -304,7 +300,10 @@ KernelWeb.dt.init('#fm-table', {
     columnDefs: [
         { visible: false,    targets: [0] },
         { orderable: false,  targets: [1, 5] },
-    ]
+    ],
+    language: {
+        emptyTable: 'This folder is empty.'
+    }
 });
 
 // ── Rename modal wiring ────────────────────────────────────────────────

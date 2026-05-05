@@ -83,7 +83,13 @@ KernelWeb.dt.init('#admin-users-table', {
         { orderable: false, targets: [3, 5] }
     ],
     buttons: [
-        { extend: 'create', text: '<i class="bi bi-person-plus me-1"></i>Create User', className: 'btn-sm btn-primary', url: '/admin/users/create' }
+        {
+            text: '<i class="bi bi-person-plus me-1"></i>Create User',
+            className: 'btn-sm btn-primary',
+            action: function () {
+                window.location.href = '/admin/users/create';
+            }
+        }
     ]
 });
 </script>

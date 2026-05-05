@@ -88,7 +88,13 @@ KernelWeb.dt.init('#admin-groups-table', {
         { orderable: false, targets: [2, 3, 5] }
     ],
     buttons: [
-        { extend: 'create', text: '<i class="bi bi-plus-lg me-1"></i>New Group', className: 'btn-sm btn-primary', url: '/admin/groups/create' }
+        {
+            text: '<i class="bi bi-plus-lg me-1"></i>New Group',
+            className: 'btn-sm btn-primary',
+            action: function () {
+                window.location.href = '/admin/groups/create';
+            }
+        }
     ]
 });
 
