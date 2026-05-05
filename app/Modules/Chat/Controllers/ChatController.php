@@ -44,7 +44,7 @@ class ChatController extends Controller
 
         $pageTitle     = 'Chat';
         $activeSection = 'Chat';
-        $flash         = $this->popFlash();
+        $flash         = $this->popChatFlash();
 
         ob_start();
         require $viewsPath . '/chat/index.php';
@@ -148,7 +148,7 @@ class ChatController extends Controller
 
         $pageTitle     = htmlspecialchars($room['name']);
         $activeSection = 'Chat';
-        $flash         = $this->popFlash();
+        $flash         = $this->popChatFlash();
 
         ob_start();
         require $viewsPath . '/chat/show.php';
@@ -298,7 +298,7 @@ class ChatController extends Controller
         $_SESSION['chat_flash'] = ['type' => $type, 'message' => $message];
     }
 
-    private function popFlash(): ?array
+    private function popChatFlash(): ?array
     {
         $flash = $_SESSION['chat_flash'] ?? null;
         unset($_SESSION['chat_flash']);

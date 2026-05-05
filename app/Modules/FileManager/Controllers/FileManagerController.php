@@ -99,7 +99,8 @@ class FileManagerController extends Controller
         $displayName = ($user['display_name'] ?? '') !== '' ? $user['display_name'] : $user['username'];
 
         $breadcrumbs  = $this->buildBreadcrumbs($root, $relativePath);
-        $flash        = $this->popFlash();
+        $flash        = $_SESSION['fm_flash'] ?? null;
+        unset($_SESSION['fm_flash']);
         $pageTitle    = 'File Manager';
         $activeSection = 'File Manager';
         $viewsPath    = __DIR__ . '/../../../Views';
@@ -582,16 +583,6 @@ class FileManagerController extends Controller
     private function flash(string $type, string $message): void
     {
         $_SESSION['fm_flash'] = ['type' => $type, 'message' => $message];
-    }
-
-    /**
-     * Read and clear the flash message from the session.
-     */
-    private function popFlash(): ?array
-    {
-        $flash = $_SESSION['fm_flash'] ?? null;
-        unset($_SESSION['fm_flash']);
-        return $flash;
     }
 
     /**

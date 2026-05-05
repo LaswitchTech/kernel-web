@@ -369,14 +369,4 @@ class GroupController extends Controller
     {
         $_SESSION['admin_flash'] = ['type' => $type, 'message' => $message];
     }
-
-    /**
-     * Read and clear the flash message from the session.
-     */
-    private function popFlash(): ?array
-    {
-        $flash = $_SESSION['admin_flash'] ?? null;
-        unset($_SESSION['admin_flash']);
-        return $flash;
-    }
 }
