@@ -37,14 +37,24 @@ To disable (production):
 ## Planned Tools
 
 | Tool | Description | Status |
-|------|------|--------|
-| Create Plugin Scaffold | Generate a new plugin directory structure with manifest, routes.php, and skeleton controllers | Planned |
-| Create Theme Scaffold | Generate a new theme directory with theme.json, less/app.less, and Bootstrap token overrides | Planned |
-| Create Layout Scaffold | Generate a new layout file with standard panel regions and hook points | Planned |
+|--|----|-|
+| Create Plugin Scaffold | Generate a new plugin directory structure with manifest, routes.php, and skeleton controllers | Designed — see [Scaffold Generator Design](../scaffolds.md) |
+| Create Theme Scaffold | Generate a new theme directory with theme.json, less/app.less, and Bootstrap token overrides | Designed — see [Scaffold Generator Design](../scaffolds.md) |
+| Create Layout Scaffold | Generate a new layout file with standard panel regions and hook points | Designed — see [Scaffold Generator Design](../scaffolds.md) |
 | Copy Example Code | Copy example extension code (lifecycle hooks, menu registrations, route patterns) to a new extension | Planned |
 | Configure Local Repository | Configure a local repository for extension development and testing | Planned |
 | Validate Manifests | Validate extension manifests (plugin.json, theme.json, layout.json) for common errors | Planned |
 | Run Development Diagnostics | Check plugin loading, theme discovery, layout resolution, and config state | Planned |
+
+## Scaffold Generator Design
+
+The scaffold generator (plugin/theme/layout) has been designed but not yet implemented. See `docs/developer/scaffolds.md` for full design details including:
+
+- Output strategy (staging vs direct `/lib/`)
+- Template location and variable system
+- Input fields and validation rules
+- Safety rules
+- Future UI flow
 
 ## Security
 

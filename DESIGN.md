@@ -1022,7 +1022,7 @@ Developer mode is activated when `config/app.php` `debug` is `true` (controlled 
 When enabled, the following tools may be available:
 
 | Tool | Description |
-|------|-------------|
+|------|------|------|
 | Plugin scaffold | Create a new plugin scaffold |
 | Theme scaffold | Create a new theme scaffold |
 | Layout scaffold | Create a new layout scaffold |
@@ -1036,6 +1036,76 @@ When enabled, the following tools may be available:
 - Developer tools must not expose unsafe actions publicly
 - Developer tools should be gated behind `extensions.manage` or a dedicated `dev.tools` permission
 - No developer tool should perform destructive operations without confirmation
+
+---
+
+## Scaffold Generator Design
+
+### Purpose
+
+Accelerate creation of new extensions (plugins, themes, layouts) by generating consistent, safe template scaffolds.
+
+### Output Location
+
+Scaffolds are written to `/storage/extension-staging/{slug}/` (not directly to `/lib/`).
+
+**Rationale:**
+- Staging is atomic — partial generation doesn't corrupt `/lib/`
+- Matches the existing catalog install workflow (which expects files in staging)
+- User can review before install
+- Rollback is safe (delete staging dir)
+
+### Template Location
+
+Templates live in `/resources/scaffolds/{type}/` (version-controlled):
+
+```
+resources/scaffolds/
+├── plugin/          — plugin.json, src/, routes.php, migrations/, views/, README.md
+├── theme/           — theme.json, less/app.less, README.md
+└── layout/          — layout.json, app.php
+```
+
+### Placeholder Variables
+
+Templates use `{{variable}}` placeholders:
+
+| Variable | Example | Description |
+|--|--|----|
+| `{{name}}` | `My Extension` | Display name |
+| `{{slug}}` | `my-extension` | URL-safe identifier (lowercase, hyphens) |
+| `{{Namespace}}` | `MyExtension` | PascalCase class prefix |
+| `{{author}}` | `Jane Developer` | Author name |
+| `{{version}}` | `0.1.0` | Initial version |
+| `{{description}}` | `A sample extension` | Short description |
+| `{{plural_slug}}` | `my-extensions` | Pluralized slug for table names |
+| `{{lower_slug}}` | `my_extension` | Snake_case slug for DB names |
+
+### Slug Validation
+
+Slugs must match `^[a-z][a-z0-9-]*$`, 1-63 chars, no existing directory at target path.
+
+### Safety Rules
+
+1. Developer mode only (`APP_DEBUG=true`)
+2. Admin permission required (`WebAuth` + `WebPermission:admin`)
+3. No path traversal (slug regex + directory check)
+4. No overwriting existing directories
+5. No secrets in templates
+6. No automatic git commits
+7. Preview before generate (file list for review)
+8. No filesystem paths exposed in UI
+
+### Future UI Flow
+
+1. `GET /admin/developer/scaffold` — choose scaffold type
+2. Fill metadata form (name, slug, version, description, author)
+3. (Optional) Fill type-specific fields (permissions, routes, menus, etc.)
+4. Preview files to be generated
+5. Confirm generation
+6. Show success with generated file list and next steps
+
+For full design, see `docs/developer/scaffolds.md`.
 
 ---
 
