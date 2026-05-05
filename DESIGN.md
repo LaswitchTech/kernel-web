@@ -921,8 +921,8 @@ Kernel-Web uses a hybrid approach for CSS delivery:
 ### Route
 
 - **Path:** `GET /css`
+- **Auth:** None (public route — stylesheets must be loadable by unauthenticated visitors)
 - **Content-Type:** `text/css`
-- **Middleware:** `SessionAuth` (auth required)
 - **Cache-Control:** `public, max-age=3600`
 - **Controller:** `CssController@show`
 - **Service:** `LessCompiler` (in `app/Services/LessCompiler.php`)

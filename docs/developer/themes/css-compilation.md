@@ -26,7 +26,7 @@ kernel CSS with dynamic theme/layout/plugin LESS.
 |----------|-------|
 | Path | `GET /css` |
 | Content-Type | `text/css` |
-| Middleware | `SessionAuth` |
+| Middleware | None (public) |
 | Controller | `CssController@show` |
 | Service | `LessCompiler` |
 | Cache-Control | `public, max-age=3600` |

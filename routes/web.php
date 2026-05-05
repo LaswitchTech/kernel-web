@@ -23,6 +23,14 @@ $router->get('/', 'Controllers\Home\HomeController@index', [], 0);
 $router->get('/install', 'Controllers\Home\HomeController@install', [], 0);
 $router->get('/dashboard', 'Controllers\Home\HomeController@dashboard', [], 0);
 
+// -------------------------------- CSS (public) ------
+// Dynamically compiled CSS must be publicly accessible so unauthenticated
+// pages (/, signin, setup) load styling correctly. No sensitive data
+// is in the compiled output (only CSS custom property tokens and structural
+// class definitions). Raw LESS files remain on disk — browsers request /css,
+// not the source LESS files.
+$router->get('/css', 'CssController@show', [], 0);
+
 // -------------------------------- Admin Area (requires 'admin' permission) ------
 
 // Admin dashboard
@@ -106,9 +114,6 @@ $router->get('/api/notifications/recent', 'Modules\Notifications\Controllers\Not
 
 // Chat JSON API — SessionAuth for AJAX callers.
 $router->get('/api/chat/unread', 'Modules\Chat\Controllers\ChatController@unreadCount', ['SessionAuth']);
-
-// -------------------------------- CSS (dynamically compiled from LESS) ------
-$router->get('/css', 'CssController@show', ['SessionAuth']);
 
 // -------------------------------- Authentication (public) ------
 $router->get('/signin', 'AuthController@loginForm');

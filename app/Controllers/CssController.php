@@ -5,14 +5,18 @@ namespace App\Controllers;
 use App\Core\Config;
 
 /**
- * Serves dynamically compiled CSS at GET /css.
+ * Serves dynamically compiled CSS at GET /css (public route).
+ *
+ * The compiled output contains only CSS custom property tokens
+ * (theme colors, layout dimensions, structural class definitions).
+ * No sensitive data (no paths, no user data, no secrets).
  *
  * Priority:
  *   1. production mode — serve npm-compiled public/assets/css/app.css (existing build)
  *   2. development mode — dynamically compile LESS via LessCompiler service
  *
  * The npm build (npm run build:css) is the source of truth for production CSS.
- * The PHP compiler handles theme/layout/plugin extensions not yet in the static build.
+ * Raw LESS files are not served directly — browsers request /css only.
  */
 class CssController
 {
@@ -20,7 +24,7 @@ class CssController
      * Serve compiled CSS.
      *
      * Content-Type is set to text/css.
-     * A Cache-Control header enables browser caching (1 hour).
+     * Cache-Control enables browser caching (1 hour).
      */
     public function show(): void
     {
@@ -50,7 +54,12 @@ class CssController
                 echo file_get_contents($staticCss);
                 return;
             }
-            echo "/* CSS unavailable: {$e->getMessage()} */";
+            // Only show error details in debug mode.
+            if ($debug) {
+                echo "/* CSS unavailable: " . $e->getMessage() . " */";
+            } else {
+                echo "/* CSS unavailable */";
+            }
         }
     }
 }
