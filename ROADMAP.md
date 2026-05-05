@@ -37,7 +37,7 @@ Core infrastructure improvements that unlock future feature work.
 - [ ] Extension update checks (local → catalog → remote)
 - [ ] Documentation plugin (render markdown docs at clean routes)
 - [x] Extensions UI polish (improved listing, filtering, status indicators)
-- [ ] Developer mode tools foundation (conditional code paths, permission gates)
+- [x] Developer mode tools foundation (conditional code paths, permission gates)
 - [ ] Plugin/theme/layout scaffold generator (bootstrap new extensions)
 - [ ] Remote catalog sync (periodic fetch of extension listings from a remote server)
 - [ ] Extension manifest validation improvements (semver, dependency format)
@@ -108,7 +108,7 @@ These are planned or requested but are out of scope for the current development 
 | Plugin migrations | Implemented | Migration runner, catalog integration |
 | Breadcrumbs | Implemented | Documented in /docs/developer/breadcrumbs.md |
 | DataTables | Standardized | Consistent configuration across all admin tables |
-| Developer mode | Not implemented | Gated by `APP_DEBUG` |
+| Developer mode | Implemented | Admin page at /admin/developer, sidebar menu (debug-gated), planned-tools cards |
 | LESS compilation | Implemented | Hybrid: npm build + PHP dynamic merge at /css |
 | Updates module | Not implemented | Documented for Phase 2 |
 | Documentation plugin | Not implemented | Documented for Phase 2 |

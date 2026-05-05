@@ -292,6 +292,22 @@ if ($pluginsDir !== false && is_dir($pluginsDir)) {
         ));
     }
 
+    // Developer Tools — only in debug mode (APP_DEBUG=true).
+    if (!empty($appCfg['debug'])) {
+        MenuRegistry::add('admin-sidebar', new \App\Core\MenuItem(
+            name:        'admin-developer',
+            label:       'Developer Tools',
+            url:         '/admin/developer',
+            icon:        'bi bi-terminal',
+            styleClass:  null,
+            permission:  'admin',
+            order:       80,
+            parentId:    null,
+            source:      'core',
+            sections:    [],
+        ));
+    }
+
     // Store registry in container for later access (e.g. admin UI).
     $container->set('plugins', $loader->getRegistry());
 
