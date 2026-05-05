@@ -36,7 +36,7 @@ Core infrastructure improvements that unlock future feature work.
 - [x] Dynamic LESS compilation (wikimedia/less.php, /css route, cache, theme/layout/plugin merge)
 - [ ] Extension update checks (local → catalog → remote)
 - [ ] Documentation plugin (render markdown docs at clean routes)
-- [ ] Extensions UI polish (improved listing, filtering, status indicators)
+- [x] Extensions UI polish (improved listing, filtering, status indicators)
 - [ ] Developer mode tools foundation (conditional code paths, permission gates)
 - [ ] Plugin/theme/layout scaffold generator (bootstrap new extensions)
 - [ ] Remote catalog sync (periodic fetch of extension listings from a remote server)
@@ -100,7 +100,7 @@ These are planned or requested but are out of scope for the current development 
 | Area | Status | Notes |
 |------|--------|-------|
 | Plugin system | Implemented | Discovery, manifest, lifecycle hooks, registry |
-| Extension catalog | Partially implemented | Browse, submit, review, approve, install, enable/disable, uninstall |
+| Extension catalog | Partially implemented | Browse, submit, review, approve, install, enable/disable, uninstall — UI polished with consistent badges, filtering, and action grouping |
 | Menu system | Implemented | Registry, sidebar, user-menu, admin-menu locations |
 | Layout system | Implemented | `app.php` (app), `panel.php` (admin), `blank.php` (auth, local assets, hooks) |
 | Theme system | Partially implemented | Bootstrap 5, LESS, dark/light mode |
