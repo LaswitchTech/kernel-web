@@ -32,7 +32,7 @@
     //   Bottom row : Length (left)  |  Info (center)  |  Pagination (right)
     // Bootstrap utility classes provide gutter + vertical margins between rows.
     var DOM_FULL =
-        "<'row g-2 align-items-center mb-2'<'col-auto'B><'col-sm-3 ms-auto'f>>" +
+        "<'row g-2 align-items-center mb-2'<'col-auto'B><'col'f>>" +
         "rt" +
         "<'row g-2 align-items-center mt-2'<'col-sm-4'l><'col-sm-4 text-center'i><'col-sm-4'p>>";
 

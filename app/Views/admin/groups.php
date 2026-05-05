@@ -90,7 +90,7 @@ KernelWeb.dt.init('#admin-groups-table', {
     buttons: [
         {
             text: '<i class="bi bi-plus-lg me-1"></i>New Group',
-            className: 'btn-sm btn-primary',
+            className: 'btn btn-sm btn-primary',
             action: function () {
                 window.location.href = '/admin/groups/create';
             }
