@@ -84,9 +84,10 @@ KernelWeb.dt.init('#admin-users-table', {
     ],
     buttons: [
         {
-            text: '<i class="bi bi-person-plus me-1"></i>New User',
+            text: '<i class="bi bi-person-plus me-1" aria-hidden="true"></i><span class="visually-hidden">New User</span>',
             className: 'btn btn-sm btn-primary',
-            action: function () {
+            titleAttr: 'New User',
+            action: function (e, dt, node, config) {
                 window.location.href = '/admin/users/create';
             }
         }

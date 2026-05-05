@@ -11,7 +11,7 @@
  * Depends on: jQuery, DataTables 2.3.x, DataTables Buttons 3.2.x
  *
  * Deferred init:
- *   If a view calls KernelWeb.dt.init() before this file loads, the call is
+ *   If a view calls KernelWeb.dt.init() before this script loads, the call is
  *   silently queued and replayed after this script finishes executing.
  */
 (function (window, $) {
@@ -25,25 +25,26 @@
         window.KernelWeb._dtInitQueue = null;
     }
 
-    // ── Defaults ──
-    // DOM layout:
-    //   Top row    : Buttons (left)  |  Search (right)
-    //   Table      : rt
-    //   Bottom row : Length (left)  |  Info (center)  |  Pagination (right)
-    // Bootstrap utility classes provide gutter + vertical margins between rows.
-    var DOM_FULL =
-        "<'row g-2 align-items-center mb-2'<'col-auto'B><'col'f>>" +
-        "rt" +
-        "<'row g-2 align-items-center mt-2'<'col-sm-4'l><'col-sm-4 text-center'i><'col-sm-4'p>>";
-
+    // ── Defaults (DataTables 2 layout API) ──
+    // Layout:
+    //   topStart  : buttons (left)
+    //   topEnd    : search   (right)
+    //   bottomStart: pageLength (left)
+    //   bottom     : info     (center)
+    //   bottomEnd  : paging   (right)
     var DEFAULTS = {
         pageLength : 25,
         lengthMenu : [10, 25, 50, 100],
         responsive : true,
-        dom        : DOM_FULL,
-        buttons    : [],
-        // Default button style: Bootstrap Icons + visually hidden label + aria-label
-        // Override per-table with { text: '<i class="bi bi-XXX"></i> <span class="visually-hidden">Label</span>', ariaLabel: 'Label', className: 'btn-sm btn-outline-secondary' }
+        layout     : {
+            topStart:   'buttons',
+            topEnd:     'search',
+            bottomStart: 'pageLength',
+            bottom:     'info',
+            bottomEnd:  'paging'
+        },
+        // Button default classes — applied to custom buttons lacking className
+        buttonClasses: 'btn btn-sm',
         language   : {
             emptyTable        : 'No data available.',
             zeroRecords       : 'No matching records found.',
@@ -67,7 +68,7 @@
         paging    : false,
         searching : false,
         info      : false,
-        dom       : 't',
+        layout    : { topStart: null, topEnd: null, bottomStart: null, bottom: null, bottomEnd: null },
         buttons   : null,
         responsive: false,
     });

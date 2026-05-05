@@ -61,9 +61,10 @@ KernelWeb.dt.init('#admin-permissions-table', {
     ],
     buttons: [
         {
-            text: '<i class="bi bi-plus-lg me-1"></i>New Permission',
+            text: '<i class="bi bi-plus-lg me-1" aria-hidden="true"></i><span class="visually-hidden">New Permission</span>',
             className: 'btn btn-sm btn-primary',
-            action: function () {
+            titleAttr: 'New Permission',
+            action: function (e, dt, node, config) {
                 window.location.href = '/admin/permissions/create';
             }
         }

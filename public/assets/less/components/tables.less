@@ -1,9 +1,9 @@
 // ============================================================
 // Kernel-Web — Table and DataTables theming
-// Bootstrap 5 tables + DataTables wrapper elements
+// Bootstrap 5 tables + DataTables 2 layout wrapper elements
 // ============================================================
 
-// ── Bootstrap table base overrides ───────────────────────────
+// ── Bootstrap table base overrides ──
 .table {
     --bs-table-bg:              transparent;
     --bs-table-color:           var(--app-text);
@@ -30,35 +30,39 @@
     }
 }
 
-// ── DataTables wrapper ────────────────────────────────────────
-div.dataTables_wrapper {
+// ── DataTables 2 wrapper ─────────────────────────────────
+div.dt-container {
     color: var(--app-text);
 
-    // ── Top-row layout (Buttons left, search right) ───────────
-    .dt-top {
-        margin-bottom: 0.5rem;
-    }
-
-    .dt-bot {
-        margin-top: 0.5rem;
-    }
-
-    // ── Control rows — comfortable spacing between controls and table ────
-    .dt-top,
-    .dt-bot {
-        // Vertical breathing room between controls and table
+    // ── Control rows — vertical breathing room ──
+    div.dt-row {
         margin-top:     0.5rem;
         margin-bottom:  0.5rem;
+
+        // First row: only top margin; last row: only bottom margin
+        &:first-child {
+            margin-top: 0;
+        }
+        &:last-child {
+            margin-bottom: 0;
+        }
     }
 
-    // ── Hide the Buttons container when no buttons are injected ───
-    // Prevents empty left-side gap when a table has no action buttons.
-    .dt-buttons:empty {
-        display: none;
+    // ── Buttons container ──
+    div.dt-layout-start {
+        // Hide buttons area when no buttons rendered
+        &:has(> .dt-buttons:empty) {
+            display: none;
+        }
+
+        // Collapse empty button groups
+        > .dt-buttons:empty {
+            display: none !important;
+        }
     }
 
-    // Controls: length select + filter input
-    div.dataTables_length {
+    // ── Page length ──
+    div.dt-length {
         label {
             color: var(--app-text-muted);
             font-size: 0.85rem;
@@ -84,10 +88,8 @@ div.dataTables_wrapper {
         }
     }
 
-    div.dataTables_filter {
-        // Fill the assigned Bootstrap column (~25% of table width with col-sm-4)
-        width: 100%;
-
+    // ── Search ──
+    div.dt-search {
         label {
             color: var(--app-text-muted);
             font-size: 0.85rem;
@@ -95,19 +97,16 @@ div.dataTables_wrapper {
             align-items: center;
             gap: 0.35rem;
             white-space: nowrap;
-            width: 100%;
             justify-content: flex-end;
         }
 
-        input[type="search"] {
+        input {
             background-color: var(--app-input-bg);
             color: var(--app-text);
             border: 1px solid var(--app-border);
             border-radius: calc(var(--app-radius) / 2);
             padding: 0.25rem 0.5rem;
             font-size: 0.85rem;
-            // Expand to fill the label flex container
-            flex: 1;
             min-width: 120px;
 
             &:focus {
@@ -118,19 +117,19 @@ div.dataTables_wrapper {
         }
     }
 
-    // Info text ("Showing X–Y of Z entries")
-    div.dataTables_info {
+    // ── Info text ("Showing X–Y of Z entries") ──
+    div.dt-info {
         color: var(--app-text-muted);
         font-size: 0.8rem;
-        padding-top: 0.5rem;
     }
 
-    // Pagination
-    div.dataTables_paginate {
-        .paginate_button {
+    // ── Pagination ──
+    div.dt-paging {
+        .dt-paging-button {
             color: var(--app-text-muted) !important;
             border-radius: calc(var(--app-radius) / 2) !important;
             border: 1px solid transparent !important;
+            cursor: pointer;
 
             &:hover {
                 background: var(--app-nav-hover-bg) !important;
@@ -138,7 +137,8 @@ div.dataTables_wrapper {
                 border-color: var(--app-border) !important;
             }
 
-            &.current {
+            &.current,
+            &.active {
                 background: var(--app-primary) !important;
                 color: #fff !important;
                 border-color: var(--app-primary) !important;
@@ -158,8 +158,8 @@ div.dataTables_wrapper {
         }
     }
 
-    // Processing overlay
-    div.dataTables_processing {
+    // ── Processing overlay ──
+    div.dt-processing {
         background: var(--app-panel-2);
         color: var(--app-text-muted);
         border: 1px solid var(--app-border);
@@ -167,25 +167,15 @@ div.dataTables_wrapper {
         box-shadow: var(--app-shadow);
     }
 
-    // Empty-row message
-    td.dataTables_empty {
+    // ── Empty row ──
+    td.dt-empty {
         color: var(--app-text-muted);
         font-style: italic;
         text-align: center;
         padding: 2rem 1rem !important;
     }
 
-    // ── DataTables Buttons ────────────────────────────────────
-    // No .btn override here.
-    //
-    // The .dt-buttons container (Bootstrap 5 integration gives it
-    // class="dt-buttons btn-group flex-wrap") holds buttons that are
-    // injected via initComplete().  Those buttons are plain Bootstrap
-    // variant elements (btn-primary, btn-outline-secondary, etc.) and
-    // must keep their own Bootstrap colours — a broad .dt-buttons .btn
-    // rule would override every variant class and break the styling.
-    //
-    // If DT-generated export buttons (copy / excel / print …) are added
-    // in the future, scope any theming to something like
-    // .dt-buttons > button.btn-secondary rather than .dt-buttons .btn.
+    // ── Buttons styling ──
+    // dt-buttons is a btn-group — buttons keep their own Bootstrap classes.
+    // Do not override .btn variants here.
 }
