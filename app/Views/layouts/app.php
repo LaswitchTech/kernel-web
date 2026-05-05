@@ -21,10 +21,15 @@
     <link rel="stylesheet" href="/assets/vendor/bootstrap/5.3.3/css/bootstrap.min.css">
     <!-- Bootstrap Icons 1.11.3 -->
     <link rel="stylesheet" href="/assets/vendor/bootstrap-icons/1.11.3/bootstrap-icons.min.css">
-    <!-- DataTables 1.13.8 + Responsive 2.5.0 + Buttons 2.4.2 -->
-    <link rel="stylesheet" href="/assets/vendor/datatables/1.13.8/css/dataTables.bootstrap5.min.css">
-    <link rel="stylesheet" href="/assets/vendor/datatables-responsive/2.5.0/css/responsive.bootstrap5.min.css">
-    <link rel="stylesheet" href="/assets/vendor/datatables-buttons/2.4.2/css/buttons.bootstrap5.min.css">
+    <!-- DataTables 2.3.8 + Buttons 3.2.6 + Responsive 3.0.8 + Select 3.1.3 + StateRestore 1.4.3 + RowGroup 1.6.0 + Scroller 2.4.3 + ColumnControl 1.2.1 -->
+    <link rel="stylesheet" href="/assets/vendor/datatables/2.3.8/css/jquery.dataTables.min.css">
+    <link rel="stylesheet" href="/assets/vendor/datatables-buttons/3.2.6/css/buttons.bootstrap5.min.css">
+    <link rel="stylesheet" href="/assets/vendor/datatables-responsive/3.0.8/css/responsive.bootstrap5.min.css">
+    <link rel="stylesheet" href="/assets/vendor/datatables-select/3.1.3/css/select.bootstrap5.min.css">
+    <link rel="stylesheet" href="/assets/vendor/datatables-staterestore/1.4.3/css/stateRestore.min.css">
+    <link rel="stylesheet" href="/assets/vendor/datatables-rowgroup/1.6.0/css/rowGroup.bootstrap5.min.css">
+    <link rel="stylesheet" href="/assets/vendor/datatables-scroller/2.4.3/css/scroller.bootstrap5.min.css">
+    <link rel="stylesheet" href="/assets/vendor/datatables-columncontrol/1.2.1/css/columnControl.bootstrap5.min.css">
     <!-- App theme — dynamically compiled LESS -->
     <link rel="stylesheet" href="/css">
 
@@ -253,13 +258,25 @@ echo \App\Core\MenuHelper::renderSidebar($navActive, $permissions ?? [], $sideba
 <script src="/assets/vendor/bootstrap/5.3.3/js/bootstrap.bundle.min.js"></script>
 <!-- jQuery 3.7.1 (required by DataTables) -->
 <script src="/assets/vendor/jquery/3.7.1/jquery.min.js"></script>
-<!-- DataTables 1.13.8 + Responsive 2.5.0 + Buttons 2.4.2 -->
-<script src="/assets/vendor/datatables/1.13.8/js/jquery.dataTables.min.js"></script>
-<script src="/assets/vendor/datatables/1.13.8/js/dataTables.bootstrap5.min.js"></script>
-<script src="/assets/vendor/datatables-responsive/2.5.0/js/dataTables.responsive.min.js"></script>
-<script src="/assets/vendor/datatables-responsive/2.5.0/js/responsive.bootstrap5.min.js"></script>
-<script src="/assets/vendor/datatables-buttons/2.4.2/js/dataTables.buttons.min.js"></script>
-<script src="/assets/vendor/datatables-buttons/2.4.2/js/buttons.bootstrap5.min.js"></script>
+<!-- DataTables 2.3.8 (Bootstrap 5 classes built into core) -->
+<script src="/assets/vendor/datatables/2.3.8/js/jquery.dataTables.min.js"></script>
+<!-- DataTables Buttons 3.2.6 -->
+<script src="/assets/vendor/datatables-buttons/3.2.6/js/dataTables.buttons.min.js"></script>
+<script src="/assets/vendor/datatables-buttons/3.2.6/js/buttons.bootstrap5.min.js"></script>
+<!-- DataTables Responsive 3.0.8 -->
+<script src="/assets/vendor/datatables-responsive/3.0.8/js/dataTables.responsive.min.js"></script>
+<script src="/assets/vendor/datatables-responsive/3.0.8/js/responsive.bootstrap5.min.js"></script>
+<!-- DataTables Select 3.1.3 -->
+<script src="/assets/vendor/datatables-select/3.1.3/js/dataTables.select.min.js"></script>
+<!-- DataTables StateRestore 1.4.3 -->
+<script src="/assets/vendor/datatables-staterestore/1.4.3/js/dataTables.stateRestore.min.js"></script>
+<script src="/assets/vendor/datatables-staterestore/1.4.3/js/staterestore.bootstrap5.min.js"></script>
+<!-- DataTables RowGroup 1.6.0 -->
+<script src="/assets/vendor/datatables-rowgroup/1.6.0/js/dataTables.rowGroup.min.js"></script>
+<!-- DataTables Scroller 2.4.3 -->
+<script src="/assets/vendor/datatables-scroller/2.4.3/js/dataTables.scroller.min.js"></script>
+<!-- DataTables ColumnControl 1.2.1 -->
+<script src="/assets/vendor/datatables-columncontrol/1.2.1/js/dataTables.columnControl.min.js"></script>
 <!-- App shared JS -->
 <script src="/assets/js/datatables-init.js"></script>
 

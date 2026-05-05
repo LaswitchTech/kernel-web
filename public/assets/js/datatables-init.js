@@ -8,7 +8,7 @@
  * Both merge the supplied options on top of their respective defaults so
  * per-table overrides (e.g. custom column order, pageLength) are easy.
  *
- * Depends on: jQuery, DataTables 1.13.x, DataTables Buttons 2.4.x
+ * Depends on: jQuery, DataTables 2.3.x, DataTables Buttons 3.2.x
  *
  * Deferred init:
  *   If a view calls KernelWeb.dt.init() before this file loads, the call is
@@ -68,13 +68,17 @@
         responsive: false,
     });
 
-    // ── Real implementations ──
+    // ── Real implementations (DataTables 2.x) ──
     function init(selector, options) {
-        return $(selector).DataTable($.extend(true, {}, DEFAULTS, options || {}));
+        var tableEl = $(selector).first();
+        if (tableEl.length === 0) return null;
+        return new DataTable(tableEl[0], $.extend(true, {}, DEFAULTS, options || {}));
     }
 
     function initCompact(selector, options) {
-        return $(selector).DataTable($.extend(true, {}, COMPACT_DEFAULTS, options || {}));
+        var tableEl = $(selector).first();
+        if (tableEl.length === 0) return null;
+        return new DataTable(tableEl[0], $.extend(true, {}, COMPACT_DEFAULTS, options || {}));
     }
 
     // Install real implementations on KernelWeb.
