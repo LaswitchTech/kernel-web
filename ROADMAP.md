@@ -56,6 +56,7 @@ Features that depend on Phase 2 foundations being in place.
 - [ ] Application update system (local override patches)
 - [ ] Theme/layout runtime management (switch without manual file operations)
 - [x] DataTables standardization everywhere (consistent configuration, shared init)
+- [ ] User registration (config toggle, disabled by default)
 - [ ] Plugin marketplace foundation (extension listing, version tracking)
 - [ ] Developer mode tools implementation (scaffold generator, example templates)
 - [ ] Extension installation progress tracking (large extensions)
@@ -121,6 +122,7 @@ These are planned or requested but are out of scope for the current development 
 | Phase 1 stabilization | Closed | 17/18 tasks done — tests deferred (no framework) |
 | OAuth | Deferred | See Deferred section |
 | Licensing | Deferred | See Deferred section |
+| Registration | Planned | Config toggle (disabled by default) — Phase 3 |
 
 ---
 

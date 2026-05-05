@@ -435,6 +435,34 @@ Organizations are a future optional concept for grouping users and data.
 
 ---
 
+## Registration Design
+
+### Rule
+> Registration is **disabled by default**. When enabled, it is controlled by a single configuration option.
+
+### Configuration
+- `config/auth.php` includes `'registration' => ['enabled' => false]`
+- When `enabled` is `false`, the registration route returns 404
+- When `enabled` is `true`, a registration form is shown at `/auth/register`
+
+### Form Design (when enabled)
+- Uses `blank.php` layout (same as login)
+- Fields: username, email, password, password confirmation
+- Server-side validation with keyed field errors
+- On success: creates user, auto-logins, redirects to `/`
+- On failure: re-renders form with error messages
+
+### Security Considerations
+- Rate limiting is planned (future)
+- Email verification is planned (future)
+- No open registration without admin approval (planned)
+
+### Roadmap
+- Phase 3: Basic registration form + config toggle
+- Phase 4: Email verification + rate limiting
+
+---
+
 ## Landing Page Design
 
 ### Public Landing Page

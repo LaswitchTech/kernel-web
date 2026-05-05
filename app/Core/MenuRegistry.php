@@ -69,6 +69,7 @@ class MenuRegistry
      *   - permission: required permission (for links)
      *   - name: identifier
      *   - source: plugin or 'core'
+     *   - children: array of link arrays for section items (only on 'section' type)
      *
      * Section carrier items (name starting with '__section__') carry section
      * labels but have no url. They are excluded from the returned array.
@@ -90,6 +91,7 @@ class MenuRegistry
 
         $result = [];
         $lastOrder = -1;
+        $lastSectionIdx = -1;
 
         foreach ($items as $item) {
             // Skip section carrier items (they have no url).
@@ -101,16 +103,18 @@ class MenuRegistry
             foreach ($sections as $order => $label) {
                 if ($order > $lastOrder && $order < $item->order) {
                     $result[] = [
-                        'type'  => 'section',
-                        'label' => $label,
-                        'order' => $order,
+                        'type'    => 'section',
+                        'label'   => $label,
+                        'order'   => $order,
+                        'children' => [],
                     ];
+                    $lastSectionIdx = count($result) - 1;
                     $lastOrder = $order;
                     unset($sections[$order]);
                 }
             }
 
-            $result[] = [
+            $link = [
                 'type'       => 'link',
                 'name'       => $item->name,
                 'label'      => $item->label,
@@ -121,6 +125,11 @@ class MenuRegistry
                 'source'     => $item->source,
                 'order'      => $item->order,
             ];
+            $result[] = $link;
+            // Attach to current section.
+            if ($lastSectionIdx >= 0 && $result[$lastSectionIdx]['type'] === 'section') {
+                $result[$lastSectionIdx]['children'][] = $link;
+            }
             $lastOrder = max($lastOrder, $item->order);
         }
 

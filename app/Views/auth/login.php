@@ -29,7 +29,7 @@
 
         <div id="login-error" class="alert alert-danger d-none" role="alert"></div>
 
-        <form id="login-form" novalidate>
+        <form id="login-form" action="/auth/login" method="POST">
             <div class="mb-3">
                 <label for="identity" class="form-label">Username or Email</label>
                 <input

@@ -74,7 +74,7 @@ $navActive = $activeSection ?? $pageTitle;
         <nav class="sidebar-nav">
 <?php
 // Render admin sidebar from MenuRegistry.
-echo \App\Core\MenuHelper::renderSidebar($navActive, $permissions ?? [], [], 'admin-sidebar');
+echo \App\Core\MenuHelper::renderSidebar($navActive, $permissions ?? [], [], 'admin-sidebar', $navActive);
 ?>
         </nav>
 
@@ -141,6 +141,13 @@ echo \App\Core\MenuHelper::renderSidebar($navActive, $permissions ?? [], [], 'ad
                                 <i class="bi bi-person me-2"></i>Profile
                             </a>
                         </li>
+                        <?php if (in_array('admin', $permissions ?? [], true)): ?>
+                        <li>
+                            <a class="dropdown-item" href="/admin">
+                                <i class="bi bi-gear me-2"></i>Administration
+                            </a>
+                        </li>
+                        <?php endif; ?>
                         <li><hr class="dropdown-divider"></li>
                         <li>
                             <button class="dropdown-item" id="js-logout">
@@ -159,7 +166,7 @@ echo \App\Core\MenuHelper::renderSidebar($navActive, $permissions ?? [], [], 'ad
                 <ol class="breadcrumb mb-0">
                     <li class="breadcrumb-item">
                         <a href="/admin" class="text-decoration-none">
-                            <i class="bi bi-house"></i> Admin
+                            <i class="bi bi-house"></i> Administration
                         </a>
                     </li>
                     <?php foreach ($breadcrumbs as $i => $crumb): ?>

@@ -21,7 +21,7 @@ class MenuHelper
      * @param array<string, int> $badges URL-prefix to badge count mapping.
      * @return string
      */
-    public static function renderSidebar(string $navActive, array $permissions, array $badges = [], string $menuName = 'sidebar'): string
+    public static function renderSidebar(string $navActive, array $permissions, array $badges = [], string $menuName = 'sidebar', string $currentPage = ''): string
     {
         $items = MenuRegistry::renderItems($menuName, $permissions);
 
@@ -29,7 +29,17 @@ class MenuHelper
 
         foreach ($items as $item) {
             if ($item['type'] === 'section') {
-                $out .= '<div class="sidebar-section-label">' . htmlspecialchars($item['label']) . "</div>\n";
+                $cls = 'sidebar-section-label';
+                // Highlight section header when any child URL is active.
+                if ($currentPage && !empty($item['children'] ?? [])) {
+                    foreach ($item['children'] as $child) {
+                        if (rtrim($currentPage, '/') === rtrim($child['url'], '/')) {
+                            $cls .= ' active';
+                            break;
+                        }
+                    }
+                }
+                $out .= '<div class="' . htmlspecialchars($cls) . '">' . htmlspecialchars($item['label']) . "</div>\n";
                 continue;
             }
 
