@@ -834,7 +834,7 @@ Any interface that displays tabular data should use DataTables by default.
 - All admin and plugin tables should initialize DataTables where appropriate
 - Table actions such as "Create", "Add", "Export", or similar should prioritize DataTables Buttons where appropriate
 - Avoid placing unrelated action buttons randomly outside the table when they belong to table-level actions
-- DataTables libraries are already loaded in the panel layout (jQuery 3.7.1, DataTables 1.13.8 + Responsive 2.5.0 + Buttons 2.4.2)
+- DataTables libraries are already loaded in the panel layout (jQuery 3.7.1, DataTables 2.3.8 + Buttons 3.2.6 + Responsive 3.0.8 + Select 3.1.3 + StateRestore 1.4.3 + RowGroup 1.6.0 + Scroller 2.4.3 + ColumnControl 1.2.1)
 - Initialize via `$.fn.dataTable()` or the shared `datatables-init.js` helper
 
 **Exception:** Lists that are not tabular (e.g., notification feeds, chat messages) do not require DataTables.
