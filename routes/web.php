@@ -52,6 +52,9 @@ $router->post('/admin/extensions/catalog/{id}/enable', 'Controllers\Admin\Extens
 $router->post('/admin/extensions/catalog/{id}/disable', 'Controllers\Admin\ExtensionsController@handleDisable', ['WebAuth', 'WebPermission:extensions.manage']);
 $router->post('/admin/extensions/catalog/{id}/uninstall', 'Controllers\Admin\ExtensionsController@handleUninstall', ['WebAuth', 'WebPermission:extensions.manage']);
 
+// Admin Themes — preview page for theme development.
+$router->get('/admin/themes/preview', 'Controllers\Admin\ThemeController@preview', ['WebAuth', 'WebPermission:admin']);
+
 // Admin permissions — full CRUD.
 $router->get('/admin/permissions', 'Controllers\Admin\PermissionController@index', ['WebAuth', 'WebPermission:admin']);
 $router->get('/admin/permissions/create', 'Controllers\Admin\PermissionController@createForm', ['WebAuth', 'WebPermission:admin']);

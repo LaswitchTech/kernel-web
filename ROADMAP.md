@@ -42,9 +42,7 @@ Core infrastructure improvements that unlock future feature work.
 - [ ] Remote catalog sync (periodic fetch of extension listings from a remote server)
 - [ ] Extension manifest validation improvements (semver, dependency format)
 - [ ] Organizations system design (optional, plugin-based data scoping)
-- [ ] Theme preview page design (Bootstrap components reference)
 - [ ] Organizations plugin foundation (organizations table, organization_users pivot, user membership)
-- [ ] Theme preview page implementation (Bootstrap components reference, theme switching)
 
 ---
 
@@ -106,7 +104,7 @@ These are planned or requested but are out of scope for the current development 
 | Theme system | Partially implemented | Bootstrap 5, LESS, dark/light mode |
 | Auth system | Partially implemented | Users, groups, permissions, tokens, sessions |
 | Organizations | Planned | Design phase — optional, plugin-based scoping |
-| Theme preview | Planned | Design phase — Bootstrap components reference |
+| Theme preview | Implemented | GET /admin/themes/preview, all Bootstrap components, panel layout with breadcrumbs |
 | Plugin migrations | Implemented | Migration runner, catalog integration |
 | Breadcrumbs | Implemented | Documented in /docs/developer/breadcrumbs.md |
 | DataTables | Standardized | Consistent configuration across all admin tables |
