@@ -86,7 +86,8 @@
         errorBox.classList.add('d-none');
     }
 
-    form.addEventListener('submit', async function () {
+    form.addEventListener('submit', async function (e) {
+        e.preventDefault();
         hideError();
 
         const identity = document.getElementById('identity').value.trim();
@@ -100,10 +101,10 @@
         setLoading(true);
 
         try {
+            const formData = new FormData(form);
             const res = await fetch('/auth/login', {
                 method:  'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body:    JSON.stringify({ identity, password }),
+                body:    formData,
             });
 
             const data = await res.json();

@@ -5,13 +5,6 @@
 </div>
 <?php endif; ?>
 
-<nav aria-label="breadcrumb">
-    <ol class="breadcrumb mb-4">
-        <li class="breadcrumb-item"><a href="/admin">Administration</a></li>
-        <li class="breadcrumb-item active" aria-current="page">Developer Tools</li>
-    </ol>
-</nav>
-
 <h2 class="mb-3">Developer Tools</h2>
 <div class="alert alert-info d-flex align-items-center mb-4" role="alert">
     <i class="bi bi-terminal me-2 fs-5"></i>

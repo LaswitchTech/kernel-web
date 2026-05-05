@@ -19,23 +19,7 @@
 
     window.KernelWeb = window.KernelWeb || {};
 
-    // ── Stub (queued init calls until this file loads) ──
-    var _queue = [];
-    window.KernelWeb.dt = {
-        init: function(selector, options) {
-            _queue.push(function() {
-                return $(selector).DataTable($.extend(true, {}, _DEFAULTS, options || {}));
-            });
-        },
-        initCompact: function(selector, options) {
-            _queue.push(function() {
-                return $(selector).DataTable($.extend(true, {}, _COMPACT_DEFAULTS, options || {}));
-            });
-        },
-        _q: _queue
-    };
-
-    // ── Defaults ──
+    // ── Defaults (must be defined before stub) ──
     // Top row  : [Buttons / actions (left)]  [Search ~25% (right)]
     // Table    : rt
     // Bottom row: [Show N (left)]  [Info (centre)]  [Pagination (right)]
@@ -44,7 +28,7 @@
         "rt" +
         "<'row g-2 align-items-center mt-2'<'col-sm-4'l><'col-sm-4 text-center'i><'col-sm-4'p>>";
 
-    var _DEFAULTS = {
+    var DEFAULTS = {
         pageLength : 25,
         lengthMenu : [10, 25, 50, 100],
         responsive : true,
@@ -69,7 +53,7 @@
     };
 
     // Compact preset: styled table only, no controls.
-    var _COMPACT_DEFAULTS = $.extend(true, {}, _DEFAULTS, {
+    var COMPACT_DEFAULTS = $.extend(true, {}, DEFAULTS, {
         paging    : false,
         searching : false,
         info      : false,
@@ -78,13 +62,30 @@
         responsive: false,
     });
 
+    // ── Stub (queued init calls) ──
+    var _queue = [];
+    window.KernelWeb.dt = {
+        init: function(selector, options) {
+            var opts = options || {};
+            _queue.push(function() {
+                return $(selector).DataTable($.extend(true, {}, DEFAULTS, opts));
+            });
+        },
+        initCompact: function(selector, options) {
+            var opts = options || {};
+            _queue.push(function() {
+                return $(selector).DataTable($.extend(true, {}, COMPACT_DEFAULTS, opts));
+            });
+        }
+    };
+
     // ── Real implementations ──
     function init(selector, options) {
-        return $(selector).DataTable($.extend(true, {}, _DEFAULTS, options || {}));
+        return $(selector).DataTable($.extend(true, {}, DEFAULTS, options || {}));
     }
 
     function initCompact(selector, options) {
-        return $(selector).DataTable($.extend(true, {}, _COMPACT_DEFAULTS, options || {}));
+        return $(selector).DataTable($.extend(true, {}, COMPACT_DEFAULTS, options || {}));
     }
 
     // Replace stub with real implementations.

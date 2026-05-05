@@ -165,14 +165,8 @@ echo \App\Core\MenuHelper::renderSidebar($navActive, $permissions ?? [], [], 'ad
 <?php if (isset($breadcrumbs) && is_array($breadcrumbs) && !empty($breadcrumbs)): ?>
             <nav aria-label="breadcrumb" class="mb-3">
                 <ol class="breadcrumb mb-0">
-                    <li class="breadcrumb-item">
-                        <a href="/admin" class="text-decoration-none">
-                            <i class="bi bi-house"></i> Administration
-                        </a>
-                    </li>
-                    <?php foreach ($breadcrumbs as $i => $crumb): ?>
-                    <?php $last = ($i === count($breadcrumbs) - 1); ?>
-                    <?php if ($last): ?>
+                    <?php $bcLast = count($breadcrumbs) - 1; foreach ($breadcrumbs as $i => $crumb): ?>
+                    <?php if ($i === $bcLast): ?>
                     <li class="breadcrumb-item active" aria-current="page">
                         <?= htmlspecialchars($crumb['label']) ?>
                     </li>

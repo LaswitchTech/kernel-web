@@ -49,7 +49,10 @@ class MenuHelper
             }
 
             $url = $item['url'];
-            $isActive = (rtrim($navActive, '/') === rtrim($url, '/'));
+            // Exact match takes priority; then prefix match for nested routes.
+            $isExact  = (rtrim($navActive, '/') === rtrim($url, '/'));
+            $isPrefix = !$isExact && strpos($navActive, rtrim($url, '/')) === 0;
+            $isActive = $isExact || $isPrefix;
 
             $classes = 'sidebar-link';
             if ($isActive) {

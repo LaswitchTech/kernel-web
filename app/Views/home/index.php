@@ -12,28 +12,28 @@
             <h6 class="text-uppercase text-muted small fw-bold mb-3">Documentation</h6>
             <div class="row g-2 mb-4">
                 <div class="col-sm-6">
-                    <a href="<?= htmlspecialchars($installUrl) ?>" class="card p-3 text-decoration-none text-dark h-100">
+                    <a href="<?= htmlspecialchars($installUrl) ?>" class="card p-3 text-decoration-none h-100">
                         <i class="bi bi-download text-primary mb-2"></i>
                         <div class="small fw-bold">Installation</div>
                         <div class="small text-muted"><?= $isInstalled ? 'Verify your setup' : 'Get started' ?></div>
                     </a>
                 </div>
                 <div class="col-sm-6">
-                    <a href="#" class="card p-3 text-decoration-none text-dark h-100" data-todo="docs-plugin">
+                    <a href="#" class="card p-3 text-decoration-none h-100" data-todo="docs-plugin">
                         <i class="bi bi-code-slash text-primary mb-2"></i>
                         <div class="small fw-bold">Architecture</div>
                         <div class="small text-muted">Kernel design and structure</div>
                     </a>
                 </div>
                 <div class="col-sm-6">
-                    <a href="#" class="card p-3 text-decoration-none text-dark h-100" data-todo="docs-plugin">
+                    <a href="#" class="card p-3 text-decoration-none h-100" data-todo="docs-plugin">
                         <i class="bi bi-book text-primary mb-2"></i>
                         <div class="small fw-bold">User Guide</div>
                         <div class="small text-muted">Dashboard and admin features</div>
                     </a>
                 </div>
                 <div class="col-sm-6">
-                    <a href="#" class="card p-3 text-decoration-none text-dark h-100" data-todo="docs-plugin">
+                    <a href="#" class="card p-3 text-decoration-none h-100" data-todo="docs-plugin">
                         <i class="bi bi-puzzle text-primary mb-2"></i>
                         <div class="small fw-bold">Plugins</div>
                         <div class="small text-muted">Available plugin documentation</div>
