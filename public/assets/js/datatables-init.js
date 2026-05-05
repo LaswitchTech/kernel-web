@@ -17,9 +17,15 @@
 (function (window, $) {
     'use strict';
 
+    // Guard: the layout <head> inline script always defines window.KernelWeb
+    // and window.KernelWeb._dtInitQueue. If missing, create an empty queue
+    // so this file is safe when loaded standalone (e.g. blank layout).
     window.KernelWeb = window.KernelWeb || {};
+    if (!window.KernelWeb._dtInitQueue) {
+        window.KernelWeb._dtInitQueue = null;
+    }
 
-    // ── Defaults (must be defined before stub) ──
+    // ── Defaults ──
     // Top row  : [Buttons / actions (left)]  [Search ~25% (right)]
     // Table    : rt
     // Bottom row: [Show N (left)]  [Info (centre)]  [Pagination (right)]
@@ -62,23 +68,6 @@
         responsive: false,
     });
 
-    // ── Stub (queued init calls) ──
-    var _queue = [];
-    window.KernelWeb.dt = {
-        init: function(selector, options) {
-            var opts = options || {};
-            _queue.push(function() {
-                return $(selector).DataTable($.extend(true, {}, DEFAULTS, opts));
-            });
-        },
-        initCompact: function(selector, options) {
-            var opts = options || {};
-            _queue.push(function() {
-                return $(selector).DataTable($.extend(true, {}, COMPACT_DEFAULTS, opts));
-            });
-        }
-    };
-
     // ── Real implementations ──
     function init(selector, options) {
         return $(selector).DataTable($.extend(true, {}, DEFAULTS, options || {}));
@@ -88,12 +77,16 @@
         return $(selector).DataTable($.extend(true, {}, COMPACT_DEFAULTS, options || {}));
     }
 
-    // Replace stub with real implementations.
+    // Install real implementations on KernelWeb.
     window.KernelWeb.dt = { init: init, initCompact: initCompact };
 
-    // ── Drain queued calls from views that loaded before this file ──
-    var q = _queue;
-    _queue = null;
-    for (var i = 0; i < q.length; i++) { q[i](); }
+    // ── Drain the head-stub queue ──
+    // Views may have called KernelWeb.dt.init() before this script loaded;
+    // the head bootstrap creates _dtInitQueue to collect those calls.
+    var q = window.KernelWeb._dtInitQueue;
+    window.KernelWeb._dtInitQueue = null;
+    if (q) {
+        for (var i = 0; i < q.length; i++) { q[i](); }
+    }
 
 }(window, jQuery));

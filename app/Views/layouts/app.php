@@ -32,6 +32,16 @@
     // Hook: layout.head — plugins can inject meta tags, CSS links, etc.
     echo \App\Core\HookRegistry::render('layout.head');
     ?>
+
+    <!-- KernelWeb — always defined before body scripts run -->
+    <script>
+    window.KernelWeb = window.KernelWeb || {};
+    window.KernelWeb._dtInitQueue = window.KernelWeb._dtInitQueue || [];
+    window.KernelWeb.dt = window.KernelWeb.dt || {
+        init: function(s, o) { window.KernelWeb._dtInitQueue.push(function() { $(s).DataTable($.extend(true, {}, o || {})); }); },
+        initCompact: function(s, o) { window.KernelWeb._dtInitQueue.push(function() { $(s).DataTable($.extend(true, {}, o || {})); }); },
+    };
+    </script>
 </head>
 <body>
 
