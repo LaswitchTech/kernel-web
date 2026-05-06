@@ -99,3 +99,21 @@
 div.dt-container > div.row:last-of-type {
     margin-bottom: 0.5rem;
 }
+
+// ── Extend Search Field ──────────────────────────────────────
+div.dt-container {
+    > div.row {
+        > div {
+            &:has(div.dt-search) {
+                width: 40%;
+                > div.dt-search {
+                    width: 100%;
+
+                    input {
+                        width: 100%;
+                    }
+                }
+            }
+        }
+    }
+}

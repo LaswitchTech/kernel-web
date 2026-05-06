@@ -746,6 +746,15 @@ a:not([class]):hover {
 div.dt-container > div.row:last-of-type {
   margin-bottom: 0.5rem;
 }
+div.dt-container > div.row > div:has(div.dt-search) {
+  width: 40%;
+}
+div.dt-container > div.row > div:has(div.dt-search) > div.dt-search {
+  width: 100%;
+}
+div.dt-container > div.row > div:has(div.dt-search) > div.dt-search input {
+  width: 100%;
+}
 .table {
   --bs-table-bg: transparent;
   --bs-table-color: var(--app-text);
