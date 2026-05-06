@@ -122,6 +122,34 @@
             bottomStart: 'info',
             bottomEnd:  'paging'
         },
+        columnControl: [
+            {
+                target: 0,
+                content: [
+                    'order',
+                    [
+                        'orderAsc',
+                        'orderDesc',
+                        'spacer',
+                        'orderAddAsc',
+                        'orderAddDesc',
+                        'spacer',
+                        'orderRemove'
+                    ]
+                ]
+            },
+            {
+                target: 1,
+                content: ['search']
+            }
+        ],
+        ordering: {
+            handler: false,
+            indicators: false
+        },
+        // scrollCollapse: true,
+        // scroller: true,
+        // scrollY: 500,
         language   : {
             emptyTable        : 'No data available.',
             zeroRecords       : 'No matching records found.',
