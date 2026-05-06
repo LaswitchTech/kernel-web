@@ -119,6 +119,10 @@ $router->get('/api/notifications/count', 'Modules\Notifications\Controllers\Noti
 $router->get('/api/notifications/recent', 'Modules\Notifications\Controllers\NotificationController@recent', ['SessionAuth']);
 $router->get('/api/profile', 'AuthController@profile', ['SessionAuth']);
 
+// Profile Modal sections — metadata + content loading.
+$router->get('/api/profile/sections', 'ProfileModalController@index', ['SessionAuth']);
+$router->get('/api/profile/sections/{id}', 'ProfileModalController@content', ['SessionAuth']);
+
 // Chat JSON API — SessionAuth for AJAX callers.
 $router->get('/api/chat/unread', 'Modules\Chat\Controllers\ChatController@unreadCount', ['SessionAuth']);
 

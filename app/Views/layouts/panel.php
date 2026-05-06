@@ -400,6 +400,34 @@ echo \App\Core\HookRegistry::render('layout.body.end');
             .then(function (data) { renderOverview(data.user || {}); })
             .catch(function () { showError('Could not load profile data.'); });
     });
+
+    // Load API Tokens tab content on first tab click (lazy).
+    (function () {
+        var loaded = false;
+        document.getElementById('tab-tokens').addEventListener('shown.bs.tab', function () {
+            if (loaded) return;
+            loaded = true;
+
+            var panel = document.getElementById('panel-tokens');
+            panel.innerHTML = '<div class="text-center py-4"><span class="spinner-border spinner-border-sm me-2"></span>Loading…</div>';
+
+            fetch('/api/profile/sections/tokens', { credentials: 'same-origin' })
+                .then(function (r) {
+                    if (!r.ok) throw new Error('Failed to load section');
+                    return r.json();
+                })
+                .then(function (data) {
+                    if (data.success && data.html) {
+                        panel.innerHTML = data.html;
+                    } else {
+                        panel.innerHTML = '<div class="text-muted p-4">Could not load this section.</div>';
+                    }
+                })
+                .catch(function () {
+                    panel.innerHTML = '<div class="text-muted p-4">Could not load this section.</div>';
+                });
+        });
+    })();
 })();
 </script>
 

@@ -349,6 +349,29 @@ if ($pluginsDir !== false && is_dir($pluginsDir)) {
 }
 
 // ---------------------------------------------------------------------------
+// Core Profile Modal Sections
+// ---------------------------------------------------------------------------
+\App\Core\ProfileModal::addSection([
+    'id'       => 'overview',
+    'label'    => 'Overview',
+    'icon'     => 'bi-person',
+    'order'    => 10,
+    'callback' => fn () => '<div class="text-muted">Overview data is loaded via the /api/profile endpoint on modal open.</div>',
+    'permission' => null,
+    'source'   => 'core',
+]);
+
+\App\Core\ProfileModal::addSection([
+    'id'       => 'tokens',
+    'label'    => 'API Tokens',
+    'icon'     => 'bi-key',
+    'order'    => 20,
+    'callback' => fn () => '<div class="text-center py-5 text-muted"><i class="bi bi-key d-block mb-3" style="font-size:2rem;opacity:.35;"></i><p class="mb-0">API token management will be available here.</p></div>',
+    'permission' => null,
+    'source'   => 'core',
+]);
+
+// ---------------------------------------------------------------------------
 // Application Routes
 // ---------------------------------------------------------------------------
 require __DIR__ . '/../routes/web.php';

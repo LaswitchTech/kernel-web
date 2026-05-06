@@ -18,6 +18,9 @@
  * |------|---------|
  * | `app/Views/partials/profile-modal.php` | Modal HTML template |
  * | `app/Views/partials/user-menu.php` | Profile trigger button |
+ * | `app/Core/ProfileModal.php` | Section registry |
+ * | `app/Core/ProfileModalSection.php` | Section value class |
+ * | `app/Controllers/ProfileModalController.php` | Section API endpoints |
  * | `app/Controllers/AuthController.php` | `/api/profile` endpoint |
  * | `routes/web.php` | Route registration |
  * | `app/Auth/TokenService.php` | Token CRUD operations |
@@ -75,25 +78,42 @@
  * **Safe fields:** Only the fields listed above are returned. No `password_hash`,
  * `token`, or `secret` columns are ever exposed.
  *
- * ### GET /api/profile/sections/{slug}
+ * ### GET /api/profile/sections
  *
- * Returns HTML fragment for a plugin tab. Lazy-loaded on first tab click.
+ * Returns metadata for all visible sections (permission-filtered).
  *
- * **Response:** HTML fragment
+ * **Response:**
+ * ```json
+ * {
+ *   "success": true,
+ *   "sections": [
+ *     { "id": "overview", "label": "Overview", "icon": "bi-person", "order": 10, "source": "core" },
+ *     { "id": "tokens", "label": "API Tokens", "icon": "bi-key", "order": 20, "source": "core" }
+ *   ]
+ * }
+ * ```
  *
  * **Auth:** SessionAuth
  *
- * **Plugin registration:**
- * ```php
- * ProfileModal::addSection(
- *     name: 'notifications',
- *     label: 'Notifications',
- *     content: fn() => require __DIR__.'/views/profile/notifications.php',
- *     order: 20,
- *     permission: 'profile.notifications',
- *     source: 'notifications'
- * );
+ * ### GET /api/profile/sections/{id}
+ *
+ * Returns the HTML body for a specific section. Lazy-loaded on first tab click.
+ *
+ * **Response:**
+ * ```json
+ * {
+ *   "success": true,
+ *   "section": "tokens",
+ *   "html": "<div class=\"text-center py-5 text-muted\">...</div>"
+ * }
  * ```
+ *
+ * **Error responses:**
+ * - `401` — Not authenticated
+ * - `404` — Section not found
+ * - `403` — Section exists but user lacks permission
+ *
+ * **Auth:** SessionAuth
  *
  * ### Token Endpoints
  *
@@ -107,32 +127,39 @@
  *
  * ## Plugin Hook: profile.sections
  *
- * Plugins declare the hook in `plugin.json`:
+ * Plugins register sections by calling `ProfileModal::addSection()` directly
+ * (e.g., in the plugin's `hooks.php` or a boot service).
  *
- * ```json
- * {
- *     "hooks": ["profile.sections"]
- * }
- * ```
- *
- * Then register in `hooks.php`:
+ * ### Registration
  *
  * ```php
- * ProfileModal::addSection('slug', 'Label', 'view-path', $order, 'permission');
+ * ProfileModal::addSection([
+ *     'id' => 'notifications',
+ *     'label' => 'Notifications',
+ *     'icon' => 'bi-bell',
+ *     'order' => 20,
+ *     'callback' => function () {
+ *         return '<div>Notification preferences go here.</div>';
+ *     },
+ *     'permission' => 'profile.notifications',
+ *     'source' => 'notifications',
+ * ]);
  * ```
  *
  * ### Parameters
  *
  * | Parameter | Required | Description |
  * |-----------|----------|-------------|
- * | name | yes | Unique slug for the tab |
+ * | id | yes | Unique slug for the tab (regex: `^[a-z][a-z0-9_-]*$`) |
  * | label | yes | Tab display text |
- * | content | yes | Closure returning HTML or view path string |
- * | order | no | Sort priority (default: 50) |
+ * | icon | no | Bootstrap Icons class (e.g., `bi-bell`) |
+ * | order | no | Sort priority — lower renders first (default: 50) |
+ * | callback | no | Closure returning HTML string (or null for no body) |
  * | permission | no | Required permission to see this tab |
  * | source | no | Plugin name or 'core' |
-
-**Content Format:** The `content` parameter accepts either a string (view file path relative to the plugin's `views/` directory) or a closure that returns HTML. Views receive `$user` and `$can` (permission checker) variables.
+ *
+ * **Note:** The `id` field replaces the former `name` parameter from the design doc.
+ * The `callback` field replaces `content`. The new API is typed and validated.
  *
  * ## Security Rules
  *
@@ -232,10 +259,9 @@
 These tasks are tracked in the Phase 2 section of ROADMAP.md.
 
 1. ~~**Profile Modal tabbed UI foundation**~~ — convert static modal to tabs, wire Overview section to `/api/profile` — **done**
-2. **Profile Modal section registry / hook system** — `ProfileModal` class, `profile.sections` hook registration
+2. ~~**Profile Modal section registry / hook system**~~ — `ProfileModal` class, `profile.sections` hook registration — **done** (see docs below)
 3. **Profile Modal API Tokens section** — integrate existing TokenController endpoints into the modal
 4. **Profile Modal plugin-provided sections** — tab loading, permission gating
-5. **Profile Modal API section endpoint** — `/api/profile/sections/{slug}` handler
 
 For design decisions, see DESIGN.md under "UI Design Standards → Profile Modal".
  */
