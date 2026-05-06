@@ -81,7 +81,35 @@
             text: '<i class="bi bi-list" aria-hidden="true"></i><span class="visually-hidden">Number of rows</span>',
             titleAttr: 'Number of rows',
             extend: 'pageLength'
-        }
+        },
+        // {
+        //     text: '<i class="bi bi-arrow-clockwise" aria-hidden="true"></i><span class="visually-hidden">Load State</span>',
+        //     className: 'btn-primary',
+        //     init: function (dt, node){
+        //         $(node).removeClass('btn-secondary');
+        //     },
+        //     titleAttr: 'Load State',
+        //     extend: 'savedStates',
+        //     config: {
+        //         splitSecondaries: [
+        //             'updateState',
+        //             'renameState',
+        //             'removeState',
+        //         ]
+        //     }
+        // },
+        // {
+        //     text: '<i class="bi bi-save" aria-hidden="true"></i><span class="visually-hidden">Save State</span>',
+        //     className: 'btn-success',
+        //     init: function (dt, node){
+        //         $(node).removeClass('btn-secondary');
+        //     },
+        //     titleAttr: 'Save State',
+        //     extend: 'createState',
+        //     config: {
+        //         creationModal: true
+        //     }
+        // }
     ];
 
     var DEFAULTS = {
