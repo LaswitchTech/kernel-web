@@ -89,8 +89,11 @@ KernelWeb.dt.init('#admin-groups-table', {
     ],
     buttons: [
         {
-            text: '<i class="bi bi-plus-lg me-1" aria-hidden="true"></i><span class="visually-hidden">New Group</span>',
-            className: 'btn btn-sm btn-primary',
+            text: '<i class="bi bi-plus-lg" aria-hidden="true"></i><span class="visually-hidden">New Group</span>',
+            className: 'btn-primary',
+            init: function (dt, node){
+                $(node).removeClass('btn-secondary');
+            },
             titleAttr: 'New Group',
             action: function (e, dt, node, config) {
                 window.location.href = '/admin/groups/create';
