@@ -846,12 +846,14 @@ The panel layout includes a user menu in the topbar (topbar-actions dropdown, ri
 **Currently implemented:**
 - User avatar (first letter of display name)
 - Username display
-- Profile link (`/profile`)
+- Profile trigger button (opens modal at `/api/profile`)
+- Admin panel shortcut (visible only to users with `admin` or `admin.access` permission, points to `/admin`)
 - Sign out button (`/auth/logout`, POST)
-- Admin panel shortcut (visible only to users with `admin.access` permission, points to `/admin`)
 
-**Planned additions:**
-- Account settings link
+**Rendering:**
+- Rendered via `partials/user-menu.php` (used by both `panel.php` and `app.php`)
+- Profile button triggers the Bootstrap modal (not a page navigation)
+- Modal content loaded via `/api/profile` (safe user fields)
 
 The user menu is rendered in `panel.php` and populated via `MenuRegistry` with a `user-menu` menu location.
 
@@ -879,13 +881,111 @@ The reusable `panel` layout renders breadcrumbs via direct Bootstrap breadcrumb 
 | Content | Main area | Page-specific content |
 | Footer | Bottom of page | Copyright, plugin hooks |
 
-### Design Patterns
+### Profile Modal
+
+A Bootstrap modal (not a navigation-based page) displays user profile information and extends via plugins.
+
+**Modal Structure (UI Choice — Tabs)**
+
+Use Bootstrap tabs inside the modal body. Tabs are preferred over accordions because:
+- Users can switch between sections without collapsing current content
+- Tab state persists naturally via Bootstrap's JS
+- Plugins can add tabs without layout conflicts
+- Fits the modal's constrained height better than scrollable accordion
+
+| Tab | Name | Content | Source |
+|-----|------|---------|--------|
+| Overview | `overview` | Basic user info (username, email, display name, member since) | Kernel core (always present) |
+| API Tokens | `tokens` | Active tokens list with create/revoke | Kernel core (always present) |
+| `{slug}` | `{slug}` | Plugin-provided sections (e.g. Notification Preferences) | Plugins (optional) |
+
+**Plugin Hook: `profile.sections`**
+
+Plugins register additional tabs via a new registry:
+
+```php
+ProfileModal::addSection('notifications', 'Notifications', 'notifications', 20);
+```
+
+The `profile.sections` collection is rendered server-side during modal init. Each section declares:
+- `name` — unique slug
+- `label` — tab display text
+- `content` — view path or callback that returns HTML
+- `order` — sort priority (lower renders first)
+- `permission` — optional required permission
+- `source` — plugin name or `core`
+
+**Content Loading Strategy**
+
+- The **Overview** tab content renders server-side (always available)
+- Additional tabs load via AJAX on first tab switch (lazy)
+- Cached in DOM after first load (no repeated requests)
+- Falls back to "Could not load section" on error
+
+**API Design**
+
+| Endpoint | Method | Auth | Description |
+|----------|--------|------|-------------|
+| `/api/profile` | GET | SessionAuth | Returns safe user fields |
+| `/api/profile/sections/{slug}` | GET | SessionAuth | Returns HTML fragment for section tab |
+| `/api/profile/tokens` | GET | SessionAuth | Returns active token list (JSON) |
+| `POST /api/profile/tokens` | POST | SessionAuth | Creates new token (delegates to TokenService) |
+| `DELETE /api/profile/tokens/{id}` | DELETE | SessionAuth | Revokes token (delegates to TokenService) |
+
+The `/api/profile` endpoint (already implemented in `AuthController@profile`) returns safe user fields. No additional fields should be added without reviewing for sensitive data exposure.
+
+**Security Rules**
+
+- Server-side **safe field filter** — only explicitly allowed fields are returned (never `password_hash`, `token`, or `secret` columns)
+- All API endpoints require **SessionAuth** middleware
+- Token operations verify **user ownership** before allowing create/revoke
+- Plugin sections gate on **declared permission** (rendered conditionally)
+- Modal JS never stores sensitive data in `localStorage` or cookies
+- Error responses return generic messages (never leak stack traces or field names)
+
+**Extensibility**
+
+Third-party plugins can add profile sections:
+
+```json
+// plugin.json
+{
+    "hooks": ["profile.sections"],
+    "permissions": ["profile.notifications"]
+}
+```
+
+```php
+// hooks.php
+ProfileModal::addSection(
+    name: 'notifications',
+    label: 'Notifications',
+    content: fn() => require __DIR__.'/views/profile/notifications.php',
+    order: 20,
+    permission: 'profile.notifications',
+    source: 'notifications'
+);
+```
+
+The modal renders plugin sections as additional tabs. Permission filtering happens at render time — hidden tabs never appear in the DOM.
+
+**Modal JavaScript**
+
+- Triggered by the `js-profile-trigger` button in the user menu
+- Loads Overview immediately, other sections lazily on tab click
+- Stores loaded section HTML in a `Map` keyed by slug (cache in DOM)
+- Displays loading spinner during AJAX fetch
+- Handles errors gracefully with inline alerts
+
+**Design Patterns**
 
 - Use Bootstrap 5 components where available
 - Use Bootstrap Icons for icons
 - Dark mode support via `data-bs-theme` attribute
 - Theme persistence via `localStorage`
 - Maintain responsive design across breakpoints
+- Follow the modal structure and plugin hook system documented here
+- All user-facing profiles use the modal — not navigation-based pages
 
 ### Theme Preview Page
 
