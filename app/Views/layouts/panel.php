@@ -466,17 +466,19 @@ echo \App\Core\HookRegistry::render('layout.body.end');
                     var actions = document.createElement('div');
                     actions.className = 'd-flex align-items-center gap-2';
 
+                    var isRevoked = !!t.revoked_at;
+                    var isExpired = !isRevoked && t.expires_at && new Date(t.expires_at) < new Date();
                     var expiredSpan = document.createElement('span');
                     expiredSpan.className = 'badge bg-secondary';
-                    expiredSpan.textContent = 'Expired';
-                    expiredSpan.style.display = (t.expired ? '' : 'none');
+                    expiredSpan.textContent = isRevoked ? 'Revoked' : (isExpired ? 'Expired' : '');
+                    expiredSpan.style.display = (isRevoked || isExpired ? '' : 'none');
                     actions.appendChild(expiredSpan);
 
                     var revokeBtn = document.createElement('button');
                     revokeBtn.className = 'btn btn-sm btn-outline-danger';
                     revokeBtn.type = 'button';
                     revokeBtn.textContent = 'Revoke';
-                    revokeBtn.disabled = !!t.expired;
+                    revokeBtn.disabled = isRevoked;
                     revokeBtn.setAttribute('data-token-id', t.id);
                     revokeBtn.addEventListener('click', function () {
                         if (!confirm('Revoke this token?')) return;
