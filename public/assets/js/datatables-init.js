@@ -9,14 +9,84 @@
         window.KernelWeb._dtInitQueue = null;
     }
 
+    // ── Default Buttons toolbar ───────────────────────────────
+    var DEFAULT_BUTTONS = [
+        {
+            extend: 'collection',
+            text: '<i class="bi-check2-square"></i><span class="visually-hidden">Select</span>',
+            buttons: [
+                {
+                    extend: 'selectAll',
+                    text: '<i class="bi-check2-all me-2"></i>All',
+                },
+                {
+                    extend: 'selectNone',
+                    text: '<i class="bi-x-square me-2"></i>None',
+                },
+                {
+                    name: 'selectFiltered',
+                    text: '<i class="bi-eye me-2"></i>Filtered',
+                    action: function (e, dt, node, config) {
+                        dt.rows({ selected: true }).deselect();
+                        dt.rows({ search: 'applied', page: 'all' }).select();
+                    },
+                },
+                {
+                    name: 'selectUnfiltered',
+                    text: '<i class="bi-eye-slash me-2"></i>Unfiltered',
+                    action: function (e, dt, node, config) {
+                        dt.rows({ selected: true }).deselect();
+                        dt.rows({ search: 'removed', page: 'all' }).select();
+                    },
+                },
+            ]
+        },
+        {
+            extend: 'collection',
+            text: '<i class="bi-arrow-bar-down"></i><span class="visually-hidden">Export</span>',
+            buttons: [
+                {
+                    extend: 'copy',
+                    text: '<i class="bi-clipboard me-2"></i>Clipboard',
+                    exportOptions: { columns: ':visible:not(:last-child)' },
+                },
+                {
+                    extend: 'excel',
+                    text: '<i class="bi-filetype-xlsx me-2"></i>Excel',
+                    exportOptions: { columns: ':visible:not(:last-child)' },
+                },
+                {
+                    extend: 'csv',
+                    text: '<i class="bi-filetype-csv me-2"></i>CSV',
+                    exportOptions: { columns: ':visible:not(:last-child)' },
+                },
+                {
+                    extend: 'pdf',
+                    text: '<i class="bi-filetype-pdf me-2"></i>PDF',
+                    exportOptions: { columns: ':visible:not(:last-child)' },
+                },
+            ],
+        },
+        {
+            text: '<i class="bi bi-layout-sidebar-inset" aria-hidden="true"></i><span class="visually-hidden">Column Visibility</span>',
+            titleAttr: 'Column Visibility',
+            extend: 'colvis'
+        },
+        {
+            text: '<i class="bi bi-list" aria-hidden="true"></i><span class="visually-hidden">Number of rows</span>',
+            titleAttr: 'Number of rows',
+            extend: 'pageLength'
+        }
+    ];
+
     var DEFAULTS = {
         pageLength : 25,
         lengthMenu : [10, 25, 50, 100],
         responsive : true,
         layout     : {
-            topStart:   null,
+            topStart:   'buttons',
             topEnd:     'search',
-            bottomStart: 'pageLength',
+            bottomStart: 'info',
             bottomEnd:  'paging'
         },
         language   : {
@@ -53,59 +123,20 @@
             return null;
         }
 
+        // Merge custom buttons before defaults
         var customButtons = Array.isArray(options && options.buttons) ? options.buttons : [];
+        var finalButtons = customButtons.concat(DEFAULT_BUTTONS);
+
         var opts = $.extend({}, options || {});
         delete opts.buttons;
         var config = $.extend(true, {}, DEFAULTS, opts);
 
-        var dt = new DataTable(tableEl[0], config);
-
-        // Manually create buttons if provided (DT2 layout doesn't render "buttons" feature type)
-        if (customButtons.length > 0) {
-            try {
-                // Try the buttons API first
-                var api = new $.fn.dataTable.Api(tableEl[0]);
-                var btns = new $.fn.dataTable.Buttons(api, customButtons);
-                var container = btns.container();
-
-                // Find the top-left slot (first .dt-layout-start in the first .dt-row)
-                var containerEl = tableEl.closest('.dt-container');
-                var topStart = containerEl.find('.dt-row').first().find('.dt-layout-start').first();
-
-                if (topStart.length === 0) {
-                    // Fallback: create the slot ourselves
-                    var row = $('<div>').addClass('row mt-2 justify-content-between');
-                    topStart = $('<div>').addClass('d-md-flex justify-content-between align-items-center dt-layout-start col-md-auto me-auto');
-                    row.append(topStart);
-                    containerEl.prepend(row);
-                }
-
-                container.appendTo(topStart);
-            } catch(e) {
-                // Buttons API failed — create buttons manually
-                var btnGroup = $('<div>').addClass('dt-buttons btn-group flex-wrap');
-                customButtons.forEach(function(btnConf) {
-                    var text = typeof btnConf.text === 'function' ? btnConf.text() : btnConf.text;
-                    var btnEl = $('<button>')
-                        .addClass(btnConf.className || 'btn btn-secondary')
-                        .attr('type', 'button')
-                        .attr('title', btnConf.titleAttr || '')
-                        .html(text);
-                    if (btnConf.action) {
-                        btnEl.on('click', function(e) { btnConf.action(e, null, null, btnConf); });
-                    }
-                    btnGroup.append(btnEl);
-                });
-                var container = tableEl.closest('.dt-container');
-                var topRow = container.find('.dt-row').first();
-                var slot = topRow.find('.dt-layout-start').first();
-                if (slot.length === 0) {
-                    topRow.prepend(btnGroup);
-                } else {
-                    btnGroup.appendTo(slot);
-                }
-            }
+        // Set merged buttons into config (only if buttons exist)
+        if (finalButtons.length > 0) {
+            config.buttons = finalButtons;
         }
+
+        var dt = new DataTable(tableEl[0], config);
 
         return dt;
     }
