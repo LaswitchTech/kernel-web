@@ -12,6 +12,37 @@
     // ── Default Buttons toolbar ───────────────────────────────
     var DEFAULT_BUTTONS = [
         {
+            text: '<i class="bi bi-printer" aria-hidden="true"></i><span class="visually-hidden">Print</span>',
+            titleAttr: 'Print',
+            extend: 'print'
+        },
+        {
+            extend: 'collection',
+            text: '<i class="bi-arrow-bar-down"></i><span class="visually-hidden">Export</span>',
+            buttons: [
+                {
+                    extend: 'copy',
+                    text: '<i class="bi-clipboard me-2"></i>Clipboard',
+                    exportOptions: { columns: ':visible:not(:last-child)' },
+                },
+                {
+                    extend: 'excel',
+                    text: '<i class="bi-filetype-xlsx me-2"></i>Excel',
+                    exportOptions: { columns: ':visible:not(:last-child)' },
+                },
+                {
+                    extend: 'csv',
+                    text: '<i class="bi-filetype-csv me-2"></i>CSV',
+                    exportOptions: { columns: ':visible:not(:last-child)' },
+                },
+                {
+                    extend: 'pdf',
+                    text: '<i class="bi-filetype-pdf me-2"></i>PDF',
+                    exportOptions: { columns: ':visible:not(:last-child)' },
+                },
+            ],
+        },
+        {
             extend: 'collection',
             text: '<i class="bi-check2-square"></i><span class="visually-hidden">Select</span>',
             buttons: [
@@ -40,32 +71,6 @@
                     },
                 },
             ]
-        },
-        {
-            extend: 'collection',
-            text: '<i class="bi-arrow-bar-down"></i><span class="visually-hidden">Export</span>',
-            buttons: [
-                {
-                    extend: 'copy',
-                    text: '<i class="bi-clipboard me-2"></i>Clipboard',
-                    exportOptions: { columns: ':visible:not(:last-child)' },
-                },
-                {
-                    extend: 'excel',
-                    text: '<i class="bi-filetype-xlsx me-2"></i>Excel',
-                    exportOptions: { columns: ':visible:not(:last-child)' },
-                },
-                {
-                    extend: 'csv',
-                    text: '<i class="bi-filetype-csv me-2"></i>CSV',
-                    exportOptions: { columns: ':visible:not(:last-child)' },
-                },
-                {
-                    extend: 'pdf',
-                    text: '<i class="bi-filetype-pdf me-2"></i>PDF',
-                    exportOptions: { columns: ':visible:not(:last-child)' },
-                },
-            ],
         },
         {
             text: '<i class="bi bi-layout-sidebar-inset" aria-hidden="true"></i><span class="visually-hidden">Column Visibility</span>',
