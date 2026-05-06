@@ -117,6 +117,7 @@ $router->post('/notifications/{id}/read', 'Modules\Notifications\Controllers\Not
 // JSON endpoints — SessionAuth returns 401 JSON on failure (not redirect).
 $router->get('/api/notifications/count', 'Modules\Notifications\Controllers\NotificationController@unreadCount', ['SessionAuth']);
 $router->get('/api/notifications/recent', 'Modules\Notifications\Controllers\NotificationController@recent', ['SessionAuth']);
+$router->get('/api/profile', 'AuthController@profile', ['SessionAuth']);
 
 // Chat JSON API — SessionAuth for AJAX callers.
 $router->get('/api/chat/unread', 'Modules\Chat\Controllers\ChatController@unreadCount', ['SessionAuth']);

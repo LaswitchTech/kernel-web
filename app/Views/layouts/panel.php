@@ -321,5 +321,56 @@ $navActive = $_SERVER['REQUEST_URI'] ?? '/';
 echo \App\Core\HookRegistry::render('layout.body.end');
 ?>
 
+<!-- Profile modal -->
+<?php include __DIR__ . '/../partials/profile-modal.php'; ?>
+
+<script>
+(function () {
+    var profileModal    = document.getElementById('profile-modal');
+    var loadingEl       = document.getElementById('profile-loading');
+    var errorEl         = document.getElementById('profile-error');
+    var contentEl       = document.getElementById('profile-content');
+
+    function showLoading() {
+        errorEl.classList.add('d-none');
+        contentEl.classList.add('d-none');
+        loadingEl.style.display = '';
+    }
+
+    function showError(msg) {
+        loadingEl.style.display = 'none';
+        errorEl.textContent = msg;
+        errorEl.classList.remove('d-none');
+    }
+
+    function renderProfile(user) {
+        loadingEl.style.display = 'none';
+        contentEl.classList.remove('d-none');
+        document.getElementById('pm-username').textContent    = user.username    || '—';
+        document.getElementById('pm-email').textContent         = user.email     || '—';
+        document.getElementById('pm-display-name').textContent  = user.display_name || (user.username || '—');
+        document.getElementById('pm-created').textContent       = user.created_at || '—';
+    }
+
+    document.addEventListener('click', function (e) {
+        var trigger = e.target.closest('.js-profile-trigger');
+        if (!trigger) return;
+        e.preventDefault();
+
+        showLoading();
+        var bsModal = new bootstrap.Modal(profileModal);
+        bsModal.show();
+
+        fetch('/api/profile', { credentials: 'same-origin' })
+            .then(function (r) {
+                if (!r.ok) throw new Error('Failed to load profile');
+                return r.json();
+            })
+            .then(function (data) { renderProfile(data.user || {}); })
+            .catch(function () { showError('Could not load profile data.'); });
+    });
+})();
+</script>
+
 </body>
 </html>

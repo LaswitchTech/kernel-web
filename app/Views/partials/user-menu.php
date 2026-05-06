@@ -9,9 +9,9 @@
     <ul class="dropdown-menu dropdown-menu-end">
         <li><h6 class="dropdown-header"><?= htmlspecialchars($displayName) ?></h6></li>
         <li>
-            <a class="dropdown-item" href="/profile">
+            <button class="dropdown-item js-profile-trigger" type="button">
                 <i class="bi bi-person me-2"></i>Profile
-            </a>
+            </button>
         </li>
         <?php
         $canAdmin = in_array('admin', $permissions ?? [], true)

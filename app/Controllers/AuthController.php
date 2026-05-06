@@ -103,4 +103,32 @@ class AuthController extends Controller
 
         $this->json(['user' => $user]);
     }
+
+    // -------------------------------------------------------------------------
+    // GET /api/profile
+    // -------------------------------------------------------------------------
+
+    public function profile(array $params = []): void
+    {
+        /** @var AuthService $auth */
+        $auth = $this->container->get('auth');
+        $user = $auth->user();
+
+        if ($user === null) {
+            $this->json(['error' => 'Not authenticated'], 401);
+            return;
+        }
+
+        // Return only safe fields — never expose password_hash, tokens, or secrets.
+        $this->json([
+            'user' => [
+                'id'           => (int) ($user['id'] ?? 0),
+                'username'     => (string) ($user['username'] ?? ''),
+                'email'        => (string) ($user['email'] ?? ''),
+                'display_name' => (string) ($user['display_name'] ?? ''),
+                'created_at'   => (string) ($user['created_at'] ?? ''),
+                'updated_at'   => (string) ($user['updated_at'] ?? ''),
+            ],
+        ]);
+    }
 }
