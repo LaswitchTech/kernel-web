@@ -381,8 +381,10 @@ echo \App\Core\HookRegistry::render('layout.body.end');
             dl.appendChild(dd);
         });
 
-        dataEl.innerHTML = '';
-        dataEl.appendChild(dl);
+        if (dataEl) {
+            dataEl.innerHTML = '';
+            dataEl.appendChild(dl);
+        }
     }
 
     document.addEventListener('click', function (e) {
@@ -428,11 +430,11 @@ echo \App\Core\HookRegistry::render('layout.body.end');
             var listEmpty  = document.getElementById('pm-token-list-empty');
 
             // ── Show the form container ──
-            panel.appendChild(createForm);
-            panel.appendChild(createdEl);
-            panel.appendChild(listLoading);
-            panel.appendChild(listEmpty);
-            panel.appendChild(listEl);
+            if (createForm) panel.appendChild(createForm);
+            if (createdEl)  panel.appendChild(createdEl);
+            if (listLoading) panel.appendChild(listLoading);
+            if (listEmpty)   panel.appendChild(listEmpty);
+            if (listEl)      panel.appendChild(listEl);
 
             // ── Helpers ──
             function escHtml(s) {
