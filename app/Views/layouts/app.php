@@ -567,12 +567,14 @@ echo \App\Core\HookRegistry::render('layout.body.end');
 
     function showError(msg) {
         if (loadingEl) loadingEl.style.display = 'none';
+        if (dataEl) { dataEl.style.display = 'none'; dataEl.innerHTML = ''; }
         errorEl.classList.remove('d-none');
         errorEl.innerHTML = '<i class="bi bi-exclamation-triangle me-1"></i>' + escHtml(msg);
     }
 
     function renderOverview(user) {
         if (loadingEl) loadingEl.style.display = 'none';
+        if (dataEl) dataEl.classList.remove('d-none');
         var dl = document.createElement('dl');
         dl.className = 'row mb-0';
 
