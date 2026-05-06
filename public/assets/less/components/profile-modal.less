@@ -1,0 +1,34 @@
+/* Profile Modal — tabbed profile view */
+
+.profile-modal-tabs {
+    margin: 0;
+    border-bottom: var(--bs-border-width) solid var(--bs-border-color);
+    padding: 0 var(--bs-modal-padding);
+    background: var(--bs-body-bg);
+}
+
+.profile-modal-tabs .nav-link {
+    border: none;
+    border-radius: 0;
+    color: var(--bs-text-muted);
+
+    &:hover:not(.active) {
+        color: var(--bs-body-color);
+        background: transparent;
+    }
+
+    &.active {
+        color: var(--bs-emphasis-color);
+        background: transparent;
+        border-bottom: 2px solid var(--bs-primary);
+    }
+}
+
+.profile-modal-content {
+    padding: var(--bs-modal-padding);
+}
+
+.profile-modal-loading,
+.profile-modal-error {
+    padding: 0;
+}

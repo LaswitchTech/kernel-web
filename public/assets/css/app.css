@@ -995,6 +995,34 @@ div.dt-container td.dt-empty {
 .app-footer a:hover {
   color: var(--app-text);
 }
+/* Profile Modal — tabbed profile view */
+.profile-modal-tabs {
+  margin: 0;
+  border-bottom: var(--bs-border-width) solid var(--bs-border-color);
+  padding: 0 var(--bs-modal-padding);
+  background: var(--bs-body-bg);
+}
+.profile-modal-tabs .nav-link {
+  border: none;
+  border-radius: 0;
+  color: var(--bs-text-muted);
+}
+.profile-modal-tabs .nav-link:hover:not(.active) {
+  color: var(--bs-body-color);
+  background: transparent;
+}
+.profile-modal-tabs .nav-link.active {
+  color: var(--bs-emphasis-color);
+  background: transparent;
+  border-bottom: 2px solid var(--bs-primary);
+}
+.profile-modal-content {
+  padding: var(--bs-modal-padding);
+}
+.profile-modal-loading,
+.profile-modal-error {
+  padding: 0;
+}
 .chat-panel {
   display: flex;
   flex-direction: column;

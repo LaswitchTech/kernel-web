@@ -544,30 +544,61 @@ echo \App\Core\HookRegistry::render('layout.body.end');
 
 <script>
 (function () {
-    var profileModal    = document.getElementById('profile-modal');
-    var loadingEl       = document.getElementById('profile-loading');
-    var errorEl         = document.getElementById('profile-error');
-    var contentEl       = document.getElementById('profile-content');
+    var profileModal = document.getElementById('profile-modal');
+
+    var loadingEl   = document.getElementById('pm-loading');
+    var errorEl     = document.getElementById('pm-error');
+    var dataEl      = document.getElementById('pm-data');
+
+    function escHtml(s) {
+        return String(s || '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;');
+    }
 
     function showLoading() {
         errorEl.classList.add('d-none');
-        contentEl.classList.add('d-none');
-        loadingEl.style.display = '';
+        errorEl.innerHTML = '';
+        dataEl.innerHTML = '';
+        if (loadingEl) loadingEl.style.display = '';
     }
 
     function showError(msg) {
-        loadingEl.style.display = 'none';
-        errorEl.textContent = msg;
+        if (loadingEl) loadingEl.style.display = 'none';
         errorEl.classList.remove('d-none');
+        errorEl.innerHTML = '<i class="bi bi-exclamation-triangle me-1"></i>' + escHtml(msg);
     }
 
-    function renderProfile(user) {
-        loadingEl.style.display = 'none';
-        contentEl.classList.remove('d-none');
-        document.getElementById('pm-username').textContent    = user.username    || '—';
-        document.getElementById('pm-email').textContent         = user.email     || '—';
-        document.getElementById('pm-display-name').textContent  = user.display_name || (user.username || '—');
-        document.getElementById('pm-created').textContent       = user.created_at || '—';
+    function renderOverview(user) {
+        if (loadingEl) loadingEl.style.display = 'none';
+        var dl = document.createElement('dl');
+        dl.className = 'row mb-0';
+
+        var fields = [
+            ['Username',    'username'],
+            ['Email',       'email'],
+            ['Display Name','display_name'],
+            ['Created At',  'created_at'],
+            ['Updated At',  'updated_at'],
+        ];
+
+        fields.forEach(function (f) {
+            var dt = document.createElement('dt');
+            dt.className = 'col-sm-4 text-muted';
+            dt.textContent = f[0];
+
+            var dd = document.createElement('dd');
+            dd.className = 'col-sm-8';
+            dd.textContent = (user[f[1]] && user[f[1]] !== '') ? user[f[1]] : '—';
+
+            dl.appendChild(dt);
+            dl.appendChild(dd);
+        });
+
+        dataEl.innerHTML = '';
+        dataEl.appendChild(dl);
     }
 
     document.addEventListener('click', function (e) {
@@ -584,7 +615,7 @@ echo \App\Core\HookRegistry::render('layout.body.end');
                 if (!r.ok) throw new Error('Failed to load profile');
                 return r.json();
             })
-            .then(function (data) { renderProfile(data.user || {}); })
+            .then(function (data) { renderOverview(data.user || {}); })
             .catch(function () { showError('Could not load profile data.'); });
     });
 })();
