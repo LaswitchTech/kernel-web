@@ -35,7 +35,7 @@ div.dt-container {
     color: var(--app-text);
 
     // ── Control rows — vertical breathing room ──
-    div.dt-row {
+    div.row {
         margin-top:     0.5rem;
         margin-bottom:  0.5rem;
 
@@ -55,7 +55,7 @@ div.dt-container {
         > .dt-buttons {
             display: flex;
             flex-wrap: wrap;
-            gap: 0.25rem;
+            gap: 0;
 
             // Hide button group when it has no visible child elements
             &:has(> button.btn:empty, > .btn:empty) {
@@ -130,7 +130,6 @@ div.dt-container {
     div.dt-paging {
         .dt-paging-button {
             color: var(--app-text-muted) !important;
-            border-radius: calc(var(--app-radius) / 2) !important;
             border: 1px solid transparent !important;
             cursor: pointer;
 

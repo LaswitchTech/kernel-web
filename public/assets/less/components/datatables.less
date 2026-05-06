@@ -26,7 +26,7 @@
 .dt-buttons {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.25rem;
+    gap: 0;
     align-items: center;
 }
 
@@ -52,7 +52,7 @@
 // ── Buttons group wrapper ───────────────────────────────────
 .dt-buttons.btn-group {
     display: inline-flex;
-    gap: 0.25rem;
+    gap: 0;
 }
 
 // ── Search ──────────────────────────────────────────────────
@@ -76,11 +76,6 @@
     margin-left: 0.25rem;
 }
 
-// ── Info ────────────────────────────────────────────────────
-.dt-info {
-    padding-top: 0.5rem;
-}
-
 // ── Pagination ──────────────────────────────────────────────
 .dt-paging {
     margin: 0;
@@ -88,4 +83,19 @@
 
 .dt-paging .pagination {
     margin: 0;
+}
+
+// ── Layout variations (e.g. for full-width tables) ──────────
+.dt-layout-full {
+    padding: 0;
+}
+
+// ── Layout for table wrapper (e.g. for full-width tables) ─────────
+.dt-layout-table {
+    margin: 0;
+}
+
+// ── Last row of BS5 layout (e.g. for full-width tables) ─────────
+div.dt-container > div.row:last-of-type {
+    margin-bottom: 0.5rem;
 }
