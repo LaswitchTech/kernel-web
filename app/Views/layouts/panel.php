@@ -410,24 +410,161 @@ echo \App\Core\HookRegistry::render('layout.body.end');
             if (loaded) return;
             loaded = true;
 
-            var panel = document.getElementById('panel-tokens');
-            panel.innerHTML = '<div class="text-center py-4"><span class="spinner-border spinner-border-sm me-2"></span>Loading…</div>';
+            var panel  = document.getElementById('panel-tokens');
+            // Clear placeholder from section callback; JS renders the full UI.
+            panel.innerHTML = '';
 
-            fetch('/api/profile/sections/tokens', { credentials: 'same-origin' })
+            var createdEl  = document.getElementById('pm-token-created');
+            var valueEl    = document.getElementById('pm-token-value');
+            var createForm = document.getElementById('pm-token-create-form');
+            var nameInput  = document.getElementById('pm-token-name');
+            var listEl     = document.getElementById('pm-token-list');
+            var listLoading = document.getElementById('pm-token-list-loading');
+            var listEmpty  = document.getElementById('pm-token-list-empty');
+
+            // ── Show the form container ──
+            panel.appendChild(createForm);
+            panel.appendChild(createdEl);
+            panel.appendChild(listLoading);
+            panel.appendChild(listEmpty);
+            panel.appendChild(listEl);
+
+            // ── Helpers ──
+            function escHtml(s) {
+                return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+            }
+            function showListLoading() { listLoading.style.display=''; listEmpty.style.display='none'; listEl.innerHTML=''; }
+            function hideListLoading() { listLoading.style.display='none'; }
+            function showListEmpty()  { listLoading.style.display='none'; listEmpty.style.display=''; listEl.innerHTML=''; }
+
+            // ── Render token list ──
+            function renderTokens(tokens) {
+                hideListLoading();
+                if (!tokens || tokens.length === 0) { showListEmpty(); return; }
+                listEl.innerHTML = '';
+                tokens.forEach(function (t) {
+                    var row = document.createElement('div');
+                    row.className = 'list-group-item d-flex align-items-center justify-content-between py-2 px-3';
+
+                    var info = document.createElement('div');
+                    info.className = 'd-flex align-items-center gap-2';
+
+                    var icon = document.createElement('i');
+                    icon.className = 'bi bi-key text-muted';
+                    info.appendChild(icon);
+
+                    var nameSpan = document.createElement('span');
+                    nameSpan.className = 'small';
+                    nameSpan.textContent = (t.name && t.name !== '') ? t.name : '(unnamed)';
+                    info.appendChild(nameSpan);
+
+                    var createdSpan = document.createElement('small');
+                    createdSpan.className = 'text-muted ms-2';
+                    createdSpan.textContent = t.created_at || '';
+                    info.appendChild(createdSpan);
+
+                    var actions = document.createElement('div');
+                    actions.className = 'd-flex align-items-center gap-2';
+
+                    var expiredSpan = document.createElement('span');
+                    expiredSpan.className = 'badge bg-secondary';
+                    expiredSpan.textContent = 'Expired';
+                    expiredSpan.style.display = (t.expired ? '' : 'none');
+                    actions.appendChild(expiredSpan);
+
+                    var revokeBtn = document.createElement('button');
+                    revokeBtn.className = 'btn btn-sm btn-outline-danger';
+                    revokeBtn.type = 'button';
+                    revokeBtn.textContent = 'Revoke';
+                    revokeBtn.disabled = !!t.expired;
+                    revokeBtn.setAttribute('data-token-id', t.id);
+                    revokeBtn.addEventListener('click', function () {
+                        if (!confirm('Revoke this token?')) return;
+                        revokeBtn.disabled = true;
+                        revokeBtn.textContent = 'Revoking…';
+                        fetch('/api/tokens/' + t.id, { method: 'DELETE', credentials: 'same-origin' })
+                            .then(function (r) {
+                                if (!r.ok) throw new Error('Failed to revoke');
+                                return r.json();
+                            })
+                            .then(function () { loadTokens(); })
+                            .catch(function () {
+                                revokeBtn.disabled = false;
+                                revokeBtn.textContent = 'Revoke';
+                            });
+                    });
+                    actions.appendChild(revokeBtn);
+
+                    row.appendChild(info);
+                    row.appendChild(actions);
+                    listEl.appendChild(row);
+                });
+            }
+
+            // ── Load tokens ──
+            function loadTokens() {
+                showListLoading();
+                fetch('/api/tokens', { credentials: 'same-origin' })
+                    .then(function (r) {
+                        if (!r.ok) throw new Error('Failed to load tokens');
+                        return r.json();
+                    })
+                    .then(function (data) { renderTokens(data.tokens || []); })
+                    .catch(function () { showListEmpty(); });
+            }
+
+            // ── Create token handler ──
+            createForm.addEventListener('submit', function (e) {
+                e.preventDefault();
+                var btn = document.getElementById('pm-token-create-btn');
+                var createError = document.getElementById('pm-token-create-error');
+                var label = btn.querySelector('.create-label');
+                var loader = btn.querySelector('.loading-label');
+                var tokenName = nameInput.value.trim();
+
+                if (tokenName === '') { nameInput.focus(); return; }
+
+                btn.disabled = true;
+                label.classList.add('d-none');
+                loader.classList.remove('d-none');
+                if (createError) { createError.classList.add('d-none'); createError.innerHTML = ''; }
+
+                fetch('/api/tokens', {
+                    method: 'POST',
+                    credentials: 'same-origin',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name: tokenName }),
+                })
                 .then(function (r) {
-                    if (!r.ok) throw new Error('Failed to load section');
+                    if (!r.ok) throw new Error('Failed to create token');
                     return r.json();
                 })
                 .then(function (data) {
-                    if (data.success && data.html) {
-                        panel.innerHTML = data.html;
-                    } else {
-                        panel.innerHTML = '<div class="text-muted p-4">Could not load this section.</div>';
+                    if (data.token) {
+                        valueEl.textContent = data.token;
+                        createdEl.classList.remove('d-none');
+                    }
+                    if (data.record) {
+                        loadTokens();
                     }
                 })
-                .catch(function () {
-                    panel.innerHTML = '<div class="text-muted p-4">Could not load this section.</div>';
+                .catch(function (err) {
+                    if (createError) {
+                        createError.classList.remove('d-none');
+                        createError.textContent = err.message || 'Could not create token.';
+                    }
+                })
+                .finally(function () {
+                    btn.disabled = false;
+                    label.classList.remove('d-none');
+                    loader.classList.add('d-none');
+                    nameInput.value = '';
+                    nameInput.focus();
                 });
+            });
+
+            // Initial load
+            loadTokens();
         });
     })();
 })();

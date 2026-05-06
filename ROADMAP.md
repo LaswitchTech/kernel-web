@@ -41,7 +41,7 @@ Core infrastructure improvements that unlock future feature work.
 - [x] Developer mode tools foundation (conditional code paths, permission gates)
 - [x] Profile Modal tabbed UI foundation (convert static modal to tabs, Overview section)
 - [x] Profile Modal section registry / hook system (ProfileModal class, profile.sections hook)
-- [ ] Profile Modal API Tokens section (integrate existing TokenService into modal)
+- [x] Profile Modal API Tokens section (integrate existing TokenService into modal)
 - [ ] Profile Modal plugin-provided sections (tab loading, permission gating)
 - [ ] Plugin/theme/layout scaffold generator (design complete — see docs/developer/scaffolds.md)
 - [ ] Remote catalog sync (periodic fetch of extension listings from a remote server)
@@ -125,7 +125,7 @@ These are planned or requested but are out of scope for the current development 
 | Contributing docs | Implemented | Documented in /docs/contributing.md |
 | Runtime DB safety | Hardened | DB files excluded from public/, .gitignore updated |
 | Phase 1 stabilization | Closed | 14/15 tasks done — tests deferred (no framework) |
-| Profile Modal | Designed, partially implemented | Design complete (DESIGN.md, docs/developer/profile-modal.md). Runtime: tabbed modal HTML + section registry + `/api/profile` + `/api/profile/sections/{id}` endpoints + lazy API Tokens tab loading. Missing: API Tokens content, plugin-provided sections. Remaining tasks in Phase 2. |
+| Profile Modal | Implemented, API Tokens section | API Tokens section implemented with create/list/revoke UI. Runtime: tabbed modal HTML + section registry + /api/profile + /api/profile/sections/{id} endpoints + functional token CRUD via JS. Remaining: plugin-provided sections. |
 | OAuth | Deferred | See Deferred section |
 | Licensing | Deferred | See Deferred section |
 | Registration | Planned | Config toggle (disabled by default) — Phase 3 |

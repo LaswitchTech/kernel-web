@@ -39,12 +39,37 @@
                         <div class="d-none" id="pm-data"></div>
                     </div>
 
-                    <!-- API Tokens placeholder tab -->
+                    <!-- API Tokens tab -->
                     <div class="tab-pane fade" id="panel-tokens" role="tabpanel" aria-labelledby="tab-tokens">
-                        <div class="text-center py-5 text-muted">
-                            <i class="bi bi-key d-block mb-3" style="font-size:2rem;opacity:.35;"></i>
-                            <p class="mb-0">API token management will be available here.</p>
+                        <!-- Plaintext token display (shown once after creation) -->
+                        <div class="alert alert-warning d-none" id="pm-token-created" role="alert">
+                            <div class="small fw-semibold mb-1">Your new token — save it now, it won't be shown again:</div>
+                            <code class="d-block bg-body-secondary p-2 mb-2" id="pm-token-value" style="word-break:break-all;user-select:all;"></code>
+                            <button class="btn btn-sm btn-outline-secondary" type="button" onclick="document.getElementById('pm-token-created').classList.add('d-none');">Dismiss</button>
                         </div>
+
+                        <!-- Create token form -->
+                        <div class="px-3 py-3 border-bottom">
+                            <form id="pm-token-create-form" class="d-flex gap-2 align-items-start">
+                                <input type="text" id="pm-token-name" class="form-control form-control-sm" placeholder="Token name" required aria-label="Token name" style="min-width:180px;">
+                                <button type="submit" class="btn btn-sm btn-primary" id="pm-token-create-btn">
+                                    <span class="create-label">Create Token</span>
+                                    <span class="loading-label d-none"><span class="spinner-border spinner-border-sm me-1"></span>Creating…</span>
+                                </button>
+                            </form>
+                            <div class="profile-modal-error d-none mt-2 small" id="pm-token-create-error" role="alert"></div>
+                        </div>
+
+                        <!-- Token list -->
+                        <div id="pm-token-list-loading" class="text-center py-4 text-muted small" style="display:none;">
+                            <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                            Loading…
+                        </div>
+                        <div id="pm-token-list-empty" class="text-center py-4 text-muted small" style="display:none;">
+                            <i class="bi bi-key d-block mb-2" style="font-size:1.5rem;opacity:.35;"></i>
+                            No API tokens yet. Create one above.
+                        </div>
+                        <div id="pm-token-list" class="list-group list-group-flush" style="max-height:300px;overflow-y:auto;"></div>
                     </div>
                 </div>
             </div>

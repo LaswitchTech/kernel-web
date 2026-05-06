@@ -366,7 +366,7 @@ if ($pluginsDir !== false && is_dir($pluginsDir)) {
     'label'    => 'API Tokens',
     'icon'     => 'bi-key',
     'order'    => 20,
-    'callback' => fn () => '<div class="text-center py-5 text-muted"><i class="bi bi-key d-block mb-3" style="font-size:2rem;opacity:.35;"></i><p class="mb-0">API token management will be available here.</p></div>',
+    'callback' => fn () => '<div id="pm-tokens-content"></div>',
     'permission' => null,
     'source'   => 'core',
 ]);

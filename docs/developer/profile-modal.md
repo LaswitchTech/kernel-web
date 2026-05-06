@@ -260,7 +260,7 @@ These tasks are tracked in the Phase 2 section of ROADMAP.md.
 
 1. ~~**Profile Modal tabbed UI foundation**~~ — convert static modal to tabs, wire Overview section to `/api/profile` — **done**
 2. ~~**Profile Modal section registry / hook system**~~ — `ProfileModal` class, `profile.sections` hook registration — **done** (see docs below)
-3. **Profile Modal API Tokens section** — integrate existing TokenController endpoints into the modal
+3. ~~**Profile Modal API Tokens section**~~ — integrate existing TokenController endpoints into the modal — **done**
 4. **Profile Modal plugin-provided sections** — tab loading, permission gating
 
 For design decisions, see DESIGN.md under "UI Design Standards → Profile Modal".
