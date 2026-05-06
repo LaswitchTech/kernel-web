@@ -175,8 +175,8 @@ echo \App\Core\MenuHelper::renderSidebar($navActive, $permissions ?? [], [], 'ad
             </div>
         </header>
 
-        <!-- Page content -->
-        <main class="app-content">
+        <!-- Page content (rendered at end, after scripts load) -->
+        <main class="app-content" id="app-page-content">
 <?php if (isset($breadcrumbs) && is_array($breadcrumbs) && !empty($breadcrumbs)): ?>
             <nav aria-label="breadcrumb" class="mb-3">
                 <ol class="breadcrumb mb-0">
@@ -196,7 +196,6 @@ echo \App\Core\MenuHelper::renderSidebar($navActive, $permissions ?? [], [], 'ad
                 </ol>
             </nav>
 <?php endif; ?>
-            <?= $content ?>
         </main>
 
         <!-- Footer -->
@@ -242,7 +241,8 @@ echo \App\Core\MenuHelper::renderSidebar($navActive, $permissions ?? [], [], 'ad
 <!-- ColumnControl 1.2.1 (BS5 built into core) -->
 <script src="/assets/vendor/datatables-columncontrol/1.2.1/js/dataTables.columnControl.min.js"></script>
 <!-- App shared JS -->
-<script src="/assets/js/datatables-init.js"></script>
+<script src="/assets/js/datatables-init.js?v=13"></script>
+
 
 <script>
 (function () {
@@ -333,6 +333,11 @@ echo \App\Core\MenuHelper::renderSidebar($navActive, $permissions ?? [], [], 'ad
 </script>
 
 <?php
+// Render page content after scripts load (so inline scripts see jQuery/DT available)
+if (isset($content) && $content !== '') {
+    echo $content;
+}
+
 // Hook: layout.body.end — plugins can inject JS, analytics, etc. before </body>
 echo \App\Core\HookRegistry::render('layout.body.end');
 ?>

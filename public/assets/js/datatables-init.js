@@ -1,43 +1,20 @@
 /**
  * KernelWeb — shared DataTables initializer
- *
- * Provides two entry points:
- *   KernelWeb.dt.init(selector, options)        — full table (search, pagination, length, buttons)
- *   KernelWeb.dt.initCompact(selector, options) — summary table (no pagination/search/length)
- *
- * Both merge the supplied options on top of their respective defaults so
- * per-table overrides (e.g. custom column order, pageLength) are easy.
- *
- * Depends on: jQuery, DataTables 2.3.x, DataTables Buttons 3.2.x
- *
- * Deferred init:
- *   If a view calls KernelWeb.dt.init() before this script loads, the call is
- *   silently queued and replayed after this script finishes executing.
  */
 (function (window, $) {
     'use strict';
 
-    // Guard: the layout <head> inline script always defines window.KernelWeb
-    // and window.KernelWeb._dtInitQueue. If missing, create an empty queue
-    // so this file is safe when loaded standalone (e.g. blank layout).
     window.KernelWeb = window.KernelWeb || {};
     if (!window.KernelWeb._dtInitQueue) {
         window.KernelWeb._dtInitQueue = null;
     }
 
-    // ── Defaults (DataTables 2 layout API) ──
-    // Layout:
-    //   topStart  : buttons (left)
-    //   topEnd    : search   (right)
-    //   bottomStart: pageLength (left)
-    //   bottom     : info     (center)
-    //   bottomEnd  : paging   (right)
     var DEFAULTS = {
         pageLength : 25,
         lengthMenu : [10, 25, 50, 100],
         responsive : true,
         layout     : {
-            topStart:   'buttons',
+            topStart:   null,
             topEnd:     'search',
             bottomStart: 'pageLength',
             bottom:     'info',
@@ -61,7 +38,6 @@
         },
     };
 
-    // Compact preset: table only, no controls.
     var COMPACT_DEFAULTS = $.extend(true, {}, DEFAULTS, {
         paging    : false,
         searching : false,
@@ -71,33 +47,68 @@
         responsive: false,
     });
 
-    // ── Real implementations (DataTables 2.x) ──
     function init(selector, options) {
         var tableEl = $(selector).first();
-        if (tableEl.length === 0) return null;
+        if (tableEl.length === 0) {
+            $(function() { init(selector, options); });
+            return null;
+        }
 
-        // Merge view options onto defaults
-        var config = $.extend(true, {}, DEFAULTS, options || {});
+        var customButtons = Array.isArray(options && options.buttons) ? options.buttons : [];
+        var opts = $.extend({}, options || {});
+        delete opts.buttons;
+        var config = $.extend(true, {}, DEFAULTS, opts);
 
-        // Extract custom buttons and wire into layout.
-        // DT2 layout slot value is { featureName: featureConfig }.
-        // For the buttons feature, featureConfig = { buttons: [...] }.
-        // So: layout.topStart = { buttons: { buttons: [...] } }
-        var customButtons = Array.isArray(config.buttons) ? config.buttons : [];
-        delete config.buttons;
-        delete config.buttonClasses;
+        var dt = new DataTable(tableEl[0], config);
 
-        config.layout = {
-            topStart: customButtons.length
-                ? { buttons: { buttons: customButtons } }
-                : null,
-            topEnd:     'search',
-            bottomStart: 'pageLength',
-            bottom:     'info',
-            bottomEnd:  'paging'
-        };
+        // Manually create buttons if provided (DT2 layout doesn't render "buttons" feature type)
+        if (customButtons.length > 0) {
+            try {
+                // Try the buttons API first
+                var api = new $.fn.dataTable.Api(tableEl[0]);
+                var btns = new $.fn.dataTable.Buttons(api, customButtons);
+                var container = btns.container();
 
-        return new DataTable(tableEl[0], config);
+                // Find the top-left slot (first .dt-layout-start in the first .dt-row)
+                var containerEl = tableEl.closest('.dt-container');
+                var topStart = containerEl.find('.dt-row').first().find('.dt-layout-start').first();
+
+                if (topStart.length === 0) {
+                    // Fallback: create the slot ourselves
+                    var row = $('<div>').addClass('row mt-2 justify-content-between');
+                    topStart = $('<div>').addClass('d-md-flex justify-content-between align-items-center dt-layout-start col-md-auto me-auto');
+                    row.append(topStart);
+                    containerEl.prepend(row);
+                }
+
+                container.appendTo(topStart);
+            } catch(e) {
+                // Buttons API failed — create buttons manually
+                var btnGroup = $('<div>').addClass('dt-buttons btn-group flex-wrap');
+                customButtons.forEach(function(btnConf) {
+                    var text = typeof btnConf.text === 'function' ? btnConf.text() : btnConf.text;
+                    var btnEl = $('<button>')
+                        .addClass(btnConf.className || 'btn btn-secondary')
+                        .attr('type', 'button')
+                        .attr('title', btnConf.titleAttr || '')
+                        .html(text);
+                    if (btnConf.action) {
+                        btnEl.on('click', function(e) { btnConf.action(e, null, null, btnConf); });
+                    }
+                    btnGroup.append(btnEl);
+                });
+                var container = tableEl.closest('.dt-container');
+                var topRow = container.find('.dt-row').first();
+                var slot = topRow.find('.dt-layout-start').first();
+                if (slot.length === 0) {
+                    topRow.prepend(btnGroup);
+                } else {
+                    btnGroup.appendTo(slot);
+                }
+            }
+        }
+
+        return dt;
     }
 
     function initCompact(selector, options) {
@@ -106,12 +117,8 @@
         return new DataTable(tableEl[0], $.extend(true, {}, COMPACT_DEFAULTS, options || {}));
     }
 
-    // Install real implementations on KernelWeb.
     window.KernelWeb.dt = { init: init, initCompact: initCompact };
 
-    // ── Drain the head-stub queue ──
-    // Views may have called KernelWeb.dt.init() before this script loaded;
-    // the head bootstrap creates _dtInitQueue to collect those calls.
     var q = window.KernelWeb._dtInitQueue;
     window.KernelWeb._dtInitQueue = null;
     if (q) {
