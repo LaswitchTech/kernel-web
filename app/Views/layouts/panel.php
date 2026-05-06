@@ -393,6 +393,11 @@ echo \App\Core\HookRegistry::render('layout.body.end');
         showLoading();
         var bsModal = new bootstrap.Modal(profileModal);
         bsModal.show();
+        // Focus the modal title after show to avoid aria-hidden accessibility warning
+        setTimeout(function () {
+            var title = document.getElementById('profile-modal-label');
+            if (title) title.focus();
+        }, 150);
 
         fetch('/api/profile', { credentials: 'same-origin' })
             .then(function (r) {
@@ -567,6 +572,9 @@ echo \App\Core\HookRegistry::render('layout.body.end');
 
             // Initial load
             loadTokens();
+
+            // Focus token name input for accessibility
+            if (nameInput) setTimeout(function () { nameInput.focus(); }, 200);
         });
     })();
 })();

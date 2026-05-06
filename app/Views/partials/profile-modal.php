@@ -45,7 +45,7 @@
                         <div class="alert alert-warning d-none" id="pm-token-created" role="alert">
                             <div class="small fw-semibold mb-1">Your new token — save it now, it won't be shown again:</div>
                             <code class="d-block bg-body-secondary p-2 mb-2" id="pm-token-value" style="word-break:break-all;user-select:all;"></code>
-                            <button class="btn btn-sm btn-outline-secondary" type="button" onclick="document.getElementById('pm-token-created').classList.add('d-none');">Dismiss</button>
+                            <button class="btn btn-sm btn-outline-secondary" type="button" data-dismiss="alert" aria-label="Dismiss">Dismiss</button>
                         </div>
 
                         <!-- Create token form -->
