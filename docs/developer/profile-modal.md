@@ -229,22 +229,13 @@
  *
  * ## Implementation Tasks (Not Yet Done)
 
-1. **ProfileModal class** — registry class for `addSection()` and tab rendering
-2. **`/api/profile/sections/{slug}` endpoint** — AJAX tab content loader
-3. **Profile modal tabbed UI** — convert current profile modal HTML to tabs
-4. **API Tokens tab** — integrate TokenController endpoints into the modal
-5. **Notification preferences tab** (if Notifications plugin has this feature)
-6. **Permission filtering** — gate plugin sections on user permissions
+These tasks are tracked in the Phase 2 section of ROADMAP.md.
 
-## Design Constraints
- *
- * - Implementation (code generation)
- * - API endpoint implementations
- * - Plugin hook class (ProfileModal)
- * - Default notification preferences tab
- * - Token management within modal
- * - Tab state persistence in localStorage
- * - Keyboard shortcuts for modal
- *
- * For design decisions, see DESIGN.md under "UI Design Standards → Profile Modal".
+1. **Profile Modal tabbed UI foundation** — convert static modal to tabs, wire Overview section to `/api/profile`
+2. **Profile Modal section registry / hook system** — `ProfileModal` class, `profile.sections` hook registration
+3. **Profile Modal API Tokens section** — integrate existing TokenController endpoints into the modal
+4. **Profile Modal plugin-provided sections** — tab loading, permission gating
+5. **Profile Modal API section endpoint** — `/api/profile/sections/{slug}` handler
+
+For design decisions, see DESIGN.md under "UI Design Standards → Profile Modal".
  */
