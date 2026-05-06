@@ -43,8 +43,6 @@
             bottom:     'info',
             bottomEnd:  'paging'
         },
-        // Button default classes — applied to custom buttons lacking className
-        buttonClasses: 'btn btn-sm',
         language   : {
             emptyTable        : 'No data available.',
             zeroRecords       : 'No matching records found.',
@@ -63,7 +61,7 @@
         },
     };
 
-    // Compact preset: styled table only, no controls.
+    // Compact preset: table only, no controls.
     var COMPACT_DEFAULTS = $.extend(true, {}, DEFAULTS, {
         paging    : false,
         searching : false,
@@ -81,15 +79,23 @@
         // Merge view options onto defaults
         var config = $.extend(true, {}, DEFAULTS, options || {});
 
-        // Wire custom buttons into layout.topStart.
-        // The 'buttons' option is a separate DT2 config key; it does NOT
-        // auto-wire into the layout API.  We must pass buttons explicitly:
-        //   layout.topStart: { buttons: buttons }
-        var buttons = config.buttons && config.buttons.length ? config.buttons : null;
-        if (!config.layout) config.layout = {};
-        config.layout.topStart = buttons
-            ? { buttons: buttons }
-            : null;
+        // Extract custom buttons and wire into layout.
+        // DT2 layout slot value is { featureName: featureConfig }.
+        // For the buttons feature, featureConfig = { buttons: [...] }.
+        // So: layout.topStart = { buttons: { buttons: [...] } }
+        var customButtons = Array.isArray(config.buttons) ? config.buttons : [];
+        delete config.buttons;
+        delete config.buttonClasses;
+
+        config.layout = {
+            topStart: customButtons.length
+                ? { buttons: { buttons: customButtons } }
+                : null,
+            topEnd:     'search',
+            bottomStart: 'pageLength',
+            bottom:     'info',
+            bottomEnd:  'paging'
+        };
 
         return new DataTable(tableEl[0], config);
     }
