@@ -113,9 +113,3 @@
         </div>
     </div>
 </div>
-
-<div class="d-flex gap-2 mt-4">
-    <a href="/admin" class="btn btn-outline-secondary">
-        <i class="bi bi-arrow-left me-1"></i>Back to Administration
-    </a>
-</div>
