@@ -102,10 +102,8 @@ if (!isset($displayName) || $displayName === '') {
         : $user['username'];
 }
 
-// $activeSection may be set by controllers to mark a nav item as active
-// independently of $pageTitle (e.g. sub-pages like Add/Edit Device).
-// If not set, fall back to the current request URI for URL matching.
-$navActive = $activeSection ?? $_SERVER['REQUEST_URI'] ?? '/';
+// Use REQUEST_URI for sidebar nav matching (controllers may set $activeSection to a title, not a URL).
+$navActive = $_SERVER['REQUEST_URI'] ?? '/';
 ?>
 
 <!-- Overlay for mobile sidebar -->
@@ -128,7 +126,8 @@ $navActive = $activeSection ?? $_SERVER['REQUEST_URI'] ?? '/';
         <nav class="sidebar-nav">
             <?php
             // Render admin sidebar from MenuRegistry.
-            echo \App\Core\MenuHelper::renderSidebar($navActive, $permissions ?? [], [], 'admin-sidebar', $navActive);
+            // Use REQUEST_URI for nav matching (passed as $navActive above).
+            echo \App\Core\MenuHelper::renderSidebar($navActive, $permissions ?? [], [], 'admin-sidebar');
             ?>
         </nav>
 
