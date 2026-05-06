@@ -22,9 +22,9 @@ Foundational work that should happen before major feature development.
 - [x] Add a `blank.php` layout override example for auth pages — polished (local assets, hooks)
 - [x] Review and clean up any remaining NetMon-specific code in core — none found (core is clean)
 - [x] Document validation error convention (keyed field errors) — already documented (docs/developer/kernel/validation.md)
-- [ ] Design extensible Profile Modal system (UI structure, core sections, plugin hook, API design, security rules)
+- [x] Design extensible Profile Modal system (UI structure, core sections, plugin hook, API design, security rules)
 
-**Phase 1 Status:** 17 of 18 tasks completed. The remaining task (Add tests) is deferred — no test framework exists. Phase 1 stabilization is considered closed.
+**Phase 1 Status:** 14 of 15 tasks completed. The remaining task (Add tests) is deferred — no test framework exists. Phase 1 stabilization is closed.
 
 ---
 
@@ -120,7 +120,7 @@ These are planned or requested but are out of scope for the current development 
 | GitHub workflows | Implemented | CI (PHP lint, JSON validate) + release workflow |
 | Contributing docs | Implemented | Documented in /docs/contributing.md |
 | Runtime DB safety | Hardened | DB files excluded from public/, .gitignore updated |
-| Phase 1 stabilization | Closed | 17/18 tasks done — tests deferred (no framework) |
+| Phase 1 stabilization | Closed | 14/15 tasks done — tests deferred (no framework) |
 | Profile Modal | Designed | UI structure, plugin hook (profile.sections), API design, security rules — DESIGN.md updated, docs/developer/profile-modal.md |
 | OAuth | Deferred | See Deferred section |
 | Licensing | Deferred | See Deferred section |

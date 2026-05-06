@@ -895,7 +895,7 @@ Use Bootstrap tabs inside the modal body. Tabs are preferred over accordions bec
 
 | Tab | Name | Content | Source |
 |-----|------|---------|--------|
-| Overview | `overview` | Basic user info (username, email, display name, member since) | Kernel core (always present) |
+| Overview | `overview` | Basic user info (username, email, display_name, created_at, updated_at) | Kernel core (always present) |
 | API Tokens | `tokens` | Active tokens list with create/revoke | Kernel core (always present) |
 | `{slug}` | `{slug}` | Plugin-provided sections (e.g. Notification Preferences) | Plugins (optional) |
 
@@ -915,12 +915,35 @@ The `profile.sections` collection is rendered server-side during modal init. Eac
 - `permission` — optional required permission
 - `source` — plugin name or `core`
 
+**Safe Data Shape (Overview tab)**
+
+The `/api/profile` endpoint returns an explicit whitelist of user fields:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | int | User ID |
+| `username` | string | Login name |
+| `email` | string | Email address |
+| `display_name` | string | Display name (may be empty) |
+| `created_at` | string | Account creation timestamp |
+| `updated_at` | string | Last modification timestamp |
+
+No other user fields are returned. `password_hash`, `token`, and `secret` columns are never included. If new fields are added, review against: could this expose sensitive data?
+
+**User Isolation**
+
+Each user can only view their own profile data. The `/api/profile` endpoint always returns the authenticated user — there is no user ID parameter. Cross-user profile access is impossible because the endpoint does not accept a user selector.
+
 **Content Loading Strategy**
 
 - The **Overview** tab content renders server-side (always available)
 - Additional tabs load via AJAX on first tab switch (lazy)
 - Cached in DOM after first load (no repeated requests)
 - Falls back to "Could not load section" on error
+
+**Token Data Security**
+
+Token list endpoints (GET `/api/profile/tokens`) never return the raw token string. Only the hashed display value and metadata are shown. The raw token is only returned once at creation time (POST `/api/profile/tokens`), consistent with `TokenService::generate()`'s design. This prevents raw token exposure through API responses, logs, or localStorage.
 
 **API Design**
 

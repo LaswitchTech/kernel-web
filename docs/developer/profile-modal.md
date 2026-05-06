@@ -131,6 +131,8 @@
  * | order | no | Sort priority (default: 50) |
  * | permission | no | Required permission to see this tab |
  * | source | no | Plugin name or 'core' |
+
+**Content Format:** The `content` parameter accepts either a string (view file path relative to the plugin's `views/` directory) or a closure that returns HTML. Views receive `$user` and `$can` (permission checker) variables.
  *
  * ## Security Rules
  *
@@ -225,7 +227,16 @@
  * - Modal must be accessible (ARIA attributes, focus trapping)
  * - Modal width should not exceed viewport on mobile
  *
- * ## Future Work
+ * ## Implementation Tasks (Not Yet Done)
+
+1. **ProfileModal class** — registry class for `addSection()` and tab rendering
+2. **`/api/profile/sections/{slug}` endpoint** — AJAX tab content loader
+3. **Profile modal tabbed UI** — convert current profile modal HTML to tabs
+4. **API Tokens tab** — integrate TokenController endpoints into the modal
+5. **Notification preferences tab** (if Notifications plugin has this feature)
+6. **Permission filtering** — gate plugin sections on user permissions
+
+## Design Constraints
  *
  * - Implementation (code generation)
  * - API endpoint implementations
