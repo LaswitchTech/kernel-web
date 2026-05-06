@@ -16,8 +16,7 @@
         layout     : {
             topStart:   null,
             topEnd:     'search',
-            bottomStart: 'pageLength',
-            bottom:     'info',
+            bottomStart: 'info',
             bottomEnd:  'paging'
         },
         language   : {

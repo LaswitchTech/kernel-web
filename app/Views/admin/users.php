@@ -84,12 +84,89 @@ KernelWeb.dt.init('#admin-users-table', {
     ],
     buttons: [
         {
-            text: '<i class="bi bi-person-plus me-1" aria-hidden="true"></i><span class="visually-hidden">New User</span>',
-            className: 'btn btn-sm btn-primary',
+            text: '<i class="bi bi-person-plus" aria-hidden="true"></i><span class="visually-hidden">New User</span>',
+            className: 'btn-primary',
+            init: function (dt, node){
+                $(node).removeClass('btn-secondary');
+            },
             titleAttr: 'New User',
             action: function (e, dt, node, config) {
                 window.location.href = '/admin/users/create';
             }
+        },
+        {
+            extend: 'collection',
+            text: '<i class="bi-check2-square"></i><span class="visually-hidden">Select</span>',
+            buttons: [
+                {
+                    extend: 'selectAll',
+                    text: '<i class="bi-check2-all me-2"></i>All',
+                },
+                {
+                    extend: 'selectNone',
+                    text: '<i class="bi-x-square me-2"></i>None',
+                },
+                {
+                    name: 'selectFiltered',
+                    text: '<i class="bi-eye me-2"></i>Filtered',
+                    action: function (e, dt, node, config) {
+                        dt.rows({ selected: true }).deselect();
+                        dt.rows({ search: 'applied', page: 'all' }).select();
+                    },
+                },
+                {
+                    name: 'selectUnfiltered',
+                    text: '<i class="bi-eye-slash me-2"></i>Unfiltered',
+                    action: function (e, dt, node, config) {
+                        dt.rows({ selected: true }).deselect();
+                        dt.rows({ search: 'removed', page: 'all' }).select();
+                    },
+                },
+            ]
+        },
+        {
+            extend: 'collection',
+            text: '<i class="bi-arrow-bar-down"></i><span class="visually-hidden">Export</span>',
+            buttons: [
+                {
+                    extend: 'copy',
+                    text: '<i class="bi-clipboard me-2"></i>Clipboard',
+                    exportOptions: {
+                        columns: ':visible:not(:last-child)',
+                    },
+                },
+                {
+                    extend: 'excel',
+                    text: '<i class="bi-filetype-xlsx me-2"></i>Excel',
+                    exportOptions: {
+                        columns: ':visible:not(:last-child)',
+                    },
+                },
+                {
+                    extend: 'csv',
+                    text: '<i class="bi-filetype-csv me-2"></i>CSV',
+                    exportOptions: {
+                        columns: ':visible:not(:last-child)',
+                    },
+                },
+                {
+                    extend: 'pdf',
+                    text: '<i class="bi-filetype-pdf me-2"></i>PDF',
+                    exportOptions: {
+                        columns: ':visible:not(:last-child)',
+                    },
+                },
+            ],
+        },
+        {
+            text: '<i class="bi bi-layout-sidebar-inset" aria-hidden="true"></i><span class="visually-hidden">Column Visibility</span>',
+            titleAttr: 'Column Visibility',
+            extend: 'colvis'
+        },
+        {
+            text: '<i class="bi bi-list" aria-hidden="true"></i><span class="visually-hidden">Number of rows</span>',
+            titleAttr: 'Number of rows',
+            extend: 'pageLength'
         }
     ]
 });
