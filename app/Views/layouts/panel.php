@@ -218,6 +218,11 @@ $navActive = $activeSection ?? $_SERVER['REQUEST_URI'] ?? '/';
             <?php if (isset($breadcrumbs) && is_array($breadcrumbs) && !empty($breadcrumbs)): ?>
                 <nav aria-label="breadcrumb" class="mb-3">
                     <ol class="breadcrumb mb-0">
+                        <li class="breadcrumb-item">
+                            <a href="/" aria-label="Home" class="text-decoration-none">
+                                <i class="bi bi-house" aria-hidden="true"></i>
+                            </a>
+                        </li>
                         <?php $bcLast = count($breadcrumbs) - 1; foreach ($breadcrumbs as $i => $crumb): ?>
                         <?php if ($i === $bcLast): ?>
                         <li class="breadcrumb-item active" aria-current="page">

@@ -10,13 +10,6 @@
 </div>
 <?php endif; ?>
 
-<nav aria-label="breadcrumb">
-    <ol class="breadcrumb mb-4">
-        <li class="breadcrumb-item"><a href="/admin">Administration</a></li>
-        <li class="breadcrumb-item active" aria-current="page">Theme Preview</li>
-    </ol>
-</nav>
-
 <h2 class="mb-4">Theme Preview</h2>
 <p class="text-muted mb-4">
     This page renders all Bootstrap 5 components so you can review how your theme styles them.
