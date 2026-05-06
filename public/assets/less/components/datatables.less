@@ -2,3 +2,90 @@
 // Kernel-Web — DataTables component overrides and extensions
 // ============================================================
 
+// ── Container ───────────────────────────────────────────────
+.dt-container {
+    width: 100%;
+}
+
+// Top row — buttons and search
+.dt-container > .dt-row:first-child {
+    padding-top: 1rem;
+    padding-bottom: 0.5rem;
+}
+
+// Table — flush with container edges
+.dt-container > .dt-row:last-child > .dt-layout-table,
+.dt-container > .dt-row:last-child > .dt-layout-start,
+.dt-container > .dt-row:last-child > .dt-layout-end,
+.dt-container > .dt-row:last-child > .dt-layout-middle {
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
+}
+
+// ── Buttons ─────────────────────────────────────────────────
+.dt-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+    align-items: center;
+}
+
+// Built-in DataTables Buttons (copy, excel, pdf, print, colvis, pageLength)
+// These get .dt-button from the Buttons library + .btn from the BS5 integration.
+// Only target built-in buttons — custom action buttons use regular .btn classes.
+.dt-button {
+    cursor: pointer;
+    border-radius: 0.25rem !important;
+}
+
+.dt-button:hover,
+.dt-button:focus {
+    opacity: 0.85;
+}
+
+// Active toggle state (e.g. colvis toggle)
+.dt-button.dt-active,
+.dt-button.active {
+    opacity: 1;
+}
+
+// ── Buttons group wrapper ───────────────────────────────────
+.dt-buttons.btn-group {
+    display: inline-flex;
+    gap: 0.25rem;
+}
+
+// ── Search ──────────────────────────────────────────────────
+.dt-search {
+    display: flex;
+    align-items: center;
+}
+
+.dt-search input {
+    width: 12rem;
+    margin-left: 0.25rem;
+}
+
+// ── Length ──────────────────────────────────────────────────
+.dt-length {
+    display: flex;
+    align-items: center;
+}
+
+.dt-length select {
+    margin-left: 0.25rem;
+}
+
+// ── Info ────────────────────────────────────────────────────
+.dt-info {
+    padding-top: 0.5rem;
+}
+
+// ── Pagination ──────────────────────────────────────────────
+.dt-paging {
+    margin: 0;
+}
+
+.dt-paging .pagination {
+    margin: 0;
+}
