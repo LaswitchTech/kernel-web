@@ -113,7 +113,10 @@ Orchestrates catalog operations with validation:
 - **type**: must be one of `plugin`, `theme`, `layout`
 - **version**: must match semantic versioning (`\d+\.\d+\.\d+`)
 - **status**: must be one of `pending`, `approved`, `rejected`
-- **dependencies**: stored as JSON keyed object `type:slug → constraint`, validated with `CatalogService::parseDependencies()`
+- **dependencies**: must be empty string, empty JSON object `{}`, or valid JSON keyed object `type:slug → constraint`
+  - Keys validated by `ExtensionDependencyResolver::isValidDependencyKey()` (type is plugin/theme/layout, slug matches `^[a-z][a-z0-9_-]*$`)
+  - Constraints validated by `ExtensionDependencyResolver::isValidConstraint()` (exact, >=, >, <=, <, ^, ~, or empty)
+  - Rejected: invalid JSON, JSON array, non-object JSON, non-string constraint values, invalid key format
 - **requirements**: stored as JSON array, parsed via helper methods
 
 ## Planned Future Usage

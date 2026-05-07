@@ -24,6 +24,151 @@ class ExtensionDependencyResolver
 
     // ---------------------------------------------------------------------
     // Public API
+    /**
+     * Validate a dependency key in type:slug format.
+     *
+     * Returns true if the key is a valid "type:slug" where type is one of
+     * plugin/theme/layout and slug matches ^[a-z][a-z0-9_-]*$.
+     */
+    public static function isValidDependencyKey(string $key): bool
+    {
+        $parsed = self::parseKey($key);
+        return $parsed !== null;
+    }
+
+    /**
+     * Validate a version constraint string.
+     *
+     * Accepted formats:
+     *   - Exact: 1.2.3
+     *   - >=, >, <=, < prefixed: >=1.0.0
+     *   - Caret: ^1.2.3
+     *   - Tilde: ~1.2.3
+     *   - Empty string (always valid, means "any")
+     *
+     * Returns false for malformed constraints (e.g. invalid operator,
+     * non-semver version, or any other unrecognized format).
+     */
+    public static function isValidConstraint(string $constraint): bool
+    {
+        $c = trim($constraint);
+        if ($c === '') {
+            return true;
+        }
+
+        // Caret
+        if (preg_match('/^\^(.+)$/', $c, $m)) {
+            return self::isValidVersion($m[1]);
+        }
+
+        // Tilde
+        if (preg_match('/^\~(.+)$/', $c, $m)) {
+            return self::isValidVersion($m[1]);
+        }
+
+        // Comparison operator
+        if (preg_match('/^(>=|>|<=|<)(.+)$/', $c, $m)) {
+            return self::isValidVersion($m[2]);
+        }
+
+        // Exact version
+        return self::isValidVersion($c);
+    }
+
+    /**
+     * Validate a dependency map (array or JSON string).
+     *
+     * Accepted values:
+     *   - null, empty string, empty array, "{}" → valid (no dependencies)
+     *   - Non-empty JSON object with string keys and string values → validated per-key
+     *
+     * Rejected:
+     *   - Non-empty string that is not valid JSON
+     *   - JSON array (flat list)
+     *   - Non-object JSON (e.g. number, boolean)
+     *   - Key not matching type:slug format
+     *   - Constraint not matching a supported version constraint format
+     *   - Non-string constraint value
+     *
+     * Returns list of human-readable error messages. Empty array means valid.
+     *
+     * @param string|mixed $value
+     * @return string[]
+     */
+    public static function validateDependencyMap($value): array
+    {
+        $errors = [];
+
+        // Empty / null / empty array → valid
+        if ($value === null) {
+            return $errors;
+        }
+        if (is_array($value) && $value === []) {
+            return $errors;
+        }
+        if (is_string($value) && trim($value) === '') {
+            return $errors;
+        }
+
+        if (is_array($value)) {
+            return self::validateDependencyMapFromArray($value);
+        }
+
+        if (is_string($value)) {
+            $decoded = json_decode($value, true);
+            if (!is_array($decoded)) {
+                // Non-object JSON (array, number, boolean, etc.) or invalid JSON
+                if (json_last_error() !== JSON_ERROR_NONE) {
+                    $errors[] = 'Dependencies must be a valid JSON object (e.g. {"plugin:notes": ">=0.1.0"}) or left empty.';
+                } else {
+                    $errors[] = 'Dependencies must be a JSON object, not a list. Use {"type:slug": "constraint"} format.';
+                }
+                return $errors;
+            }
+            return self::validateDependencyMapFromArray($decoded);
+        }
+
+        $errors[] = 'Dependencies must be a JSON object or left empty.';
+        return $errors;
+    }
+
+    /**
+     * @param array $deps
+     * @return string[]
+     */
+    private static function validateDependencyMapFromArray(array $deps): array
+    {
+        $errors = [];
+
+        foreach ($deps as $key => $constraint) {
+            // Key must be a non-empty string
+            if (!is_string($key) || $key === '') {
+                $errors[] = "Dependency key must be a non-empty string in 'type:slug' format.";
+                continue;
+            }
+
+            // Key format: type:slug
+            if (!self::isValidDependencyKey($key)) {
+                $errors[] = "Invalid dependency key '{$key}'. Must be 'type:slug' where type is plugin/theme/layout and slug matches ^[a-z][a-z0-9_-]*\$.";
+                continue;
+            }
+
+            // Constraint must be a non-empty string
+            if (!is_string($constraint)) {
+                $errors[] = "Dependency '{$key}' constraint must be a string, not " . gettype($constraint) . ".";
+                continue;
+            }
+
+            // Validate constraint format
+            if (!self::isValidConstraint($constraint)) {
+                $errors[] = "Dependency '{$key}' has an invalid constraint '{$constraint}'. Supported: exact (1.2.3), >=, >, <=, <, ^ (caret), ~ (tilde).";
+                continue;
+            }
+        }
+
+        return $errors;
+    }
+
     // ---------------------------------------------------------------------
 
     /**

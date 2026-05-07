@@ -3,6 +3,7 @@
 namespace App\Services\Extensions;
 
 use App\Models\CatalogExtensionRepository;
+use App\Services\Extensions\ExtensionDependencyResolver;
 
 /**
  * Catalog service for extension metadata management.
@@ -395,6 +396,25 @@ class CatalogService
         return $result;
     }
 
+    /**
+     * Validate a dependency field value using the resolver.
+     *
+     * Returns a keyed error under 'dependencies' if invalid, empty array if valid.
+     * The key matches the form template's $errors['dependencies'] pattern.
+     *
+     * @param string $value
+     * @return array<string, string> Keyed validation errors (empty if valid)
+     */
+    private function validateDependencyField(string $value): array
+    {
+        $result = ExtensionDependencyResolver::validateDependencyMap($value);
+        if ($result !== []) {
+            return ['dependencies' => implode(' ', $result)];
+        }
+
+        return [];
+    }
+
     // ------ Internal Validation ------
 
     /**
@@ -429,6 +449,10 @@ class CatalogService
             $errors['version'] = 'Version must be in semantic versioning format (e.g. 1.0.0).';
         }
 
+        // Validate dependency format
+        $depDeps = $this->validateDependencyField($data['dependencies'] ?? '[]');
+        $errors = array_merge($errors, $depDeps);
+
         return $errors;
     }
 
@@ -458,6 +482,11 @@ class CatalogService
 
         if (isset($data['status']) && !in_array($data['status'], self::VALID_STATUSES, true)) {
             $errors['status'] = 'Status must be one of: pending, approved, rejected.';
+        }
+
+        if (isset($data['dependencies'])) {
+            $depDeps = $this->validateDependencyField($data['dependencies']);
+            $errors = array_merge($errors, $depDeps);
         }
 
         return $errors;

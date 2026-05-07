@@ -157,8 +157,16 @@
                                       id="ext-dependencies"
                                       class="form-control font-monospace"
                                       rows="3"
-                                      placeholder='["slug-of-other-plugin"]'><?= htmlspecialchars($old['dependencies'] ?? '') ?></textarea>
-                            <div class="form-text">JSON array of extension slugs this extension depends on.</div>
+                                      placeholder='{"plugin:notes": ">=0.1.0"}'><?= htmlspecialchars($old['dependencies'] ?? '') ?></textarea>
+                            <div class="form-text">
+                                JSON object mapping <code>type:slug</code> to version constraints.
+                                Empty or <code>{}</code> for no dependencies.
+                                <br>Example: <code>{"plugin:notes": ">=0.1.0", "theme:default": "^1.0.0"}</code>
+                                <br>Constraints: exact (<code>1.2.3</code>), <code>&gt;=</code>, <code>&gt;</code>, <code>&lt;=</code>, <code>&lt;</code>, <code>^</code> (caret), <code>~</code> (tilde).
+                            </div>
+                            <?php if (isset($errors['dependencies'])): ?>
+                                <div class="invalid-feedback"><?= htmlspecialchars($errors['dependencies']) ?></div>
+                            <?php endif; ?>
                         </div>
                     </div>
 
