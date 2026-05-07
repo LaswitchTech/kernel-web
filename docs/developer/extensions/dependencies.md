@@ -165,14 +165,31 @@ No dependency details on the listing page — only the count.
 
 ### Extension Detail / Review Page
 
-The dependency list is shown in the extension detail view:
+The dependency list is shown in the extension catalog table. A **Dependencies** column displays:
 
-| Column | Content |
-|--------|---------|
-| Dependency | `plugin:notes` or human-readable name (from catalog lookup) |
-| Status | badge: installed/enabled, installed/disabled, missing, version mismatch, pending, rejected |
-| Version | installed version or `—` |
-| Required by | reverse dependency list (which extensions depend on this one) |
+- **Count badge** — number of dependencies, colored by worst status:
+  - `bg-success` — all satisfied
+  - `bg-warning text-dark` — at least one pending
+  - `bg-danger` — at least one missing/version mismatch/rejected
+  - `bg-secondary` — no issues but no dependencies
+- **Expand icon** — Bootstrap collapse toggles a detail panel inline
+- **Detail panel** — table with columns: Dependency, Constraint, Installed, Status
+
+Status badge meanings (detail panel):
+
+| Status | Badge | Color | Meaning |
+|--------|-------|-------|---------|
+| `satisfied` | Success | green | Dependency found, installed, enabled, version matches constraint |
+| `installed` | Primary | blue | Dependency found, installed but not enabled |
+| `missing` | Danger | red | Dependency not found in catalog or not installed |
+| `pending` | Warning | yellow | Dependency exists but status is pending review |
+| `rejected` | Danger | red | Dependency exists but has been rejected |
+| `version-mismatch` | Danger | red | Installed version does not satisfy the declared constraint |
+| `invalid-key` | Secondary | gray | Dependency key does not match `type:slug` format |
+| `invalid-constraint` | Secondary | gray | Constraint value is not a recognized version constraint |
+| `malformed` | Danger | red | Dependency declaration is not valid JSON |
+
+No dependencies → shows "None" (muted text).
 
 ### Install Action
 

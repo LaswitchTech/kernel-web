@@ -94,6 +94,7 @@
                         <th>Slug</th>
                         <th>Type</th>
                         <th>Version</th>
+                        <th>Dependencies</th>
                         <th>Status</th>
                         <th>Installed</th>
                         <th>Enabled</th>
@@ -114,6 +115,95 @@
                             <?= ucfirst(htmlspecialchars($ext['type'])) ?>
                         </td>
                         <td class="text-muted small"><?= $ext['version'] !== '0.0.0' ? htmlspecialchars($ext['version']) : '<span class="text-muted fst-italic">—</span>' ?></td>
+                        <td>
+                            <?php
+                            $deps = $depAnalysis[(int) $ext['id']] ?? [];
+                            $depCount = count($deps);
+                            $hasIssues = false;
+                            $depStatusClass = 'secondary';
+                            foreach ($deps as $d) {
+                                if ($d['status'] === 'satisfied') {
+                                    $depStatusClass = 'success';
+                                } elseif ($d['status'] === 'pending') {
+                                    $depStatusClass = 'warning text-dark';
+                                } elseif ($d['status'] === 'missing' || $d['status'] === 'version-mismatch' || $d['status'] === 'rejected') {
+                                    $depStatusClass = 'danger';
+                                    $hasIssues = true;
+                                }
+                            }
+                            ?>
+                            <?php if ($depCount === 0): ?>
+                                <span class="text-muted small">None</span>
+                            <?php else: ?>
+                                <span class="badge <?= htmlspecialchars($depStatusClass) ?>"><?= $depCount ?></span>
+                                <a href="#dep-detail-<?= (int) $ext['id'] ?>"
+                                   class="d-inline-block ms-1"
+                                   data-bs-toggle="collapse"
+                                   data-bs-target="#dep-detail-<?= (int) $ext['id'] ?>"
+                                   aria-expanded="false"
+                                   aria-label="Toggle dependency details">
+                                    <i class="bi bi-chevron-expand text-muted"></i>
+                                </a>
+                                <div class="collapse" id="dep-detail-<?= (int) $ext['id'] ?>">
+                                    <div class="mt-2 p-2 border rounded bg-light">
+                                        <table class="table table-sm table-borderless mb-0 small">
+                                            <thead>
+                                                <tr>
+                                                    <th>Dependency</th>
+                                                    <th>Constraint</th>
+                                                    <th>Installed</th>
+                                                    <th>Status</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <?php foreach ($deps as $d): ?>
+                                                <tr>
+                                                    <td>
+                                                        <?= $d['name'] ?>
+                                                        (<code><?= htmlspecialchars($d['key']) ?></code>)
+                                                    </td>
+                                                    <td class="text-nowrap"><?= htmlspecialchars($d['constraint']) ?></td>
+                                                    <td>
+                                                        <?php if ($d['installed']): ?>
+                                                            <span class="badge bg-info text-dark"><?= htmlspecialchars($d['installedVersion']) ?></span>
+                                                        <?php else: ?>
+                                                            <span class="text-muted">—</span>
+                                                        <?php endif; ?>
+                                                    </td>
+                                                    <td>
+                                                        <?php
+                                                        $statusLabels = [
+                                                            'satisfied' => ['Success', 'bi-check-circle'],
+                                                            'installed' => ['Primary', 'bi-box'],
+                                                            'missing' => ['Danger', 'bi-x-circle'],
+                                                            'pending' => ['Warning', 'bi-clock'],
+                                                            'rejected' => ['Danger', 'bi-x-octagon'],
+                                                            'version-mismatch' => ['Danger', 'bi-exclamation-triangle'],
+                                                            'invalid-key' => ['Secondary', 'bi-file-break'],
+                                                            'invalid-constraint' => ['Secondary', 'bi-file-break'],
+                                                            'malformed' => ['Danger', 'bi-file-break'],
+                                                        ];
+                                                        [$label, $icon] = $statusLabels[$d['status']] ?? ['Secondary', 'bi-question-circle'];
+                                                        $bgClass = [
+                                                            'Success' => 'success',
+                                                            'Primary' => 'primary',
+                                                            'Warning' => 'warning text-dark',
+                                                            'Danger' => 'danger',
+                                                            'Secondary' => 'secondary',
+                                                        ];
+                                                        ?>
+                                                        <span class="badge bg-<?= htmlspecialchars($bgClass[$label] ?? 'secondary') ?>">
+                                                            <i class="bi <?= htmlspecialchars($icon) ?> me-1"></i><?= htmlspecialchars($label) ?>
+                                                        </span>
+                                                    </td>
+                                                </tr>
+                                                <?php endforeach; ?>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            <?php endif; ?>
+                        </td>
                         <td>
                             <?php if ($ext['status'] === 'approved'): ?>
                             <span class="badge bg-success" title="Approved">

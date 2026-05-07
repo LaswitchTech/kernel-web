@@ -69,6 +69,16 @@ class ExtensionsController extends Controller
 
         $extensions = $catalog->listAll();
 
+        // Pre-compute dependency analysis for display.
+        $depResolver = new \App\Services\Extensions\ExtensionDependencyResolver();
+        $depAnalysis = [];
+        foreach ($extensions as $ext) {
+            $depAnalysis[(int) $ext['id']] = $depResolver->analyzeDependencies(
+                $ext['dependencies'] ?? '[]',
+                $extensions
+            );
+        }
+
         $pageTitle  = 'Extension Catalog';
         $activeSection = 'Admin Extensions';
         $appName    = $config['name'] ?? 'Kernel-Web';
