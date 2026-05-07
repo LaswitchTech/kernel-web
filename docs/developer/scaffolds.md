@@ -67,13 +67,13 @@ Templates use `{{variable}}` placeholders:
 |------|------|----|
 | `{{name}}` | `My Extension` | Display name |
 | `{{slug}}` | `my-extension` | URL-safe identifier |
-| `{{Namespace}}` | `MyExtension` | Class name prefix (PascalCase) |
-| `{{namespace}}` | `MyExtension` | PHP namespace segment (PascalCase) |
+| `{{namespace}}` | `MyExtension` | Class name prefix (PascalCase) |
 | `{{author}}` | `Jane Developer` | Author name |
 | `{{version}}` | `0.1.0` | Initial version |
 | `{{description}}` | `A sample extension` | Short description |
-| `{{plural_slug}}` | `my-extensions` | Pluralized slug for table names |
-| `{{lower_slug}}` | `my_extension` | Snake_case slug for DB/column names |
+| `{{plural_slug}}` | `my-extensions` | Pluralized slug (for references) |
+| `{{lower_slug}}` | `my_extension` | Snake_case slug |
+| `{{pascal_slug}}` | `MyExtension` | PascalCase slug (for class names) |
 
 ### Template File Examples
 
