@@ -223,7 +223,7 @@ class Create{{pascal_slug}}Table extends Migration
  * {{name}} plugin — route registration.
  */
 
-$router->get('/{{slug}}', 'Plugins\\{{Namespace}}\\{{Namespace}}Controller@index', ['WebAuth']);
+$router->get('/{{slug}}', 'Plugins\\{{namespace}}\\{{namespace}}Controller@index', ['WebAuth']);
 ```
 
 #### `resources/scaffolds/theme/theme.json`
