@@ -349,6 +349,7 @@ Triggered when an installed catalog extension is uninstalled.
 - Enable/disable installed catalog entries (database lifecycle state + runtime integration)
 - Runtime plugin activation controlled by catalog `is_enabled` for installed catalog extensions
 - Uninstall installed catalog entries (disable-first rule, lifecycle hook, file removal, catalog preservation)
+- Extension dependency resolution (resolver service, install/enable/disable/uninstall enforcement via flash messages)
 
 ## Deferred
 
@@ -358,7 +359,7 @@ Triggered when an installed catalog extension is uninstalled.
 - Remote updates
 - Licensing
 - Dependency resolution UI
-- Dependency resolver implementation (design complete — see docs/developer/extensions/dependencies.md)
+- Dependency resolver implementation (design + first slice: resolver service + controller integration)
 - Theme switching
 - Layout switching
 - Non-reversible status transitions (pending --> approved can be changed back)

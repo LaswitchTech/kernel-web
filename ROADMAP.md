@@ -33,7 +33,7 @@ Foundational work that should happen before major feature development.
 Core infrastructure improvements that unlock future feature work.
 
 - [x] Extension uninstall workflow (reverse of install: run down migrations, disable hooks, remove files)
-- [x] Extension dependency resolver — design complete (see docs/developer/extensions/dependencies.md)
+- [x] Extension dependency resolver — design + first slice (Resolver service + controller integration)
 - [x] Dynamic LESS compilation (wikimedia/less.php, /css route, cache, theme/layout/plugin merge)
 - [ ] Extension update checks (local → catalog → remote)
 - [ ] Documentation plugin (render markdown docs at clean routes)
@@ -105,7 +105,7 @@ These are planned or requested but are out of scope for the current development 
 |------|--------|-------|
 | Plugin system | Implemented | Discovery, manifest, lifecycle hooks, registry |
 | Extension catalog | Partially implemented | Browse, submit, review, approve, install, enable/disable, uninstall — UI polished with consistent badges, filtering, and action grouping |
-| Dependency resolver | Design complete | Format: type:slug keys; supported constraints: exact, >=, >, <=, <, ^, ~; install/enable blocks, uninstall/disable protected; no auto-install (first version) — see docs/developer/extensions/dependencies.md |
+| Dependency resolver | Implemented (first slice) | Resolver service + controller integration; version constraints: exact, >=, >, <=, <, ^, ~; install/enable/uninstall/disable blocks; no auto-install — see docs/developer/extensions/dependencies.md |
 | Menu system | Implemented | Registry, sidebar, user-menu, admin-menu locations |
 | Layout system | Implemented | `app.php` (app), `panel.php` (admin), `blank.php` (auth, local assets, hooks) |
 | Theme system | Partially implemented | Bootstrap 5, LESS, dark/light mode |

@@ -420,6 +420,21 @@ class ExtensionsController extends Controller
             exit;
         }
 
+        // Check dependencies against catalog.
+        $catalog = $catalog->listAll();
+        $resolver = new \App\Services\Extensions\ExtensionDependencyResolver();
+        $deps = $resolver->parseDependencies($extension['dependencies']);
+        $depResult = $resolver->checkInstall($deps, $catalog, $slug);
+        if (!$depResult['allowed']) {
+            $messages = [];
+            foreach ($depResult['blockers'] as $blocker) {
+                $messages[] = ' - ' . $blocker['message'];
+            }
+            $this->flash('error', 'Cannot install "' . $extension['name'] . '". Dependencies not satisfied:' . "\n" . implode("\n", $messages));
+            header('Location: /admin/extensions/catalog');
+            exit;
+        }
+
         // Perform the copy
         if (!$this->copyDir($resolvedSource, $targetDir)) {
             $this->flash('error', 'Failed to copy extension files from staging to target directory.');
@@ -653,6 +668,21 @@ class ExtensionsController extends Controller
             exit;
         }
 
+        // Check dependencies against catalog.
+        $resolver = new \App\Services\Extensions\ExtensionDependencyResolver();
+        $catalogEntries = $catalog->listAll();
+        $deps = $resolver->parseDependencies($extension['dependencies']);
+        $depResult = $resolver->checkEnable($deps, $catalogEntries);
+        if (!$depResult['allowed']) {
+            $messages = [];
+            foreach ($depResult['blockers'] as $blocker) {
+                $messages[] = ' - ' . $blocker['message'];
+            }
+            $this->flash('error', 'Cannot enable "' . $extension['name'] . '". Dependencies not satisfied:' . "\n" . implode("\n", $messages));
+            header('Location: /admin/extensions/catalog');
+            exit;
+        }
+
         // Run enable lifecycle hook.
         $this->triggerLifecycle($extension['slug'], 'enable');
 
@@ -750,6 +780,21 @@ class ExtensionsController extends Controller
             exit;
         }
 
+        // Check reverse dependencies (no installed extension depends on this one).
+        $resolver = new \App\Services\Extensions\ExtensionDependencyResolver();
+        $deps = $resolver->parseDependencies($extension['dependencies']);
+        $catalogEntries = $catalog->listAll();
+        $depResult = $resolver->checkUninstall($deps, $catalogEntries, $extension['type'], $extension['slug']);
+        if (!$depResult['allowed']) {
+            $messages = [];
+            foreach ($depResult['blockers'] as $blocker) {
+                $messages[] = ' - ' . $blocker['message'];
+            }
+            $this->flash('error', 'Cannot uninstall "' . $extension['name'] . "':\n" . implode("\n", $messages));
+            header('Location: /admin/extensions/catalog');
+            exit;
+        }
+
         // Run uninstall lifecycle hook (optional).
         $hookOk = $this->triggerUninstallLifecycle($extension['name'], $extension['slug']);
         if (!$hookOk) {
@@ -810,6 +855,20 @@ class ExtensionsController extends Controller
 
         if ((int) $extension['is_enabled'] === 0) {
             $this->flash('error', 'Extension "' . $extension['name'] . '" is already disabled.');
+            header('Location: /admin/extensions/catalog');
+            exit;
+        }
+
+        // Check reverse dependencies (no enabled extension depends on this one).
+        $resolver = new \App\Services\Extensions\ExtensionDependencyResolver();
+        $catalogEntries = $catalog->listAll();
+        $depResult = $resolver->checkDisable([], $catalogEntries, $extension['type'], $extension['slug']);
+        if (!$depResult['allowed']) {
+            $messages = [];
+            foreach ($depResult['blockers'] as $blocker) {
+                $messages[] = ' - ' . $blocker['message'];
+            }
+            $this->flash('error', 'Cannot disable "' . $extension['name'] . "':\n" . implode("\n", $messages));
             header('Location: /admin/extensions/catalog');
             exit;
         }

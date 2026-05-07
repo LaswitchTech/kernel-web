@@ -377,20 +377,15 @@ The `type:slug` format is the safest choice because:
 
 ### Future (implementation)
 
-- [ ] `ExtensionDependencyResolver` service class
-- [ ] `InstallResult` / `Blocker` value objects
+- [x] `ExtensionDependencyResolver` service class
+- [x] Resolver integration in `ExtensionsController` (install/enable/disable/uninstall)
 - [ ] Catalog submission validation for dependency format
-- [ ] `CatalogService::parseDependencies()` update to preserve keyed format
-- [ ] `ExtensionsController::handleInstall()` calls resolver before install
-- [ ] `ExtensionsController::handleEnable()` calls resolver before enable
-- [ ] `ExtensionsController::handleUninstall()` calls resolver before uninstall
 - [ ] Catalog UI: dependency count badges
 - [ ] Catalog UI: dependency status on detail page
 - [ ] Catalog UI: blocker messages on actions
 - [ ] PluginLoader version check (currently only checks name)
 - [ ] Topological sort for boot order (currently discovery-order dependent)
 - [ ] Circular dependency detection in PluginLoader
-- [ ] `checkDisable()` integration
 
 ---
 
