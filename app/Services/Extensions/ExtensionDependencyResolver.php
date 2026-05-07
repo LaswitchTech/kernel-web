@@ -916,4 +916,214 @@ class ExtensionDependencyResolver
 
         return ['allowed' => true, 'blockers' => []];
     }
+
+    /**
+     * Analyze dependencies for display on catalog listing/detail pages.
+     *
+     * For each dependency, resolves it against the catalog and returns
+     * structured data suitable for rendering status badges and detail rows.
+     *
+     * @param string|array $dependenciesValue Raw dependency field (JSON string or array)
+     * @param array<int, array> $allCatalog All catalog entries for lookup
+     * @return array<int, array{key: string, constraint: string, status: string, statusClass: string, name: string, installedVersion: string, installed: bool, enabled: bool, catalogId: int|null, catalogSlug: string|null}>
+     */
+    public static function analyzeDependencies($dependenciesValue, array $allCatalog): array
+    {
+        $parsed = self::parseDependencies($dependenciesValue);
+
+        // Malformed/unparseable
+        if ($parsed === null) {
+            return [[
+                'key' => '',
+                'constraint' => '',
+                'status' => 'malformed',
+                'statusClass' => 'danger',
+                'name' => 'Invalid dependency format',
+                'installedVersion' => '—',
+                'installed' => false,
+                'enabled' => false,
+                'catalogId' => null,
+                'catalogSlug' => null,
+            ]];
+        }
+
+        // No dependencies
+        if ($parsed === []) {
+            return [];
+        }
+
+        $results = [];
+
+        foreach ($parsed as $depKey => $constraint) {
+            // Validate key format
+            if (!self::isValidDependencyKey($depKey)) {
+                $results[] = [
+                    'key' => htmlspecialchars($depKey),
+                    'constraint' => htmlspecialchars($constraint),
+                    'status' => 'invalid-key',
+                    'statusClass' => 'secondary',
+                    'name' => htmlspecialchars($depKey),
+                    'installedVersion' => '—',
+                    'installed' => false,
+                    'enabled' => false,
+                    'catalogId' => null,
+                    'catalogSlug' => null,
+                ];
+                continue;
+            }
+
+            [$depType, $depSlug] = explode(':', $depKey, 2);
+
+            // Look up in catalog
+            $catalogEntry = null;
+            foreach ($allCatalog as $entry) {
+                if ($entry['type'] === $depType && $entry['slug'] === $depSlug) {
+                    $catalogEntry = $entry;
+                    break;
+                }
+            }
+
+            // Not found in catalog
+            if ($catalogEntry === null) {
+                $results[] = [
+                    'key' => htmlspecialchars($depKey),
+                    'constraint' => htmlspecialchars($constraint),
+                    'status' => 'missing',
+                    'statusClass' => 'danger',
+                    'name' => htmlspecialchars($depSlug),
+                    'installedVersion' => '—',
+                    'installed' => false,
+                    'enabled' => false,
+                    'catalogId' => null,
+                    'catalogSlug' => $depSlug,
+                ];
+                continue;
+            }
+
+            $entryId = (int) $catalogEntry['id'];
+            $entryName = htmlspecialchars($catalogEntry['name'] ?? $depSlug);
+            $entryVersion = htmlspecialchars($catalogEntry['version'] ?? '0.0.0');
+            $entryInstalled = (int) ($catalogEntry['is_installed'] ?? 0) === 1;
+            $entryEnabled = (int) ($catalogEntry['is_enabled'] ?? 0) === 1;
+            $entryStatus = $catalogEntry['status'] ?? 'pending';
+
+            // Pending status
+            if ($entryStatus === 'pending') {
+                $results[] = [
+                    'key' => htmlspecialchars($depKey),
+                    'constraint' => htmlspecialchars($constraint),
+                    'status' => 'pending',
+                    'statusClass' => 'warning',
+                    'name' => $entryName,
+                    'installedVersion' => $entryVersion,
+                    'installed' => $entryInstalled,
+                    'enabled' => $entryEnabled,
+                    'catalogId' => $entryId,
+                    'catalogSlug' => $depSlug,
+                ];
+                continue;
+            }
+
+            // Rejected status
+            if ($entryStatus === 'rejected') {
+                $results[] = [
+                    'key' => htmlspecialchars($depKey),
+                    'constraint' => htmlspecialchars($constraint),
+                    'status' => 'rejected',
+                    'statusClass' => 'danger',
+                    'name' => $entryName,
+                    'installedVersion' => $entryVersion,
+                    'installed' => false,
+                    'enabled' => false,
+                    'catalogId' => $entryId,
+                    'catalogSlug' => $depSlug,
+                ];
+                continue;
+            }
+
+            // Not installed
+            if (!$entryInstalled) {
+                $results[] = [
+                    'key' => htmlspecialchars($depKey),
+                    'constraint' => htmlspecialchars($constraint),
+                    'status' => 'missing',
+                    'statusClass' => 'danger',
+                    'name' => $entryName,
+                    'installedVersion' => $entryVersion,
+                    'installed' => false,
+                    'enabled' => false,
+                    'catalogId' => $entryId,
+                    'catalogSlug' => $depSlug,
+                ];
+                continue;
+            }
+
+            // Installed but not enabled
+            if (!$entryEnabled) {
+                $results[] = [
+                    'key' => htmlspecialchars($depKey),
+                    'constraint' => htmlspecialchars($constraint),
+                    'status' => 'installed',
+                    'statusClass' => 'primary',
+                    'name' => $entryName,
+                    'installedVersion' => $entryVersion,
+                    'installed' => true,
+                    'enabled' => false,
+                    'catalogId' => $entryId,
+                    'catalogSlug' => $depSlug,
+                ];
+                continue;
+            }
+
+            // Invalid constraint format
+            if (!self::isValidConstraint($constraint)) {
+                $results[] = [
+                    'key' => htmlspecialchars($depKey),
+                    'constraint' => htmlspecialchars($constraint),
+                    'status' => 'invalid-constraint',
+                    'statusClass' => 'secondary',
+                    'name' => $entryName,
+                    'installedVersion' => $entryVersion,
+                    'installed' => true,
+                    'enabled' => $entryEnabled,
+                    'catalogId' => $entryId,
+                    'catalogSlug' => $depSlug,
+                ];
+                continue;
+            }
+
+            // Version mismatch
+            if ($constraint !== '' && !self::checkVersionConstraint($entryVersion, $constraint)) {
+                $results[] = [
+                    'key' => htmlspecialchars($depKey),
+                    'constraint' => htmlspecialchars($constraint),
+                    'status' => 'version-mismatch',
+                    'statusClass' => 'danger',
+                    'name' => $entryName,
+                    'installedVersion' => $entryVersion,
+                    'installed' => true,
+                    'enabled' => $entryEnabled,
+                    'catalogId' => $entryId,
+                    'catalogSlug' => $depSlug,
+                ];
+                continue;
+            }
+
+            // Satisfied
+            $results[] = [
+                'key' => htmlspecialchars($depKey),
+                'constraint' => htmlspecialchars($constraint),
+                'status' => 'satisfied',
+                'statusClass' => 'success',
+                'name' => $entryName,
+                'installedVersion' => $entryVersion,
+                'installed' => true,
+                'enabled' => $entryEnabled,
+                'catalogId' => $entryId,
+                'catalogSlug' => $depSlug,
+            ];
+        }
+
+        return $results;
+    }
 }
