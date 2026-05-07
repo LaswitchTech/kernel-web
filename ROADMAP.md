@@ -43,7 +43,7 @@ Core infrastructure improvements that unlock future feature work.
 - [x] Profile Modal section registry / hook system (ProfileModal class, profile.sections hook)
 - [x] Profile Modal API Tokens section (integrate existing TokenService into modal)
 - [x] Profile Modal plugin-provided sections (tab loading, permission gating)
-- [ ] Plugin/theme/layout scaffold generator (design complete — see docs/developer/scaffolds.md)
+- [x] Plugin/theme/layout scaffold generator (design complete — see docs/developer/scaffolds.md)
 - [ ] Remote catalog sync (periodic fetch of extension listings from a remote server)
 - [ ] Extension manifest validation improvements (semver, dependency format)
 - [ ] Organizations system design (optional, plugin-based data scoping)
@@ -112,7 +112,7 @@ These are planned or requested but are out of scope for the current development 
 | Organizations | Planned | Design phase — optional, plugin-based scoping |
 | Theme preview | Implemented | GET /admin/themes/preview, all Bootstrap components, panel layout with breadcrumbs |
 | Plugin migrations | Implemented | Migration runner, catalog integration |
-| Scaffold generator | Designed | Design complete — docs/developer/scaffolds.md (templates, staging, safety) |
+| Scaffold generator | Implemented | Routes at /admin/developer/scaffold (GET/POST), templates in resources/scaffolds/, staging output, validation, developer-mode gate |
 | Breadcrumbs | Implemented | Documented in /docs/developer/breadcrumbs.md |
 | DataTables | Standardized | Consistent configuration across all admin tables |
 | Developer mode | Implemented | Admin page at /admin/developer, sidebar menu (debug-gated), planned-tools cards |

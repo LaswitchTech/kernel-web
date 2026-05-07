@@ -57,6 +57,8 @@ $router->get('/admin/themes/preview', 'Controllers\Admin\ThemeController@preview
 
 // Admin Developer — developer mode tools.
 $router->get('/admin/developer', 'Controllers\Admin\DeveloperController@tools', ['WebAuth', 'WebPermission:admin']);
+$router->get('/admin/developer/scaffold', 'Controllers\Admin\DeveloperController@createScaffold', ['WebAuth', 'WebPermission:admin']);
+$router->post('/admin/developer/scaffold', 'Controllers\Admin\DeveloperController@createScaffold', ['WebAuth', 'WebPermission:admin']);
 
 // Admin permissions — full CRUD.
 $router->get('/admin/permissions', 'Controllers\Admin\PermissionController@index', ['WebAuth', 'WebPermission:admin']);

@@ -439,3 +439,19 @@ After a scaffold is generated:
 - Generated files should be human-readable and include placeholders/comments where customization is needed
 - The existing `resources/scaffolds/` directory should be version-controlled
 - Use `file_get_contents()` + `file_put_contents()` for file I/O (no composer dependencies)
+
+## Implementation Status (First Slice)
+
+**Implemented:**
+- Route: `GET/POST /admin/developer/scaffold` (admin + debug-gated)
+- Form: single unified scaffold generator with type selector (plugin/theme/layout)
+- Templates: `resources/scaffolds/{type}/` with `{{variable}}` placeholders
+- Generation: recursive file read, `str_replace()` substitution, file rename, write to staging
+- Validation: slug regex, semver, name/description length, PascalCase namespace
+- Safety: staging only, no overwrites, no path traversal, no secrets
+
+**Remaining:**
+- Optional type-specific fields (permissions, routes, menus, hooks, services for plugins; dark mode for themes; regions for layouts)
+- Preview before generation
+- Staging directory management (delete existing scaffolds)
+- Catalog integration link

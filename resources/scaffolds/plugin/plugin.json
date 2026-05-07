@@ -1,0 +1,25 @@
+{
+    "name": "{{name}}",
+    "version": "{{version}}",
+    "description": "{{description}}",
+    "enabled": true,
+    "requires": {
+        "kernel": "8.1"
+    },
+    "dependencies": {},
+    "permissions": [
+        "{{slug}}.manage"
+    ],
+    "routes": [],
+    "migrations": [
+        "migrations/0000_create_{{lower_slug}}_table.php"
+    ],
+    "services": {
+        "{{slug}}.service": {
+            "class": "App\\Plugins\\{{namespace}}\\{{namespace}}Service",
+            "singleton": true
+        }
+    },
+    "hooks": [],
+    "menus": []
+}

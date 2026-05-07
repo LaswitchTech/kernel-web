@@ -15,44 +15,17 @@
 </div>
 
 <div class="row g-3 mb-4">
-    <!-- Create Plugin Scaffold -->
+    <!-- Scaffold Generator -->
     <div class="col-md-6 col-xl-4">
         <div class="card h-100">
             <div class="card-body">
                 <div class="d-flex align-items-center mb-2">
-                    <i class="bi bi-plug fs-4 me-2 text-primary"></i>
-                    <h5 class="card-title mb-0">Create Plugin Scaffold</h5>
+                    <i class="bi bi-code-slash fs-4 me-2 text-primary"></i>
+                    <h5 class="card-title mb-0">Scaffold Generator</h5>
                 </div>
-                <p class="text-muted small">Generate a new plugin directory structure with manifest, routes.php, and skeleton controllers.</p>
-                <span class="badge bg-secondary">Planned</span>
-            </div>
-        </div>
-    </div>
-
-    <!-- Create Theme Scaffold -->
-    <div class="col-md-6 col-xl-4">
-        <div class="card h-100">
-            <div class="card-body">
-                <div class="d-flex align-items-center mb-2">
-                    <i class="bi bi-palette fs-4 me-2 text-primary"></i>
-                    <h5 class="card-title mb-0">Create Theme Scaffold</h5>
-                </div>
-                <p class="text-muted small">Generate a new theme directory with theme.json, less/app.less, and Bootstrap token overrides.</p>
-                <span class="badge bg-secondary">Planned</span>
-            </div>
-        </div>
-    </div>
-
-    <!-- Create Layout Scaffold -->
-    <div class="col-md-6 col-xl-4">
-        <div class="card h-100">
-            <div class="card-body">
-                <div class="d-flex align-items-center mb-2">
-                    <i class="bi bi-layout-sidebar fs-4 me-2 text-primary"></i>
-                    <h5 class="card-title mb-0">Create Layout Scaffold</h5>
-                </div>
-                <p class="text-muted small">Generate a new layout file with standard panel regions and hook points.</p>
-                <span class="badge bg-secondary">Planned</span>
+                <p class="text-muted small">Generate a starter plugin, theme, or layout into staging for review and installation.</p>
+                <a href="/admin/developer/scaffold" class="btn btn-sm btn-primary">Open Generator</a>
+                <span class="badge bg-success ms-2">Active</span>
             </div>
         </div>
     </div>
