@@ -424,6 +424,11 @@ class ExtensionsController extends Controller
         $catalog = $catalog->listAll();
         $resolver = new \App\Services\Extensions\ExtensionDependencyResolver();
         $deps = $resolver->parseDependencies($extension['dependencies']);
+        if ($deps === null) {
+            $this->flash('error', 'Cannot install "' . $extension['name'] . '": invalid dependency format.');
+            header('Location: /admin/extensions/catalog');
+            exit;
+        }
         $depResult = $resolver->checkInstall($deps, $catalog, $slug);
         if (!$depResult['allowed']) {
             $messages = [];

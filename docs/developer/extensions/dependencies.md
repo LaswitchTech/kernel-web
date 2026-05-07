@@ -379,6 +379,7 @@ The `type:slug` format is the safest choice because:
 
 - [x] `ExtensionDependencyResolver` service class
 - [x] Resolver integration in `ExtensionsController` (install/enable/disable/uninstall)
+- [x] Harden: null-parse guard, circular detection key collision fix
 - [ ] Catalog submission validation for dependency format
 - [ ] Catalog UI: dependency count badges
 - [ ] Catalog UI: dependency status on detail page

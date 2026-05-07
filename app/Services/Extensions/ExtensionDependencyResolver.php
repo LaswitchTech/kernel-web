@@ -51,7 +51,8 @@ class ExtensionDependencyResolver
                 continue;
             }
 
-            [$depType, $depSlug] = $parsed;
+            $depType = $parsed['type'];
+            $depSlug = $parsed['slug'];
 
             // Find dependency in catalog
             $catalogEntry = null;
@@ -85,10 +86,35 @@ class ExtensionDependencyResolver
             }
         }
 
-        // Circular dependency check (only for plugins)
-        $allDeps = array_merge($dependencies, ['plugin:' . $thisSlug => '0.0.0']);
-        if (self::hasCircularDependency($allDeps, $allCatalog)) {
-            $blockers[] = ['type' => 'circular', 'message' => 'Circular dependency detected.', 'dependency' => $thisSlug];
+        // Circular dependency check: only among deps that exist in the catalog.
+        $catalogKeys = [];
+        foreach ($dependencies as $depKey => $_) {
+            $parsed = self::parseKey($depKey);
+            if ($parsed === null) {
+                continue; // Invalid key already added as blocker
+            }
+            $depType = $parsed['type'];
+            $depSlug = $parsed['slug'];
+            // Check if this dep exists in catalog
+            $found = false;
+            foreach ($allCatalog as $ext) {
+                if ($ext['type'] === $depType && $ext['slug'] === $depSlug) {
+                    $found = true;
+                    break;
+                }
+            }
+            if ($found) {
+                $catalogKeys[] = $depKey;
+            }
+        }
+
+        if ($catalogKeys !== []) {
+            // Build full reachable subgraph from installer's direct deps
+            // (includes transitive deps that exist in catalog)
+            $reachable = self::buildReachableKeys($catalogKeys, $allCatalog);
+            if (self::detectCircularInSet($reachable, $allCatalog)) {
+                $blockers[] = ['type' => 'circular', 'message' => 'Circular dependency detected.', 'dependency' => $thisSlug];
+            }
         }
 
         return ['allowed' => count($blockers) === 0, 'blockers' => $blockers];
@@ -118,7 +144,8 @@ class ExtensionDependencyResolver
                 continue;
             }
 
-            [$depType, $depSlug] = $parsed;
+            $depType = $parsed['type'];
+            $depSlug = $parsed['slug'];
 
             // Find dependency in catalog
             $depRecord = null;
@@ -198,10 +225,12 @@ class ExtensionDependencyResolver
      * Handles both the new keyed format {"plugin:notes": ">=0.1.0"}
      * and legacy flat format ["notes"] (converted to no-constraint keys).
      *
-     * Returns null if the value is completely unparseable.
+     * Returns [] for null, empty string, empty array, or valid empty JSON.
+     * Returns null ONLY if the value is a non-empty string that contains
+     * unparseable (non-JSON) data — callers MUST treat null as invalid.
      *
      * @param string|mixed $value
-     * @return array<string, string>|null
+     * @return array<string, string>|null null means invalid/unparseable
      */
     public static function parseDependencies($value): ?array
     {
@@ -300,6 +329,173 @@ class ExtensionDependencyResolver
             return false;
         }
         return version_compare($installedVersion, $constraint, '=');
+    }
+
+    /**
+     * Build the set of all keys reachable from a set of seed keys.
+     *
+     * Follows dependencies transitively as long as each dep exists in the catalog.
+     *
+     * @param array<int, string> $seeds Starting keys
+     * @param array<int, array> $catalog
+     * @return array<string, string> All reachable keys
+     */
+    private static function buildReachableKeys(array $seeds, array $catalog): array
+    {
+        $reachable = [];
+        $queue = $seeds;
+
+        while ($queue !== []) {
+            $key = array_shift($queue);
+            if (isset($reachable[$key])) {
+                continue;
+            }
+            $reachable[$key] = '';
+
+            $parsed = self::parseKey($key);
+            if ($parsed === null) {
+                continue;
+            }
+
+            $depType = $parsed['type'];
+            $depSlug = $parsed['slug'];
+
+            // Find this key in catalog
+            $depRecord = null;
+            foreach ($catalog as $ext) {
+                if ($ext['type'] === $depType && $ext['slug'] === $depSlug) {
+                    $depRecord = $ext;
+                    break;
+                }
+            }
+
+            if ($depRecord === null) {
+                continue;
+            }
+
+            $depDeps = self::parseDependencies($depRecord['dependencies'] ?? '[]');
+            if ($depDeps === null) {
+                continue;
+            }
+
+            foreach ($depDeps as $depKey => $_) {
+                if (!isset($reachable[$depKey])) {
+                    $queue[] = $depKey;
+                }
+            }
+        }
+
+        return $reachable;
+    }
+
+    /**
+     * Detect circular dependencies in a set of catalog-resolvable keys.
+     *
+     * This is a pure detection method — it never adds blockers.
+     * Only traverses keys that exist in the catalog.
+     *
+     * @param array<string, string> $keys Keys known to exist in the catalog
+     * @param array<int, array> $catalog
+     * @return bool true if circular dependency found
+     */
+    private static function detectCircularInSet(array $keys, array $catalog): bool
+    {
+        return self::detectCircularHelper($keys, $catalog, array_keys($keys), [], null);
+    }
+
+    /**
+     * Detect circular dependencies among a set of catalog-resolvable keys only.
+     *
+     * This is a pure detection method — it never adds blockers.
+     * Only traverses dependencies that exist in the catalog.
+     *
+     * @param array<string, string> $deps Dependency map (only keys that exist in catalog)
+     * @param array<int, array> $catalog
+     * @param string|null $targetKey If set, check for cycles passing through this key
+     * @return bool true if circular dependency found
+     */
+    private static function detectCircularWithTarget(array $deps, array $catalog, ?string $targetKey = null): bool
+    {
+        if ($targetKey !== null) {
+            // Start with target first so we detect cycles passing through it
+            $targets = [$targetKey];
+            $targets = array_merge($targets, array_keys($deps));
+        } else {
+            $targets = array_keys($deps);
+        }
+        return self::detectCircularHelper($deps, $catalog, $targets, [], $targetKey);
+    }
+
+    /**
+     * DFS helper for circular dependency detection.
+     *
+     * @param array<string, string> $deps All known dependencies
+     * @param array<int, array> $catalog
+     * @param array<int, string> $targets Remaining keys to process
+     * @param array<int, string> $visited
+     * @param string|null $targetKey If set, check for cycles through this key
+     * @return bool true if circular dependency found
+     */
+    private static function detectCircularHelper(array $deps, array $catalog, array $targets, array $visited, ?string $targetKey = null): bool
+    {
+        if ($targets === []) {
+            return false;
+        }
+
+        $key = array_shift($targets);
+        if (in_array($key, $visited, true)) {
+            return self::detectCircularHelper($deps, $catalog, $targets, $visited, $targetKey);
+        }
+
+        $visited[] = $key;
+
+        $parsed = self::parseKey($key);
+        if ($parsed === null) {
+            return self::detectCircularHelper($deps, $catalog, $targets, $visited, $targetKey);
+        }
+
+        $depType = $parsed['type'];
+        $depSlug = $parsed['slug'];
+
+        // Find this dependency in catalog
+        $depRecord = null;
+        foreach ($catalog as $ext) {
+            if ($ext['type'] === $depType && $ext['slug'] === $depSlug) {
+                $depRecord = $ext;
+                break;
+            }
+        }
+
+        if ($depRecord === null) {
+            return self::detectCircularHelper($deps, $catalog, $targets, $visited, $targetKey);
+        }
+
+        $depDeps = self::parseDependencies($depRecord['dependencies'] ?? '[]');
+        if ($depDeps === null) {
+            return self::detectCircularHelper($deps, $catalog, $targets, $visited, $targetKey);
+        }
+
+        // Check for cycles: any dep that points back to a key in the visited set
+        foreach ($depDeps as $depKey => $_) {
+            if (in_array($depKey, $visited, true)) {
+                return true;
+            }
+            // Only follow if this dep is in our known set
+            if (isset($deps[$depKey])) {
+                $targets[] = $depKey;
+            }
+        }
+
+        // Also check if any dep points to the installer (target) for installer-specific cycles
+        if ($targetKey !== null) {
+            foreach ($depDeps as $depKey => $_) {
+                if ($depKey === $targetKey) {
+                    return true;
+                }
+            }
+        }
+
+        return self::detectCircularHelper($deps, $catalog, $targets, $visited);
     }
 
     /**
@@ -433,9 +629,10 @@ class ExtensionDependencyResolver
      * @param string|null $currentKey
      * @param array<int, string> $visited
      * @param array<int, string> $stack
+     * @param string|null $skipKey Key to skip (e.g. temp self-reference key)
      * @return bool true if circular dependency found
      */
-    private static function hasCircularDependency(array $allDeps, array $catalog, ?string $currentKey = null, array $visited = [], array $stack = []): bool
+    private static function hasCircularDependency(array $allDeps, array $catalog, ?string $currentKey = null, array $visited = [], array $stack = [], ?string $skipKey = null): bool
     {
         if ($currentKey === null) {
             $firstKey = array_key_first($allDeps);
@@ -443,6 +640,11 @@ class ExtensionDependencyResolver
                 return false;
             }
             $currentKey = $firstKey;
+        }
+
+        // Skip artificial keys (e.g. temp self-reference for circular check)
+        if ($skipKey !== null && $currentKey === $skipKey) {
+            return false;
         }
 
         $parsed = self::parseKey($currentKey);
@@ -489,7 +691,7 @@ class ExtensionDependencyResolver
             if ($depKey === $currentKey) {
                 continue; // Skip self
             }
-            if (self::hasCircularDependency($allDeps, $catalog, $depKey, $visited, $stack)) {
+            if (self::hasCircularDependency($allDeps, $catalog, $depKey, $visited, $stack, $skipKey)) {
                 return true;
             }
         }
