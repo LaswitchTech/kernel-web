@@ -130,7 +130,7 @@ Each plugin has a `plugin.json` at its root:
     "description": "Short description",
     "enabled": true,
     "requires": { "kernel": "8.1" },
-    "dependencies": { "dependency-name": ">=0.1.0" },
+    "dependencies": { "plugin:notes": ">=0.1.0" },
     "permissions": ["permission.string"],
     "routes": [],
     "migrations": [],
@@ -821,6 +821,75 @@ Created by migration `0049_create_catalog_extensions_table.php`.
 - Extensions must never crash the kernel if they fail
 - Discovery must be read-only
 - Admin UI must gate on `extensions.manage` permission
+
+---
+
+## Extension Dependency Resolver
+
+### Purpose
+
+Detect, validate, resolve, and enforce dependencies between extensions (plugins, themes, layouts).
+
+### Dependency Key Format
+
+Dependency keys use `type:slug` format in manifest and catalog:
+
+```json
+"dependencies": {
+    "plugin:notes": ">=0.1.0",
+    "theme:default": "^1.0.0"
+}
+```
+
+**Rationale:** slug is unique in catalog (DB constraint); type prefix prevents cross-type collisions; display name can change without breaking resolution.
+
+### Version Constraints
+
+| Syntax | Example | Meaning |
+|--------|---------|---------|
+| Exact | `1.2.3` | Must match exactly |
+| `>=` | `>=1.2.3` | Greater than or equal |
+| `>` | `>1.2.3` | Greater than |
+| `<=` | `<=1.2.3` | Less than or equal |
+| `<` | `<1.2.3` | Less than |
+| `^` | `^1.2.3` | Compatible with major (same major, >= given version) |
+| `~` | `~1.2.3` | Compatible with patch (same major.minor, >= given version) |
+
+Implemented via PHP's `version_compare()`. Malformed constraints are treated as unsatisfied (fail closed).
+
+### Enforcement Rules
+
+| Action | Check | Block if |
+|--------|-------|-----|
+| **Install** | dependency in catalog + approved | missing from catalog, pending, rejected, version mismatch, circular |
+| **Enable** | dependency installed + enabled + version match | not installed, disabled, version mismatch |
+| **Uninstall** | no installed extension depends on this one | another installed extension depends on it |
+| **Disable** | no enabled extension depends on this one | another enabled extension depends on it |
+
+### Resolver Service
+
+`ExtensionDependencyResolver` — pure resolution service:
+
+- `checkInstall()` — validate all dependencies before install
+- `checkEnable()` — validate all dependencies before enable
+- `checkUninstall()` — find reverse dependencies (installed extensions depending on this one)
+- `checkDisable()` — find reverse dependencies (enabled extensions depending on this one)
+- `detectCircular()` — DFS-based cycle detection
+
+Returns `InstallResult { allowed: bool, blockers: list<Blocker> }`.
+
+### Auto-Install
+
+Not implemented in the first version. Missing dependencies produce blockers listed in the UI. The user must install them manually.
+
+### Security
+
+- No remote auto-install
+- No code execution during resolution (data only)
+- Fail closed on invalid format
+- Dependency format validation on catalog submission
+
+For full design, see `docs/developer/extensions/dependencies.md`.
 
 ---
 

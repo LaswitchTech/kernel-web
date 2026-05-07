@@ -92,6 +92,7 @@ Templates use `{{variable}}` placeholders:
     "permissions": [
         "{{slug}}.manage"
     ],
+    "dependencies": {},
     "routes": [],
     "migrations": [
         "migrations/0000_create_{{lower_slug}}_table.php"

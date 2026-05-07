@@ -37,7 +37,7 @@ to the appropriate `lib/` directory, where filesystem discovery picks them up.
 | `download_url` | TEXT NOT NULL DEFAULT '' | URL to zip archive |
 | `repo_url` | TEXT NULL | Source repository URL |
 | `requirements` | TEXT NOT NULL DEFAULT '[]' | JSON requirements |
-| `dependencies` | TEXT NOT NULL DEFAULT '[]' | JSON array of extension slugs |
+| `dependencies` | TEXT NOT NULL DEFAULT '[]' | JSON keyed object: `"type:slug": "version-constraint"` (e.g., `{"plugin:notes": ">=0.1.0"}`) |
 | `status` | TEXT NOT NULL DEFAULT 'pending' | Review status |
 | `is_installed` | INTEGER NOT NULL DEFAULT 0 | Install flag |
 | `is_enabled` | INTEGER NOT NULL DEFAULT 0 | Enable flag |
@@ -113,7 +113,8 @@ Orchestrates catalog operations with validation:
 - **type**: must be one of `plugin`, `theme`, `layout`
 - **version**: must match semantic versioning (`\d+\.\d+\.\d+`)
 - **status**: must be one of `pending`, `approved`, `rejected`
-- **dependencies / requirements**: stored as JSON arrays, parsed via helper methods
+- **dependencies**: stored as JSON keyed object `type:slug → constraint`, validated with `CatalogService::parseDependencies()`
+- **requirements**: stored as JSON array, parsed via helper methods
 
 ## Planned Future Usage
 

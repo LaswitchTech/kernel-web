@@ -358,6 +358,7 @@ Triggered when an installed catalog extension is uninstalled.
 - Remote updates
 - Licensing
 - Dependency resolution UI
+- Dependency resolver implementation (design complete — see docs/developer/extensions/dependencies.md)
 - Theme switching
 - Layout switching
 - Non-reversible status transitions (pending --> approved can be changed back)
