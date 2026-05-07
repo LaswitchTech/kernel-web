@@ -44,8 +44,8 @@
 
                         <!-- Button to show the new token form (hidden when form is visible) -->
                         <div class="d-flex justify-content-end pb-3">
-                            <button class="btn btn-sm btn-outline-primary" data-bs-toggle="collapse" data-bs-target="#pm-new-token-form" aria-expanded="false" aria-controls="pm-new-token-form">
-                                <i class="bi bi-plus-lg me-1"></i>New token
+                            <button class="btn btn-sm btn-outline-primary pm-new-token-toggle" aria-expanded="false" aria-controls="pm-new-token-form">
+                                <i class="bi bi-plus-lg me-1"></i><span class="pm-toggle-text">New Token</span>
                             </button>
                         </div>
 
@@ -72,15 +72,16 @@
                                         <label for="pm-token-expires" class="form-label small">
                                             Expires at <span class="text-muted">(optional)</span>
                                         </label>
-                                        <input type="datetime-local" class="form-control form-control-sm"
-                                            id="pm">
+                                        <input type="date" class="form-control form-control-sm"
+                                            id="pm-token-expires"
+                                            min="<?= date("Y-m-d") ?>">
                                     </div>
                                     <div class="d-flex gap-2">
                                         <button type="submit" class="btn btn-sm btn-primary" id="pm-token-create-btn">
                                             <span class="create-label">Create</span>
                                             <span class="loading-label d-none"><span class="spinner-border spinner-border-sm me-1"></span>Creating…</span>
                                         </button>
-                                        <button class="btn btn-sm btn-outline-secondary" data-bs-toggle="collapse" data-bs-target="#pm-new-token-form" aria-expanded="false" aria-controls="pm-new-token-form">Cancel</button>
+                                        <button class="btn btn-sm btn-outline-secondary pm-cancel-token">Cancel</button>
                                     </div>
                                 </div>
                             </form>
@@ -203,16 +204,18 @@
 
             var panel = document.getElementById('panel-tokens');
 
-            var createdEl  = document.getElementById('pm-token-created');
-            var valueEl    = document.getElementById('pm-token-value');
-            var createForm = document.getElementById('pm-token-create-form');
-            var nameInput  = document.getElementById('pm-token-name');
-            var listEl     = document.getElementById('pm-token-list');
+            var createdEl   = document.getElementById('pm-token-created');
+            var valueEl     = document.getElementById('pm-token-value');
+            var formWrapper = document.getElementById('pm-new-token-form');
+            var createForm  = document.getElementById('pm-token-create-form');
+            var nameInput   = document.getElementById('pm-token-name');
+            var expiresInput = document.getElementById('pm-token-expires');
+            var listEl      = document.getElementById('pm-token-list');
             var listLoading = document.getElementById('pm-token-list-loading');
-            var listEmpty  = document.getElementById('pm-token-list-empty');
+            var listEmpty   = document.getElementById('pm-token-list-empty');
 
             // ── Show the form container ──
-            if (createForm) panel.appendChild(createForm);
+            // Form stays inside #pm-new-token-form collapse wrapper
             if (createdEl)  panel.appendChild(createdEl);
             if (listLoading) panel.appendChild(listLoading);
             if (listEmpty)   panel.appendChild(listEmpty);
@@ -225,6 +228,11 @@
             function showListLoading() { listLoading.style.display=''; listEmpty.style.display='none'; listEl.innerHTML=''; }
             function hideListLoading() { listLoading.style.display='none'; }
             function showListEmpty()  { listLoading.style.display='none'; listEmpty.style.display=''; listEl.innerHTML=''; }
+            function formatDate(d) {
+                if (!d) return '';
+                var parts = String(d).split(' ')[0].split('-');
+                return parts.length === 3 ? parts[1] + '/' + parts[2] + '/' + parts[0] : String(d);
+            }
 
             // ── Render token list ──
             function renderTokens(tokens) {
@@ -262,6 +270,13 @@
                     expiredSpan.textContent = isRevoked ? 'Revoked' : (isExpired ? 'Expired' : '');
                     expiredSpan.style.display = (isRevoked || isExpired ? '' : 'none');
                     actions.appendChild(expiredSpan);
+
+                    if (t.expires_at && !isRevoked) {
+                        var expSpan = document.createElement('span');
+                        expSpan.className = 'text-muted small';
+                        expSpan.textContent = 'Exp: ' + formatDate(t.expires_at);
+                        actions.appendChild(expSpan);
+                    }
 
                     var revokeBtn = document.createElement('button');
                     revokeBtn.className = 'btn btn-sm btn-outline-danger';
@@ -304,12 +319,51 @@
                     .catch(function () { showListEmpty(); });
             }
 
+            // ── Collapse toggle for new token form ──
+            var toggleBtn  = document.querySelector('.pm-new-token-toggle');
+            var cancelBtn  = document.querySelector('.pm-cancel-token');
+            var collapseEl = document.getElementById('pm-new-token-form');
+            var collapse   = collapseEl ? new bootstrap.Collapse(collapseEl, { toggle: false }) : null;
+            if (collapse) collapse.hide();
+
+            if (toggleBtn) {
+                toggleBtn.addEventListener('click', function () {
+                    if (!collapse) return;
+                    var expanded = collapseEl.classList.contains('show');
+                    if (expanded) {
+                        collapse.hide();
+                        toggleBtn.setAttribute('aria-expanded', 'false');
+                    } else {
+                        collapse.show();
+                        toggleBtn.setAttribute('aria-expanded', 'true');
+                    }
+                });
+            }
+            if (cancelBtn) {
+                cancelBtn.addEventListener('click', function () {
+                    if (!collapse) return;
+                    collapse.hide();
+                    toggleBtn.setAttribute('aria-expanded', 'false');
+                });
+            }
+
+            // Set default expiration to one year from today
+            var expiresInput = document.getElementById('pm-token-expires');
+            if (expiresInput) {
+                var d     = new Date();
+                d.setFullYear(d.getFullYear() + 1);
+                var yyyy  = d.getFullYear();
+                var mm    = String(d.getMonth() + 1).padStart(2, '0');
+                var dd    = String(d.getDate()).padStart(2, '0');
+                expiresInput.value = yyyy + '-' + mm + '-' + dd;
+            }
+
             // ── Create token handler ──
             if (!createForm) { console.error('PROFILE MODAL ERROR: #pm-token-create-form is null'); return; }
             createForm.addEventListener('submit', function (e) {
                 e.preventDefault();
                 var btn = document.getElementById('pm-token-create-btn');
-                var createError = document.getElementById('pm-token-create-error');
+                var createError = document.getElementById('pm-token-error');
                 var label = btn.querySelector('.create-label');
                 var loader = btn.querySelector('.loading-label');
                 var tokenName = nameInput.value.trim();
@@ -321,11 +375,16 @@
                 loader.classList.remove('d-none');
                 if (createError) { createError.classList.add('d-none'); createError.innerHTML = ''; }
 
+                // Build request body — expires_at is optional
+                var expiresAt = expiresInput && expiresInput.value ? expiresInput.value : null;
+                var body = { name: tokenName };
+                if (expiresAt !== null) body.expires_at = expiresAt;
+
                 fetch('/api/tokens', {
                     method: 'POST',
                     credentials: 'same-origin',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ name: tokenName }),
+                    body: JSON.stringify(body),
                 })
                 .then(function (r) {
                     if (!r.ok) throw new Error('Failed to create token');
