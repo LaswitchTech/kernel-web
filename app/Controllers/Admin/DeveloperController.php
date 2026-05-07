@@ -235,6 +235,7 @@ class DeveloperController extends Controller
             '{{AUTHOR}}'     => strtoupper($author ?: 'Anonymous'),
             '{{table}}'      => strtolower($lowerSlug),
             '{{TITLE}}'      => $name,
+            '{{title}}'      => $name,
             '{{content}}'    => 'Content goes here.',
             '{{pascal_slug}}'=> $pascalSlug,
             '{{plural_slug}}'=> $pluralSlug,

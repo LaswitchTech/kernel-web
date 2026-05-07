@@ -39,25 +39,24 @@ resources/scaffolds/
 ├── plugin/
 │   ├── plugin.json
 │   ├── src/
-│   │   ├── {{ucfirst {{Name}}}Controller.php
-│   │   ├── {{ucfirst {{Name}}}Service.php
-│   │   └── {{ucfirst {{Name}}}Repository.php
+│   │   ├── {{namespace}}Controller.php
+│   │   ├── {{namespace}}Service.php
 │   ├── routes.php
 │   ├── migrations/
-│   │   └── 0000_create_{{plural_slug}}_table.php
+│   │   └── 0000_create_{{lower_slug}}_table.php
 │   ├── views/
-│   │   ├── index.php
-│   │   ├── create.php
-│   │   └── edit.php
+│   │   └── .gitkeep
 │   └── README.md
 ├── theme/
 │   ├── theme.json
-│   ├── less/
-│   │   └── app.less
+│   ├── assets/less/
+│   │   └── theme.less
 │   └── README.md
 └── layout/
     ├── layout.json
-    └── app.php
+    ├── views/
+    │   └── layout.php
+    └── README.md
 ```
 
 ### Placeholder Variables
@@ -82,7 +81,7 @@ Templates use `{{variable}}` placeholders:
 
 ```json
 {
-    "{{name}}": "My Extension",
+    "name": "{{name}}",
     "version": "{{version}}",
     "description": "{{description}}",
     "enabled": true,
@@ -95,11 +94,11 @@ Templates use `{{variable}}` placeholders:
     ],
     "routes": [],
     "migrations": [
-        "migrations/0000_create_{{plural_slug}}_table.php"
+        "migrations/0000_create_{{lower_slug}}_table.php"
     ],
     "services": {
         "{{slug}}.service": {
-            "class": "App\\Plugins\\{{Namespace}}\\{{Namespace}}Service",
+            "class": "App\\Plugins\\{{namespace}}\\{{namespace}}Service",
             "singleton": true
         }
     },
@@ -195,22 +194,22 @@ class {{Namespace}}Repository
 
 use App\Core\Migration;
 
-class Create{{lower_slug|ucfirst}}Table extends Migration
+class Create{{pascal_slug}}Table extends Migration
 {
     public function up(): void
     {
-        $this->db->exec("
-            CREATE TABLE IF NOT EXISTS {{lower_slug}} (
+        $this->db->execute(
+            "CREATE TABLE IF NOT EXISTS {{table}} (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 created_at VARCHAR(32) NOT NULL,
                 updated_at VARCHAR(32) NOT NULL
-            )
-        ");
+            )"
+        );
     }
 
     public function down(): void
     {
-        $this->db->exec('DROP TABLE IF EXISTS {{lower_slug}}');
+        $this->db->execute('DROP TABLE IF EXISTS {{table}}');
     }
 }
 ```
@@ -237,18 +236,23 @@ $router->get('/{{slug}}', 'Plugins\\{{Namespace}}\\{{Namespace}}Controller@index
 }
 ```
 
-#### `resources/scaffolds/theme/less/app.less`
+#### `resources/scaffolds/theme/assets/less/theme.less`
 
 ```less
-// {{name}} theme
-// Description: {{description}}
+/*
+ * {{name}} theme
+ * Description: {{description}}
+ */
 
-// Bootstrap token overrides go here.
-// Components consume variables only — never hardcode colors.
+/* Bootstrap token overrides go here.
+ * Components consume variables only - never hardcode colors.
+ */
 
-// -- Primary tokens --
-// -- Body tokens --
-// -- Component tokens --
+/* -- Primary tokens -- */
+
+/* -- Body tokens -- */
+
+/* -- Component tokens -- */
 ```
 
 #### `resources/scaffolds/layout/layout.json`
@@ -261,7 +265,7 @@ $router->get('/{{slug}}', 'Plugins\\{{Namespace}}\\{{Namespace}}Controller@index
 }
 ```
 
-#### `resources/scaffolds/layout/app.php`
+#### `resources/scaffolds/layout/views/layout.php`
 
 ```php
 <!DOCTYPE html>
@@ -269,7 +273,7 @@ $router->get('/{{slug}}', 'Plugins\\{{Namespace}}\\{{Namespace}}Controller@index
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{{title}}</title>
+    <title>{{name}}</title>
 
     <!-- Bootstrap CSS -->
     <link rel="stylesheet" href="/assets/vendor/bootstrap/5.3.3/css/bootstrap.min.css">
