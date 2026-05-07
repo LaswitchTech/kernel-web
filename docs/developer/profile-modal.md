@@ -261,7 +261,17 @@ These tasks are tracked in the Phase 2 section of ROADMAP.md.
 1. ~~**Profile Modal tabbed UI foundation**~~ — convert static modal to tabs, wire Overview section to `/api/profile` — **done**
 2. ~~**Profile Modal section registry / hook system**~~ — `ProfileModal` class, `profile.sections` hook registration — **done** (see docs below)
 3. ~~**Profile Modal API Tokens section**~~ — integrate existing TokenController endpoints into the modal — **done**
-4. **Profile Modal plugin-provided sections** — tab loading, permission gating
+4. ~~**Profile Modal plugin-provided sections**~~ — dynamic tab rendering, lazy loading, permission gating — **done**
+
+### Frontend Plugin Tab Rendering
+
+On modal open, the JavaScript fetches `GET /api/profile/sections` to get all visible sections for the current user. For each section whose `source` is not `'core'`, it:
+
+1. Creates a Bootstrap 5 tab button (with optional icon) appended to `#profile-modal-tabs`
+2. Creates a tab pane appended to `#profile-modal-panes` with a loading spinner
+3. Attaches a `shown.bs.tab` listener that lazy-loads HTML via `GET /api/profile/sections/{id}` on first click
+
+Core section IDs (`overview`, `tokens`) are skipped to avoid duplicates. Plugin tabs inherit full Bootstrap 5 tab behavior (keyboard navigation, ARIA, escape-to-close).
 
 For design decisions, see DESIGN.md under "UI Design Standards → Profile Modal".
  */

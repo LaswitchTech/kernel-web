@@ -191,7 +191,81 @@
             })
             .then(function (data) { renderOverview(data.user || {}); })
             .catch(function () { showError('Could not load profile data.'); });
+
+        // Load plugin-provided sections and append dynamic tabs.
+        fetch('/api/profile/sections', { credentials: 'same-origin' })
+            .then(function (r) {
+                if (!r.ok) return [];
+                return r.json();
+            })
+            .then(function (data) { return (data.sections || []); })
+            .then(function (sections) { renderPluginTabs(sections); });
     });
+
+    // ── Render plugin-provided tabs and panes ──
+    function renderPluginTabs(sections) {
+        var tabList      = document.getElementById('profile-modal-tabs');
+        var tabContent   = document.getElementById('profile-modal-panes');
+        var coreSectionIds = ['overview', 'tokens'];
+
+        sections.forEach(function (s) {
+            if (coreSectionIds.indexOf(s.id) !== -1) return;
+
+            // Only render sections with a callback (renderable content).
+            // Sections without callbacks are filtered server-side in the registry.
+            var tabId      = 'tab-' + s.id;
+            var paneId     = 'panel-' + s.id;
+            var iconHtml   = s.icon ? '<i class="' + s.icon + ' me-1"></i>' : '';
+            var labelHtml  = iconHtml + s.label;
+
+            // Tab button — uses Bootstrap 5 tab attributes
+            var li = document.createElement('li');
+            li.className = 'nav-item';
+            li.setAttribute('role', 'presentation');
+            var btn = document.createElement('button');
+            btn.className = 'nav-link';
+            btn.id       = tabId;
+            btn.setAttribute('data-bs-toggle', 'tab');
+            btn.setAttribute('data-bs-target', '#' + paneId);
+            btn.setAttribute('type', 'button');
+            btn.setAttribute('role', 'tab');
+            btn.setAttribute('aria-controls', paneId);
+            btn.setAttribute('aria-selected', 'false');
+            btn.tabIndex = -1;
+            btn.innerHTML = labelHtml;
+            li.appendChild(btn);
+            tabList.appendChild(li);
+
+            // Tab pane
+            var pane = document.createElement('div');
+            pane.className   = 'tab-pane fade';
+            pane.id          = paneId;
+            pane.setAttribute('role', 'tabpanel');
+            pane.setAttribute('aria-labelledby', tabId);
+            pane.innerHTML = '<div class="text-center py-4 text-muted small"><span class="spinner-border spinner-border-sm me-2"></span>Loading…</div>';
+            tabContent.appendChild(pane);
+
+            // Lazy-load content on first activation
+            var loaded = false;
+            btn.addEventListener('shown.bs.tab', function () {
+                if (loaded) return;
+                loaded = true;
+                fetch('/api/profile/sections/' + s.id, { credentials: 'same-origin' })
+                    .then(function (r) {
+                        if (!r.ok) throw new Error('Failed to load section');
+                        return r.json();
+                    })
+                    .then(function (data) {
+                        if (data && data.html) {
+                            pane.innerHTML = data.html;
+                        }
+                    })
+                    .catch(function () {
+                        pane.innerHTML = '<div class="text-center py-4 text-danger small">Could not load this section.</div>';
+                    });
+            });
+        });
+    }
 
     // Load API Tokens tab content on first tab click (lazy).
     (function () {
