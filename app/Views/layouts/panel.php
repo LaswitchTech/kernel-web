@@ -413,13 +413,13 @@ echo \App\Core\HookRegistry::render('layout.body.end');
     // Load API Tokens tab content on first tab click (lazy).
     (function () {
         var loaded = false;
-        document.getElementById('tab-tokens').addEventListener('shown.bs.tab', function () {
+        var tabTokensEl = document.getElementById('tab-tokens');
+        if (!tabTokensEl) { console.error('PROFILE MODAL ERROR: #tab-tokens is null'); return; }
+        tabTokensEl.addEventListener('shown.bs.tab', function () {
             if (loaded) return;
             loaded = true;
 
-            var panel  = document.getElementById('panel-tokens');
-            // Clear placeholder from section callback; JS renders the full UI.
-            panel.innerHTML = '';
+            var panel = document.getElementById('panel-tokens');
 
             var createdEl  = document.getElementById('pm-token-created');
             var valueEl    = document.getElementById('pm-token-value');
@@ -523,6 +523,7 @@ echo \App\Core\HookRegistry::render('layout.body.end');
             }
 
             // ── Create token handler ──
+            if (!createForm) { console.error('PROFILE MODAL ERROR: #pm-token-create-form is null'); return; }
             createForm.addEventListener('submit', function (e) {
                 e.preventDefault();
                 var btn = document.getElementById('pm-token-create-btn');

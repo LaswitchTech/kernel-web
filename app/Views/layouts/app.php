@@ -637,7 +637,6 @@ echo \App\Core\HookRegistry::render('layout.body.end');
 
             var panel = document.getElementById('panel-tokens');
             if (!panel) return;
-            panel.innerHTML = '';
 
             var createdEl = document.getElementById('pm-token-created');
             var valueEl   = document.getElementById('pm-token-value');
