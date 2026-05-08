@@ -52,7 +52,7 @@ class PluginManifest
         $this->description      = isset($data['description']) ? (string) $data['description'] : null;
         $this->enabled          = (bool) ($data['enabled'] ?? true);
         $this->minKernelVersion = isset($data['requires']['kernel']) ? (string) $data['requires']['kernel'] : '';
-        $this->dependencies     = isset($data['dependencies']) ? (array) $data['dependencies'] : [];
+        $this->dependencies     = $this->resolveDependencies($data);
         $this->permissions      = isset($data['permissions']) ? (array) $data['permissions'] : [];
         $this->routes           = isset($data['routes']) ? (array) $data['routes'] : [];
         $this->migrations       = isset($data['migrations']) ? (array) $data['migrations'] : [];
@@ -103,6 +103,49 @@ class PluginManifest
     public function status(): string
     {
         return $this->enabled ? 'enabled' : 'disabled';
+    }
+
+    /**
+     * Resolve and validate the dependencies field.
+     *
+     * Rules:
+     *   - omitted / null → []
+     *   - empty array/object → []
+     *   - scalar → throws PluginException
+     *   - array/object → validated per-key via ExtensionDependencyResolver
+     *
+     * Returns the resolved dependency array.
+     *
+     * @throws PluginException on invalid structure or per-key validation errors
+     */
+    private function resolveDependencies(array $data): array
+    {
+        // Omitted or null → valid (no dependencies)
+        if (!isset($data['dependencies'])) {
+            return [];
+        }
+
+        $raw = $data['dependencies'];
+
+        // Scalar → must reject
+        if (!is_array($raw)) {
+            throw new PluginException(
+                "Dependencies must be an object (e.g. {" . '"plugin:notes": ">=0.1.0"}) or omitted. Got: ' . gettype($raw) . '.'
+            );
+        }
+
+        // Empty array → valid (no dependencies)
+        if ($raw === []) {
+            return [];
+        }
+
+        // Use ExtensionDependencyResolver for per-key validation
+        $errors = \App\Services\Extensions\ExtensionDependencyResolver::validateDependencyMap($raw);
+        if ($errors !== []) {
+            throw new PluginException(implode(' ', $errors));
+        }
+
+        return $raw;
     }
 
     /**

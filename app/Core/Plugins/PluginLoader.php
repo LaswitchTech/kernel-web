@@ -338,7 +338,9 @@ class PluginLoader
         $deps = ExtensionDependencyResolver::parseDependencies($manifest->dependencies());
 
         if ($deps === null) {
-            $skipReason = 'Invalid dependency format in plugin.json.';
+            // Should not happen — PluginManifest validates dependencies in the constructor.
+            // This is a safeguard for edge cases (e.g. manifest bypassed).
+            $skipReason = 'Invalid dependency format in plugin.json (post-load validation failed).';
             return false;
         }
 

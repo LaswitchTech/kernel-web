@@ -45,7 +45,7 @@ Core infrastructure improvements that unlock future feature work.
 - [x] Profile Modal plugin-provided sections (tab loading, permission gating)
 - [x] Plugin/theme/layout scaffold generator (design complete — see docs/developer/scaffolds.md)
 - [ ] Remote catalog sync (periodic fetch of extension listings from a remote server)
-- [ ] Extension manifest validation improvements (semver, dependency format)
+- [x] Extension manifest validation improvements (semver, dependency format)
 - [ ] Organizations system design (optional, plugin-based data scoping)
 - [ ] Organizations plugin foundation (organizations table, organization_users pivot, user membership)
 
@@ -106,6 +106,7 @@ These are planned or requested but are out of scope for the current development 
 | Plugin system | Implemented | Discovery, manifest, lifecycle hooks, registry |
 | Extension catalog | Partially implemented | Browse, submit, review, approve, install, enable/disable, uninstall — UI polished with consistent badges, filtering, and action grouping |
 | Dependency resolver | Implemented (first slice) | Resolver service + controller integration; version constraints: exact, >=, >, <=, <, ^, ~; install/enable/uninstall/disable blocks; no auto-install — see docs/developer/extensions/dependencies.md |
+| Manifest validation | Implemented | Scalar rejection, keyed format validation, per-key constraint validation — see docs/developer/extensions/dependencies.md |
 | Menu system | Implemented | Registry, sidebar, user-menu, admin-menu locations |
 | Layout system | Implemented | `app.php` (app), `panel.php` (admin), `blank.php` (auth, local assets, hooks) |
 | Theme system | Partially implemented | Bootstrap 5, LESS, dark/light mode |

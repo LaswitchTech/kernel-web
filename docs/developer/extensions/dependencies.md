@@ -353,9 +353,16 @@ Dependency declarations are treated as data. No `eval()`, `include`, or dynamic 
 
 During catalog submission and manifest loading, dependency declarations are validated:
 
+**Manifest-level validation** (`PluginManifest::__construct()`):
+- `dependencies` must be omitted, `null`, empty array/object, or a non-empty keyed structure
+- Scalar values (string, integer, boolean) are rejected with a clear error
+- Non-keyed arrays (e.g., `["notes"]`) are rejected with key format error
+
+**Per-key validation** (`ExtensionDependencyResolver::validateDependencyMap()`):
 - Keys must match `^[a-z]+:[a-z][a-z0-9_-]*$`
-- Values must be non-empty strings (constraint syntax validated loosely — only that it's a string)
+- Values must be valid version constraint strings (exact, `>=`, `>`, `<=`, `<`, `^`, `~`, or empty)
 - Empty `dependencies: {}` or `dependencies: []` → no dependencies (valid)
+- Malformed keys/constraints produce specific error messages
 
 ---
 
@@ -697,6 +704,7 @@ Cyclic dependency handling:
 - [x] Harden: null-parse guard, circular detection key collision fix
 - [x] Catalog submission validation for dependency format
 - [x] PluginLoader runtime dependency check (uses checkEnable + catalog lookup)
+- [x] Manifest-level dependency validation (scalar rejection, keyed format, per-key constraint validation)
 - [ ] Catalog UI: dependency count badges
 - [ ] Catalog UI: dependency status on detail page
 - [ ] Catalog UI: blocker messages on actions
