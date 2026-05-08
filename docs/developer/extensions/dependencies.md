@@ -191,21 +191,27 @@ Status badge meanings (detail panel):
 
 No dependencies → shows "None" (muted text).
 
-### Install Action
+### Catalog Table — Blocked Column
 
-- If dependencies are all satisfied, install proceeds normally
-- If blocked, the install button is replaced with an explanatory message listing unmet dependencies
-- Dependencies are shown as clickable links to their catalog entries where available
+A **Blocked** column shows a red badge with the count of dependency blockers for each extension. Hovering over the badge shows which specific dependencies are blocking actions.
 
-### Enable Action
+### Lifecycle Blocker Messages
 
-- If dependencies are all satisfied, enable proceeds normally
-- If blocked, show a non-interactive alert listing unsatisfied dependencies
+When a lifecycle action is blocked by dependencies, the admin sees:
 
-### Uninstall Action
+1. **Flash message** — Red alert listing the extension name and the type of each blocker
+2. **Expanded dependency detail** — The expandable row shows each dependency's full status
 
-- If other extensions depend on this one, the uninstall button is hidden
-- A notice explains which extensions depend on this one and that it must remain installed
+Example flash messages:
+
+| Action | Example Message |
+|--------|----------------|
+| **Install** | `Extension "My Plugin" cannot be installed: dependencies not satisfied.<br>Missing: <code>plugin:notes</code><br>Version mismatch: <code>plugin:core-tools</code> |
+| **Enable** | `Extension "My Plugin" cannot be enabled: dependencies not satisfied.<br>Missing: <code>plugin:notes</code><br>Missing: <code>theme:default</code> |
+| **Disable** | `Extension "Notes" cannot be disabled: dependencies not satisfied.<br>Reverse dependency: <code>plugin:tasks</code> |
+| **Uninstall** | `Extension "Notes" cannot be uninstalled: dependencies not satisfied.<br>Reverse dependency: <code>plugin:tasks</code> |
+
+Server-side enforcement remains authoritative — the resolver blocks the action regardless of UI display. The UI messages are informative only.
 
 ---
 

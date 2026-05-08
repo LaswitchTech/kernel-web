@@ -441,11 +441,8 @@ class ExtensionsController extends Controller
         }
         $depResult = $resolver->checkInstall($deps, $catalog, $slug);
         if (!$depResult['allowed']) {
-            $messages = [];
-            foreach ($depResult['blockers'] as $blocker) {
-                $messages[] = ' - ' . $blocker['message'];
-            }
-            $this->flash('error', 'Cannot install "' . $extension['name'] . '". Dependencies not satisfied:' . "\n" . implode("\n", $messages));
+            $this->flash('error', $this->formatBlockerMessage('install', $extension['name'], $depResult['blockers']));
+            $this->flashBlockers = $depResult['blockers'];
             header('Location: /admin/extensions/catalog');
             exit;
         }
@@ -689,11 +686,8 @@ class ExtensionsController extends Controller
         $deps = $resolver->parseDependencies($extension['dependencies']);
         $depResult = $resolver->checkEnable($deps, $catalogEntries);
         if (!$depResult['allowed']) {
-            $messages = [];
-            foreach ($depResult['blockers'] as $blocker) {
-                $messages[] = ' - ' . $blocker['message'];
-            }
-            $this->flash('error', 'Cannot enable "' . $extension['name'] . '". Dependencies not satisfied:' . "\n" . implode("\n", $messages));
+            $this->flash('error', $this->formatBlockerMessage('enable', $extension['name'], $depResult['blockers']));
+            $this->flashBlockers = $depResult['blockers'];
             header('Location: /admin/extensions/catalog');
             exit;
         }
@@ -801,11 +795,8 @@ class ExtensionsController extends Controller
         $catalogEntries = $catalog->listAll();
         $depResult = $resolver->checkUninstall($deps, $catalogEntries, $extension['type'], $extension['slug']);
         if (!$depResult['allowed']) {
-            $messages = [];
-            foreach ($depResult['blockers'] as $blocker) {
-                $messages[] = ' - ' . $blocker['message'];
-            }
-            $this->flash('error', 'Cannot uninstall "' . $extension['name'] . "':\n" . implode("\n", $messages));
+            $this->flash('error', $this->formatBlockerMessage('uninstall', $extension['name'], $depResult['blockers']));
+            $this->flashBlockers = $depResult['blockers'];
             header('Location: /admin/extensions/catalog');
             exit;
         }
@@ -879,11 +870,8 @@ class ExtensionsController extends Controller
         $catalogEntries = $catalog->listAll();
         $depResult = $resolver->checkDisable([], $catalogEntries, $extension['type'], $extension['slug']);
         if (!$depResult['allowed']) {
-            $messages = [];
-            foreach ($depResult['blockers'] as $blocker) {
-                $messages[] = ' - ' . $blocker['message'];
-            }
-            $this->flash('error', 'Cannot disable "' . $extension['name'] . "':\n" . implode("\n", $messages));
+            $this->flash('error', $this->formatBlockerMessage('disable', $extension['name'], $depResult['blockers']));
+            $this->flashBlockers = $depResult['blockers'];
             header('Location: /admin/extensions/catalog');
             exit;
         }
@@ -1011,5 +999,46 @@ class ExtensionsController extends Controller
     private function flash(string $type, string $message): void
     {
         $_SESSION['admin_flash'] = ['type' => $type, 'message' => $message];
+    }
+
+    /**
+     * Dependency blockers captured by the last error handler,
+     * passed to the view for inline dependency alerts.
+     *
+     * @var list<array{type: string, dependency: string, message: string}>|null
+     */
+    public ?array $flashBlockers = null;
+
+    /**
+     * Format dependency blockers into a readable flash message
+     * and dependency detail list for the catalog view.
+     *
+     * @param string $action install | enable | disable | uninstall
+     * @param string $extName Extension name
+     * @param list<array{type: string, dependency: string, message: string}> $blockers
+     */
+    private function formatBlockerMessage(string $action, string $extName, array $blockers): string
+    {
+        $details = [];
+        foreach ($blockers as $blocker) {
+            $typeLabel = match ($blocker['type']) {
+                'missing' => 'Missing',
+                'pending' => 'Pending review',
+                'rejected' => 'Rejected',
+                'version' => 'Version mismatch',
+                'circular' => 'Circular dependency',
+                'dependent' => 'Reverse dependency',
+                default => $blocker['type'],
+            };
+            $depKey = htmlspecialchars($blocker['dependency'] ?? '');
+            $details[] = sprintf('%s: <code>%s</code>', $typeLabel, $depKey);
+        }
+
+        $extName = htmlspecialchars($extName);
+        if ($details === []) {
+            return "Extension \"$extName\" cannot be $actioned: dependencies not satisfied.";
+        }
+
+        return "Extension \"$extName\" cannot be $actioned: dependencies not satisfied.<br>" . implode('<br>', $details);
     }
 }

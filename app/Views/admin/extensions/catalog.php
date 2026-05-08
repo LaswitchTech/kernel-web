@@ -1,3 +1,12 @@
+<?php $flash = $_SESSION['admin_flash'] ?? null; ?>
+<?php if ($flash): ?>
+<div class="alert alert-<?= htmlspecialchars($flash['type'] === 'success' ? 'success' : 'danger') ?> alert-dismissible mb-4" role="alert">
+    <?= $flash['message'] ?>
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+</div>
+<?php unset($flash); ?>
+<?php endif; ?>
+
 <div class="row g-3 mb-4">
     <div class="col-md-4">
         <div class="card">
@@ -98,6 +107,7 @@
                         <th>Status</th>
                         <th>Installed</th>
                         <th>Enabled</th>
+                        <th>Blocked</th>
                         <th class="text-nowrap">Actions</th>
                     </tr>
                 </thead>
@@ -241,6 +251,24 @@
                             </span>
                             <?php endif; ?>
                         </td>
+                        <td class="text-center">
+                            <?php
+                            $deps = $depAnalysis[(int) $ext['id']] ?? [];
+                            $blocked = [];
+                            foreach ($deps as $d) {
+                                if ($d['status'] === 'missing' || $d['status'] === 'version-mismatch') {
+                                    $blocked[] = ['key' => $d['key'], 'status' => $d['status']];
+                                }
+                            }
+                            ?>
+                            <?php if ($blocked !== []): ?>
+                            <span class="badge bg-danger" title="<?= count($blocked) ?> dependency blocker(s)">
+                                <i class="bi bi-exclamation-triangle me-1"></i><?= count($blocked) ?>
+                            </span>
+                            <?php else: ?>
+                            <span class="text-muted small">—</span>
+                            <?php endif; ?>
+                        </td>
                         <td class="text-nowrap">
                             <div class="btn-group btn-group-sm" role="group">
                                 <?php if ((int) $ext['is_installed'] === 0 && $ext['status'] === 'approved'): ?>
@@ -290,7 +318,7 @@
 KernelWeb.dt.init('#admin-catalog-table', {
     order: [[0, 'asc']],
     columnDefs: [
-        { orderable: false, targets: [5, 6, 7] }
+        { orderable: false, targets: [5, 6, 7, 8] }
     ]
 });
 </script>
