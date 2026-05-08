@@ -4,6 +4,7 @@ namespace App\Core\Plugins;
 
 use App\Core\Container;
 use App\Models\CatalogExtensionRepository;
+use App\Services\Extensions\ExtensionDependencyResolver;
 
 /**
  * Discovers, validates, and loads plugins from /lib/plugins/.
@@ -374,6 +375,10 @@ class PluginLoader
      */
     private function getCatalogEntries(): ?array
     {
+        if ($this->container === null || !$this->container->has('db')) {
+            return null;
+        }
+
         try {
             $repo = new CatalogExtensionRepository($this->container->get('db'));
             $entries = $repo->findAll();
@@ -401,6 +406,10 @@ class PluginLoader
      */
     private function getCatalogEnabledState(string $slug): ?bool
     {
+        if ($this->container === null || !$this->container->has('db')) {
+            return null;
+        }
+
         try {
             $repo = new CatalogExtensionRepository($this->container->get('db'));
             $entry = $repo->findBySlug($slug);

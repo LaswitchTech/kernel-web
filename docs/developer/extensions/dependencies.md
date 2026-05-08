@@ -417,7 +417,24 @@ During `PluginLoader::load()`, each discovered plugin undergoes a dependency che
 The runtime check follows the same fail-closed principle as the catalog:
 - Invalid format → plugin does not load
 - Unsatisfied dependency → plugin does not load
-- Missing catalog → falls back to registry check (not a hard block, but best-effort)
+- Missing or unavailable catalog → falls back to registry check
+
+### Catalog Unavailable Fallback — Known Limitation
+
+When the catalog table does not exist or the database is unavailable during `PluginLoader::load()`, the resolver falls back to a registry-only check that:
+
+- Validates that dependency keys are valid `type:slug` format
+- Checks if the dependency slug is enabled in the registry (by slug match first, then name lookup)
+- Does **not** check version constraints
+- Does **not** check installed state
+
+This fallback **does not block plugins with unsatisfied dependencies** — it only performs a best-effort check against already-loaded plugins. This is considered acceptable because:
+
+1. The catalog table is created during the kernel's initial database setup, before any plugins are loaded
+2. The fallback is only reachable during abnormal conditions (database not yet initialized, corrupt schema)
+3. The catalog lifecycle (install/enable) remains fully enforced — the fallback only affects runtime discovery
+
+If the catalog is unavailable and you need to enforce dependencies, ensure the database is properly initialized before plugin loading.
 
 ### Diagnostic Information
 
