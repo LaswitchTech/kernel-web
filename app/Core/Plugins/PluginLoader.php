@@ -19,6 +19,11 @@ final class PluginCandidate
         public readonly bool $effectiveEnabled,
         public readonly ?bool $catalogState,
     ) {}
+
+    public function name(): string
+    {
+        return $this->manifest->name();
+    }
 }
 
 /**
@@ -188,9 +193,11 @@ class PluginLoader
         // Return candidate — actual registry registration happens after sorting.
         $candidate = new PluginCandidate($manifest, $effectiveEnabled, $catalogState);
 
-        // If manifest and catalog disagree on enabled state, pre-discover
-        // so enable() won't fail with "not in discovered bucket".
-        if ($catalogState !== null && $catalogState !== $manifest->enabled()) {
+        // Pre-discover the plugin before sorting so enable() won't fail
+        // with "not in discovered bucket". Needed when:
+        //   - no catalog entry (catalogState is null) + manifest enabled
+        //   - catalog override changes enabled state vs manifest
+        if ($catalogState === null || $catalogState !== $manifest->enabled()) {
             $this->registry->addDiscovered($manifest);
         }
 
@@ -471,7 +478,7 @@ class PluginLoader
         foreach ($directories as $dir) {
             $candidate = $this->loadOne($dir);
             if ($candidate !== null) {
-                $candidates[$candidate->name] = $candidate;
+                $candidates[$candidate->name()] = $candidate;
             }
         }
 
@@ -558,15 +565,34 @@ class PluginLoader
             $this->markCyclicAsInvalid($cyclicNames, $candidates);
         }
 
-        // Remove cyclic plugins from candidates and re-sort remaining dependents
+        // Remove cyclic plugins from candidates, mark dependents invalid, and re-sort.
         if ($cyclicNames !== []) {
             $cyclicSet = array_flip($cyclicNames);
+            $newCandidates = [];
             foreach ($candidates as $name => $candidate) {
                 if (isset($cyclicSet[$name])) {
                     $this->registry->addInvalid($candidate->manifest, "Dependency is unavailable (circular dependency detected).");
-                    unset($candidates[$name]);
+                    continue;
+                }
+
+                // Block plugins whose dependency is part of a cycle
+                $deps = ExtensionDependencyResolver::parseDependencies($candidate->manifest->dependencies());
+                if ($deps !== null && $deps !== []) {
+                    foreach ($deps as $depKey => $_) {
+                        $parsed = ExtensionDependencyResolver::parseKey($depKey);
+                        if ($parsed !== null && isset($cyclicSet[$parsed['slug']])) {
+                            $this->registry->addInvalid($candidate->manifest, "Dependency '{$depKey}' is part of a circular dependency.");
+                            $deps = null; // mark as blocked
+                            break;
+                        }
+                    }
+                }
+
+                if ($deps !== null) {
+                    $newCandidates[$name] = $candidate;
                 }
             }
+            $candidates = $newCandidates;
 
             // Re-sort without cyclic plugins
             $names = array_keys($candidates);
