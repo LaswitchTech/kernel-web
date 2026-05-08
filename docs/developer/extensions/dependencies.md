@@ -387,6 +387,46 @@ The `type:slug` format is the safest choice because:
 
 ---
 
+## 11. Runtime Enforcement
+
+The catalog lifecycle blocks install/enable/disable/uninstall actions via `ExtensionDependencyResolver`. However, the catalog can be modified manually (direct DB edits) or files can be copied directly to `/lib/plugins/` without going through the catalog UI. To prevent the kernel from loading plugins with unsatisfied dependencies, **PluginLoader also enforces dependencies at runtime**.
+
+### How It Works
+
+During `PluginLoader::load()`, each discovered plugin undergoes a dependency check:
+
+1. **Parse dependencies** — `ExtensionDependencyResolver::parseDependencies()` normalizes the manifest's dependency declarations
+2. **Invalid format** — if parsing returns `null` (unparseable data), the plugin is marked invalid with reason "Invalid dependency format in plugin.json"
+3. **Catalog available** — if the catalog table exists, `ExtensionDependencyResolver::checkEnable()` is used with catalog entries as source of truth
+4. **Catalog unavailable** — falls back to a simpler check that verifies dependency plugins are already loaded in the registry (no version checking)
+5. **Unsatisfied dependency** — the plugin is marked invalid with the first blocker's message. A log entry is emitted via the container logger
+
+### Failure Behavior
+
+| Scenario | Plugin State | Log |
+|----------|-------------|-----|
+| Invalid dependency format | Invalid | None (format error is self-evident) |
+| Dependency not installed | Invalid | Log entry with blocker message |
+| Dependency installed but disabled | Invalid | Log entry with blocker message |
+| Dependency version mismatch | Invalid | Log entry with version requirement |
+| Invalid dependency key format | Invalid | Log entry with key format error |
+| Catalog table unavailable | May load (fallback check) | None |
+
+### Fail-Closed Principle
+
+The runtime check follows the same fail-closed principle as the catalog:
+- Invalid format → plugin does not load
+- Unsatisfied dependency → plugin does not load
+- Missing catalog → falls back to registry check (not a hard block, but best-effort)
+
+### Diagnostic Information
+
+When a plugin fails the dependency check, the skip reason is recorded in the registry's invalid bucket and can be viewed in the admin UI. The reason includes:
+- Which dependency failed
+- Why it failed (missing, disabled, version mismatch)
+
+---
+
 ## 10. Implementation Checklist
 
 ### Phase 2 (this design)
@@ -404,10 +444,10 @@ The `type:slug` format is the safest choice because:
 - [x] Resolver integration in `ExtensionsController` (install/enable/disable/uninstall)
 - [x] Harden: null-parse guard, circular detection key collision fix
 - [x] Catalog submission validation for dependency format
+- [x] PluginLoader runtime dependency check (uses checkEnable + catalog lookup)
 - [ ] Catalog UI: dependency count badges
 - [ ] Catalog UI: dependency status on detail page
 - [ ] Catalog UI: blocker messages on actions
-- [ ] PluginLoader version check (currently only checks name)
 - [ ] Topological sort for boot order (currently discovery-order dependent)
 - [ ] Circular dependency detection in PluginLoader
 

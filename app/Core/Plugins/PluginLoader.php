@@ -133,12 +133,10 @@ class PluginLoader
 
         // --- Dependency check ---
 
-        $deps = $manifest->dependencies();
-        foreach ($deps as $depName => $depVersion) {
-            if (!$this->registry->isEnabled($depName) && !$this->registry->getByName($depName)) {
-                $this->registry->addInvalid($manifest, "Missing required dependency: {$depName}");
-                return;
-            }
+        $skipReason = '';
+        if (!$this->checkDependencies($manifest, $catalogSlug, $skipReason)) {
+            $this->registry->addInvalid($manifest, $skipReason);
+            return;
         }
 
         // --- Kernel version check (deferred) ---
@@ -292,6 +290,107 @@ class PluginLoader
         }
 
         return $count;
+    }
+
+    /**
+     * Check dependencies for a plugin at runtime.
+     *
+     * Uses ExtensionDependencyResolver to validate that all declared
+     * dependencies are installed and enabled in the catalog. Fail-closed:
+     * invalid dependency format or unsatisfied dependency blocks the plugin.
+     *
+     * Returns true if all dependencies are satisfied, false otherwise.
+     * Sets $skipReason to a human-readable message on failure.
+     */
+    private function checkDependencies(PluginManifest $manifest, string $slug, string &$skipReason): bool
+    {
+        $deps = ExtensionDependencyResolver::parseDependencies($manifest->dependencies());
+
+        if ($deps === null) {
+            $skipReason = 'Invalid dependency format in plugin.json.';
+            return false;
+        }
+
+        if ($deps === []) {
+            return true;
+        }
+
+        // Fetch catalog entries for all installed extensions
+        $catalogEntries = $this->getCatalogEntries();
+        if ($catalogEntries === null) {
+            // Catalog table doesn't exist yet — cannot validate dependencies at runtime.
+            // Fall back to checking the registry for already-loaded plugins.
+            return $this->checkDependenciesFallback($manifest, $deps);
+        }
+
+        $result = ExtensionDependencyResolver::checkEnable($deps, $catalogEntries);
+        if ($result['allowed']) {
+            return true;
+        }
+
+        // Report the first blocker as the skip reason
+        $blockers = $result['blockers'];
+        $skipReason = $blockers[0]['message'];
+        $this->logLifecycleError($manifest->name(), 'dependency-check', $skipReason);
+        return false;
+    }
+
+    /**
+     * Fallback dependency check when catalog is unavailable.
+     *
+     * Checks if dependencies are already loaded in the registry (by name).
+     * This handles the case where a dependency plugin was loaded earlier
+     * in the discovery order. Does NOT check version constraints.
+     */
+    private function checkDependenciesFallback(PluginManifest $manifest, array $deps): bool
+    {
+        foreach ($deps as $depKey => $_constraint) {
+            $parsed = ExtensionDependencyResolver::parseKey($depKey);
+            if ($parsed === null) {
+                return false;
+            }
+
+            // Check if the dependency is already enabled in the registry
+            if ($this->registry->isEnabled($parsed['slug'])) {
+                continue;
+            }
+
+            // Try name-based lookup for backwards compatibility
+            $depPlugin = $this->registry->getByName($parsed['slug']);
+            if ($depPlugin !== null) {
+                continue;
+            }
+
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Get all catalog entries as a flat array.
+     *
+     * Returns null if the catalog table does not exist or cannot be queried.
+     */
+    private function getCatalogEntries(): ?array
+    {
+        try {
+            $repo = new CatalogExtensionRepository($this->container->get('db'));
+            $entries = $repo->findAll();
+
+            // findAll may return an array of objects or arrays — normalize to arrays
+            $result = [];
+            foreach ($entries as $entry) {
+                if (is_object($entry) && method_exists($entry, 'toArray')) {
+                    $result[] = $entry->toArray();
+                } elseif (is_array($entry)) {
+                    $result[] = $entry;
+                }
+            }
+            return $result;
+        } catch (\Throwable) {
+            return null;
+        }
     }
 
     /**
