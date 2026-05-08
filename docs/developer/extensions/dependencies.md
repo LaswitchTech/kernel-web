@@ -444,6 +444,225 @@ When a plugin fails the dependency check, the skip reason is recorded in the reg
 
 ---
 
+---
+
+## 12. PluginLoader Boot Order Design
+
+### Overview
+
+Currently, plugins are loaded in filesystem discovery order (alphabetical via `DirectoryIterator`). This means the order in which plugins register routes, hooks, and services depends entirely on directory naming. If Plugin A depends on Plugin B's services being available, Plugin A must be discovered after Plugin B — a fragile contract.
+
+**Boot order sorting** uses the dependency graph to load plugins in a deterministic, dependency-aware order: dependencies before dependents.
+
+### Graph Model
+
+**Nodes:** Each discovered plugin with a valid manifest and satisfied dependencies is a node.
+
+**Edges:** A directed edge from plugin X to plugin Y means "X depends on Y" — Y must load before X.
+
+**Graph source of truth:** Merged strategy — manifest dependencies define what the plugin *requires*, catalog entries define what is *available*. Both must agree for an edge to exist in the graph.
+
+- If a dependency is declared in the manifest but not installed in the catalog → edge is **excluded** (dependency not available, but handled by `checkDependencies()` as a blocker)
+- If a dependency is installed in the catalog but not declared in the manifest → edge is **excluded** (no requirement, no edge needed)
+- If both manifest and catalog agree the dependency exists and is enabled → edge is **included**
+
+**Identifier:** `type:slug` format in the graph. For the initial implementation (plugins only), this maps directly to `plugin:<slug>`. The `type:` prefix prevents cross-type collisions and enables future themes/layouts boot ordering.
+
+**Node identity in the graph:** Use the plugin's **slug** (directory name), not manifest name. The slug is guaranteed to match the catalog's `slug` column, which is the canonical unique identifier. Manifest names are not used as graph identifiers because they can change without catalog updates.
+
+### When Sorting Happens
+
+Sorting occurs **between discovery and registry registration**.
+
+Current `load()` flow:
+```
+discover() → loadOne() (validate + register to registry) → return registry
+```
+
+New `load()` flow:
+```
+discoverAll() → validateAll() → sortByDependencies() → registerAll() → return registry
+```
+
+Splitting `loadOne()` into two phases:
+1. **Discovery phase** — scan dirs, read manifests, validate JSON, run dependency checks, collect valid/discovered/invalid entries
+2. **Sort phase** — build dependency graph from valid entries, run topological sort, reorder registry buckets
+3. **Registration phase** — the registry buckets now contain entries in the correct order; `registerRoutes()`, `registerMigrations()`, etc. iterate in dependency order
+
+This separation is necessary because:
+- Sorting requires knowing the complete set of valid plugins
+- Registry operations (`enable()`, `disable()`) depend on the ordering
+- Hooks, routes, and migrations are registered after `load()` returns, so the registry order is what matters
+
+### Topological Sort Algorithm
+
+Use **Kahn's algorithm** (BFS-based topological sort):
+
+1. **Build in-degree map** — for each plugin in the valid set, count how many of its dependencies are also in the valid set
+2. **Seed queue** — add all plugins with in-degree 0 (no dependencies within the valid set)
+3. **Process queue** — for each plugin popped from the queue:
+   - Add it to the sorted result
+   - For each dependent of this plugin (plugins that list it as a dependency): decrement their in-degree
+   - If a dependent's in-degree reaches 0, add it to the queue
+4. **Detect remainder** — any plugins not in the sorted result are part of a cycle
+
+**Tie-breaking:** When multiple plugins have in-degree 0 (no internal dependencies), they are order-independent. To ensure deterministic output, sort tied plugins alphabetically by slug before adding them to the queue.
+
+```php
+private function sortByDependencies(array $validPlugins): array
+{
+    // Build adjacency list and in-degree map
+    $inDegree = [];
+    $adjacency = []; // dep => [plugins that depend on dep]
+
+    foreach ($validPlugins as $plugin) {
+        $slug = $plugin->name(); // or catalog slug
+        $inDegree[$slug] = 0;
+        $adjacency[$slug] = [];
+    }
+
+    foreach ($validPlugins as $plugin) {
+        $slug = $plugin->name();
+        $deps = ExtensionDependencyResolver::parseDependencies($plugin->dependencies());
+        if ($deps === null || $deps === []) continue;
+
+        foreach ($deps as $depKey => $constraint) {
+            $parsed = ExtensionDependencyResolver::parseKey($depKey);
+            if ($parsed === null) continue;
+
+            $depSlug = $parsed['slug'];
+            // Only create edge if the dependency is in the valid set
+            if (isset($inDegree[$depSlug])) {
+                $inDegree[$slug]++;
+                $adjacency[$depSlug][] = $slug;
+            }
+        }
+    }
+
+    // Kahn's algorithm
+    $queue = [];
+    foreach ($inDegree as $slug => $degree) {
+        if ($degree === 0) {
+            $queue[] = $slug;
+        }
+    }
+    sort($queue); // Deterministic tie-breaking
+
+    $sorted = [];
+    while ($queue !== []) {
+        sort($queue); // Re-sort on each iteration for determinism
+        $current = array_shift($queue);
+        $sorted[] = $current;
+
+        foreach ($adjacency[$current] as $dependent) {
+            $inDegree[$dependent]--;
+            if ($inDegree[$dependent] === 0) {
+                $queue[] = $dependent;
+            }
+        }
+    }
+
+    return $sorted;
+}
+```
+
+### Circular Dependency Behavior
+
+**Detection:** Kahn's algorithm naturally detects cycles — nodes not included in the sorted result form the cycle. After the sort completes, any plugin with `in-degree > 0` is part of a cycle.
+
+**Example:** If A depends on B and B depends on A:
+1. Both start with in-degree 1
+2. Queue starts empty
+3. Sort result: `[]` (no valid order)
+4. Cyclic nodes: `[A, B]`
+
+**Handling:** All plugins in a cycle are **marked invalid** with reason `"Circular dependency detected: [<plugin names>]"`. This is a hard block — no plugin in the cycle loads.
+
+**Rationale:** Boot order is a safety mechanism. A cycle means there is no valid boot order. Rather than picking an arbitrary order (which could cause silent failures), we fail closed.
+
+**Edge case:** If A depends on B (cycle) and C depends on A (no cycle):
+1. A and B are cyclic; C depends on A
+2. A and B are excluded from sorted result
+3. C's dependency on A is an edge to an excluded node — C's in-degree is decremented or its dependency is marked unsatisfied
+
+**Treatment:** C should be marked invalid with reason `"Dependency 'plugin:A' is part of a circular dependency"`. This is because C cannot load without A, and A cannot be ordered.
+
+### Missing Dependency Behavior
+
+**Pre-handled by `checkDependencies()`:** The existing runtime dependency check in `loadOne()` (commit `c328946`) already blocks plugins with unsatisfied dependencies. If a dependency is missing from the catalog or has a version mismatch, the plugin is added to the invalid bucket before the sort phase runs.
+
+**In the sort graph:** Only plugins with **all dependencies satisfied** participate in the graph. A plugin whose dependency exists in the catalog but is not being loaded this time (e.g., filtered out by catalog state) simply doesn't get an edge for that dependency — the missing dependency is already handled by the earlier validation phase.
+
+**If a dependency is excluded from the graph due to being cyclic:**
+- The dependent's in-degree in the sort is not incremented for the cyclic dep
+- But the dependent is also excluded because its dependency cannot be satisfied
+- Treated as: `"Dependency 'plugin:X' is unavailable (circular dependency)"`
+
+### Interaction with Runtime Enforcement (commit c328946)
+
+The two features are **complementary**, not redundant:
+
+| Feature | Purpose | When |
+|---------|---------|------|
+| **Runtime enforcement** | Blocks loading if dependencies are unsatisfied | Per-plugin during discovery |
+| **Boot order sorting** | Ensures plugins load in dependency order | Post-discovery, pre-registration |
+
+**Example scenario without sorting:** Plugin A (depends on B) and Plugin B load in discovery order. Both pass dependency checks because B happens to be alphabetically after A. Routes/hooks/migrations register in wrong order.
+
+**Example scenario with sorting:** Plugin A and B both pass dependency checks. Sort reorders to `[B, A]`. Routes/hooks/migrations register in correct dependency order.
+
+**The existing `checkDependencies()` is the gatekeeper.** The sort is the re-ordering step. Without the sort, `checkDependencies()` only prevents loading — it doesn't fix the order.
+
+### Skipped/Invalid Reasons
+
+Plugins excluded from the sorted result (cyclic or with cyclic dependencies) are added to the invalid bucket:
+
+| Reason | When |
+|--------|------|
+| `"Circular dependency detected: [A, B]"` | Plugin is part of a cycle |
+| `"Dependency 'plugin:A' is part of a circular dependency"` | Plugin's dependency is cyclic |
+| `"Missing dependency: plugin:X"` | Handled by existing checkDependencies() |
+
+### Themes and Layouts — Deferred
+
+**Current scope: plugins only.**
+
+**Why defer:**
+1. Themes and layouts do not register hooks, routes, or services — they are passive resources
+2. Boot order primarily affects code execution (route registration, hook registration, service initialization)
+3. A future boot-order concern could be: "theme must load before layout" — but this is not currently required
+4. The graph model (`type:slug`) already supports cross-type dependencies; the implementation just needs to filter to `type === 'plugin'` for now
+
+**Future:** When themes/layouts register hooks or services, the same graph model extends naturally by including all `type:slug` nodes.
+
+### Minimum Safe Implementation Slice
+
+After this design, the implementation should be done as:
+
+1. **Phase 1 (smallest safe slice):**
+   - Add `PluginLoader::sortByDependencies()`: build graph from valid plugins, run Kahn's algorithm, return sorted slug list
+   - In `load()`, after all discovery/validation, call `sortByDependencies()` and reorder the registry's enabled/discovered buckets
+   - Mark cyclic nodes as invalid with clear reason
+   - Document the behavior
+
+2. **Phase 2 (follow-on):**
+   - Validate that hooks, routes, and migrations register in sorted order
+   - Test with multi-dependency chains (A → B → C)
+   - Add regression test for 3-node cycles
+
+3. **Phase 3 (future):**
+   - Extend to themes/layouts
+   - Add boot-order diagnostics (log sorted order)
+
+### Limitations
+
+- **Discovery order still affects which plugins are in the graph** — if a plugin's manifest can't be read, it's not a node. This is correct: a broken plugin can't participate in the graph.
+- **The sort only considers installed/enabled plugins** — disabled plugins are not nodes, even if declared as dependencies. Their absence is handled by the earlier dependency check.
+- **Cyclic plugins are entirely blocked** — the algorithm does not try to break cycles. This is intentional: breaking a cycle arbitrarily could load dependencies in the wrong order for the remaining plugins.
+- **Determinism** — tie-breaking is alphabetical by slug. This is sufficient for correctness (any valid topological order works) and provides reproducible behavior.
+
+---
+
 ## 10. Implementation Checklist
 
 ### Phase 2 (this design)
@@ -465,8 +684,9 @@ When a plugin fails the dependency check, the skip reason is recorded in the reg
 - [ ] Catalog UI: dependency count badges
 - [ ] Catalog UI: dependency status on detail page
 - [ ] Catalog UI: blocker messages on actions
+- [x] Boot order design (Kahn's algorithm, cycle handling, design doc)
 - [ ] Topological sort for boot order (currently discovery-order dependent)
-- [ ] Circular dependency detection in PluginLoader
+- [x] Circular dependency detection design (in boot order section)
 
 ---
 
