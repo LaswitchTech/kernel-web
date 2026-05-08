@@ -654,6 +654,22 @@ After this design, the implementation should be done as:
    - Extend to themes/layouts
    - Add boot-order diagnostics (log sorted order)
 
+### Implementation — Phase 1 (completed)
+
+The following were implemented in `PluginLoader`:
+
+- `PluginCandidate` — immutable value object holding manifest + effectiveEnabled + catalogState
+- `collectPluginCandidates()` — replaces the `loadOne()` loop; validates each plugin, returns `PluginCandidate[]` keyed by name
+- `loadOne()` — refactored to return `?PluginCandidate`; invalid plugins are added to registry's invalid bucket
+- `sortPluginsByDependencies()` — Kahn's algorithm with alphabetical tie-breaking; detects and reports cyclic nodes
+- `markCyclicAsInvalid()` — marks cyclic nodes with descriptive reasons; handles self-cycles vs multi-node cycles
+- `registerPluginsInSortedOrder()` — registers candidates in dependency order
+
+Cyclic dependency handling:
+- Cyclic nodes are marked invalid first
+- Plugins depending on cyclic nodes are also marked invalid in the re-sort phase
+- Self-cycles (A → A) and multi-node cycles (A ↔ B ↔ C) are handled identically
+
 ### Limitations
 
 - **Discovery order still affects which plugins are in the graph** — if a plugin's manifest can't be read, it's not a node. This is correct: a broken plugin can't participate in the graph.
@@ -685,8 +701,8 @@ After this design, the implementation should be done as:
 - [ ] Catalog UI: dependency status on detail page
 - [ ] Catalog UI: blocker messages on actions
 - [x] Boot order design (Kahn's algorithm, cycle handling, design doc)
-- [ ] Topological sort for boot order (currently discovery-order dependent)
-- [x] Circular dependency detection design (in boot order section)
+- [x] Topological sort for boot order (Kahn's algorithm, alphabetical tie-breaking)
+- [x] Circular dependency detection in PluginLoader (Kahn's remainder, cyclic nodes marked invalid)
 
 ---
 

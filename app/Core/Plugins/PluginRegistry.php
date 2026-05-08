@@ -45,11 +45,15 @@ class PluginRegistry
      *
      * Calls extension hooks (registerPermissions, registerServices)
      * for the newly-enabled plugin.
+     *
+     * @throws PluginException if the plugin is not in the discovered bucket
      */
     public function enable(string $name): bool
     {
         if (!isset($this->discovered[$name])) {
-            return false;
+            throw new \App\Core\Plugins\PluginException(
+                "Cannot enable '{$name}': plugin not in discovered bucket."
+            );
         }
 
         $plugin = $this->discovered[$name];

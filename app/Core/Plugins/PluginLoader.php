@@ -7,6 +7,21 @@ use App\Models\CatalogExtensionRepository;
 use App\Services\Extensions\ExtensionDependencyResolver;
 
 /**
+ * Holds validated plugin data collected during the discovery phase.
+ *
+ * Used as an intermediate step between validation and dependency-aware
+ * sorting. The candidate is not yet registered until after sorting.
+ */
+final class PluginCandidate
+{
+    public function __construct(
+        public readonly PluginManifest $manifest,
+        public readonly bool $effectiveEnabled,
+        public readonly ?bool $catalogState,
+    ) {}
+}
+
+/**
  * Discovers, validates, and loads plugins from /lib/plugins/.
  *
  * Discovery flow:
@@ -41,9 +56,10 @@ class PluginLoader
      * Discovery flow:
      *   1) Scan each subdirectory of /lib/plugins/ for plugin.json
      *   2) Validate each manifest
-     *   3) Check dependencies
-     *   4) Check catalog installed state (overrides manifest enabled)
-     *   5) Build registry (enabled / disabled / invalid)
+     *   3) Check dependencies (catalog + catalog availability)
+     *   4) Collect valid plugin candidates
+     *   5) Sort candidates by dependency graph
+     *   6) Register sorted candidates into registry
      *
      * @return PluginRegistry
      */
@@ -55,9 +71,18 @@ class PluginLoader
 
         $directories = $this->discoverPluginDirs();
 
-        foreach ($directories as $dir) {
-            $this->loadOne($dir);
+        // Phase 1: collect all candidates (validation only, no registry changes yet)
+        $candidates = $this->collectPluginCandidates($directories);
+
+        if ($candidates === []) {
+            return $this->registry;
         }
+
+        // Phase 2: sort by dependency graph
+        $sortedSlugs = $this->sortPluginsByDependencies($candidates);
+
+        // Phase 3: register in sorted order
+        $this->registerPluginsInSortedOrder($candidates, $sortedSlugs);
 
         return $this->registry;
     }
@@ -97,9 +122,12 @@ class PluginLoader
     }
 
     /**
-     * Load a single plugin from its directory.
+     * Load a single plugin and return a candidate (or null if invalid).
+     *
+     * Invalid plugins are already added to the registry's invalid bucket.
+     * Returns null when the plugin is invalid.
      */
-    private function loadOne(string $dir): void
+    private function loadOne(string $dir): ?PluginCandidate
     {
         $pluginJson = $dir . '/plugin.json';
 
@@ -109,7 +137,7 @@ class PluginLoader
                 new PluginManifest(['name' => basename($dir), 'version' => '0.0.0']),
                 'Could not read plugin.json'
             );
-            return;
+            return null;
         }
 
         $data = json_decode($raw, true);
@@ -118,7 +146,7 @@ class PluginLoader
                 new PluginManifest(['name' => basename($dir), 'version' => '0.0.0']),
                 'plugin.json is not valid JSON'
             );
-            return;
+            return null;
         }
 
         try {
@@ -129,15 +157,16 @@ class PluginLoader
                 new PluginManifest(['name' => basename($dir), 'version' => '0.0.0']),
                 $e->getMessage()
             );
-            return;
+            return null;
         }
 
         // --- Dependency check ---
 
+        $catalogSlug = basename($dir);
         $skipReason = '';
         if (!$this->checkDependencies($manifest, $catalogSlug, $skipReason)) {
             $this->registry->addInvalid($manifest, $skipReason);
-            return;
+            return null;
         }
 
         // --- Kernel version check (deferred) ---
@@ -148,30 +177,24 @@ class PluginLoader
                 $manifest,
                 "Requires kernel {$minKernel}, current: " . phpversion()
             );
-            return;
+            return null;
         }
 
         // --- Catalog enabled-state override ---
-        // If a catalog entry exists and is installed, the catalog's is_enabled
-        // takes precedence over the manifest's enabled field.
 
-        $catalogSlug = basename($dir);
         $catalogState = $this->getCatalogEnabledState($catalogSlug);
         $effectiveEnabled = $catalogState ?? $manifest->enabled();
 
-        // --- Valid plugin ---
+        // Return candidate — actual registry registration happens after sorting.
+        $candidate = new PluginCandidate($manifest, $effectiveEnabled, $catalogState);
 
-        if ($effectiveEnabled) {
-            // Catalog says enabled but manifest may have disabled it.
-            // Ensure the manifest is in the discovered bucket first so enable() works.
-            if ($catalogState !== null && $catalogState !== $manifest->enabled()) {
-                $this->registry->addDiscovered($manifest);
-            }
-            $this->registry->enable($manifest->name());
-        } else {
+        // If manifest and catalog disagree on enabled state, pre-discover
+        // so enable() won't fail with "not in discovered bucket".
+        if ($catalogState !== null && $catalogState !== $manifest->enabled()) {
             $this->registry->addDiscovered($manifest);
-            $this->registry->disable($manifest->name());
         }
+
+        return $candidate;
     }
 
     /**
@@ -426,6 +449,224 @@ class PluginLoader
         } catch (\Throwable) {
             // Catalog table may not exist yet; fall back to manifest.
             return null;
+        }
+    }
+
+    // ------ Boot Order Sorting ------
+
+    /**
+     * Collect all valid plugin candidates from discovered directories.
+     *
+     * Each candidate is validated independently. Invalid plugins are added
+     * to the registry's invalid bucket. Valid plugins are collected for
+     * dependency-aware sorting.
+     *
+     * @param string[] $directories Absolute directory paths
+     * @return array<string, PluginCandidate> Keyed by plugin name
+     */
+    private function collectPluginCandidates(array $directories): array
+    {
+        $candidates = [];
+
+        foreach ($directories as $dir) {
+            $candidate = $this->loadOne($dir);
+            if ($candidate !== null) {
+                $candidates[$candidate->name] = $candidate;
+            }
+        }
+
+        return $candidates;
+    }
+
+    /**
+     * Sort valid plugin candidates by dependency graph using Kahn's algorithm.
+     *
+     * Returns a list of plugin names in dependency order. Plugins with no
+     * dependencies among valid candidates are tie-broken alphabetically by name.
+     *
+     * Cyclic plugins are marked invalid with a descriptive reason.
+     *
+     * @param array<string, PluginCandidate> $candidates
+     * @return string[] Plugin names in sorted order
+     */
+    private function sortPluginsByDependencies(array $candidates): array
+    {
+        // Build the graph: only consider dependencies that are also valid candidates.
+        $names = array_keys($candidates);
+        $inDegree = array_fill_keys($names, 0);
+        $adjacency = []; // dep => [dependents that depend on dep]
+
+        foreach ($names as $name) {
+            $adjacency[$name] = [];
+        }
+
+        foreach ($candidates as $name => $candidate) {
+            $deps = ExtensionDependencyResolver::parseDependencies($candidate->manifest->dependencies());
+            if ($deps === null || $deps === []) {
+                continue;
+            }
+
+            foreach ($deps as $depKey => $_constraint) {
+                $parsed = ExtensionDependencyResolver::parseKey($depKey);
+                if ($parsed === null) {
+                    continue;
+                }
+
+                $depName = $parsed['slug'];
+                // Only create edge if the dependency is in our valid candidate set.
+                if (isset($inDegree[$depName])) {
+                    $inDegree[$name]++;
+                    $adjacency[$depName][] = $name;
+                }
+            }
+        }
+
+        // Kahn's algorithm
+        $queue = [];
+        foreach ($inDegree as $name => $degree) {
+            if ($degree === 0) {
+                $queue[] = $name;
+            }
+        }
+        sort($queue);
+
+        $sorted = [];
+        while ($queue !== []) {
+            sort($queue);
+            $current = array_shift($queue);
+            $sorted[] = $current;
+
+            foreach ($adjacency[$current] as $dependent) {
+                $inDegree[$dependent]--;
+                if ($inDegree[$dependent] === 0) {
+                    $queue[] = $dependent;
+                }
+            }
+        }
+
+        // Mark cyclic nodes as invalid (nodes not in sorted result)
+        $sortedSet = array_flip($sorted);
+        $cyclicNames = [];
+        foreach ($inDegree as $name => $degree) {
+            if (isset($sortedSet[$name]) || $degree === 0) {
+                continue;
+            }
+            $cyclicNames[] = $name;
+        }
+
+        if ($cyclicNames !== []) {
+            $this->markCyclicAsInvalid($cyclicNames, $candidates);
+        }
+
+        // Remove cyclic plugins from candidates and re-sort remaining dependents
+        if ($cyclicNames !== []) {
+            $cyclicSet = array_flip($cyclicNames);
+            foreach ($candidates as $name => $candidate) {
+                if (isset($cyclicSet[$name])) {
+                    $this->registry->addInvalid($candidate->manifest, "Dependency is unavailable (circular dependency detected).");
+                    unset($candidates[$name]);
+                }
+            }
+
+            // Re-sort without cyclic plugins
+            $names = array_keys($candidates);
+            if ($names !== []) {
+                $inDegree = array_fill_keys($names, 0);
+                $adjacency = [];
+                foreach ($names as $name) {
+                    $adjacency[$name] = [];
+                }
+
+                foreach ($candidates as $name => $candidate) {
+                    $deps = ExtensionDependencyResolver::parseDependencies($candidate->manifest->dependencies());
+                    if ($deps === null || $deps === []) {
+                        continue;
+                    }
+
+                    foreach ($deps as $depKey => $_constraint) {
+                        $parsed = ExtensionDependencyResolver::parseKey($depKey);
+                        if ($parsed === null) {
+                            continue;
+                        }
+
+                        $depName = $parsed['slug'];
+                        if (isset($inDegree[$depName])) {
+                            $inDegree[$name]++;
+                            $adjacency[$depName][] = $name;
+                        }
+                    }
+                }
+
+                $queue = [];
+                foreach ($inDegree as $name => $degree) {
+                    if ($degree === 0) {
+                        $queue[] = $name;
+                    }
+                }
+                sort($queue);
+
+                $sorted = [];
+                while ($queue !== []) {
+                    sort($queue);
+                    $current = array_shift($queue);
+                    $sorted[] = $current;
+
+                    foreach ($adjacency[$current] as $dependent) {
+                        $inDegree[$dependent]--;
+                        if ($inDegree[$dependent] === 0) {
+                            $queue[] = $dependent;
+                        }
+                    }
+                }
+            }
+        }
+
+        return $sorted;
+    }
+
+    /**
+     * Mark cyclic plugins as invalid in the registry.
+     *
+     * @param string[] $cyclicNames
+     * @param array<string, PluginCandidate> $candidates
+     */
+    private function markCyclicAsInvalid(array $cyclicNames, array $candidates): void
+    {
+        if (count($cyclicNames) === 1) {
+            // Single node self-cycle (e.g., A depends on A)
+            $name = $cyclicNames[0];
+            $this->registry->addInvalid($candidates[$name]->manifest, "Circular dependency detected: '{$name}' depends on itself.");
+            return;
+        }
+
+        // Multi-node cycle
+        $names = [];
+        foreach ($cyclicNames as $name) {
+            $names[] = "'" . $candidates[$name]->manifest->name() . "'";
+        }
+        $cycleList = implode(', ', $names);
+
+        foreach ($cyclicNames as $name) {
+            $this->registry->addInvalid($candidates[$name]->manifest, "Circular dependency detected: [{$cycleList}].");
+        }
+    }
+
+    /**
+     * Register plugins in dependency order.
+     *
+     * @param array<string, PluginCandidate> $candidates
+     * @param string[] $sortedNames Plugin names in dependency order
+     */
+    private function registerPluginsInSortedOrder(array $candidates, array $sortedNames): void
+    {
+        foreach ($sortedNames as $name) {
+            $candidate = $candidates[$name];
+            if ($candidate->effectiveEnabled) {
+                $this->registry->enable($name);
+            } else {
+                $this->registry->addDiscovered($candidate->manifest);
+                $this->registry->disable($name);
+            }
         }
     }
 
