@@ -732,9 +732,11 @@ This pass is **read-only discovery and display only**. The following are **defer
 - upload / marketplace
 - remote updates
 - licensing
-- dependency resolution UI
+- dependency resolution UI (blocking behavior on install/enable/disable/uninstall)
 - theme switching
 - layout switching
+
+The **read-only dependency status display** (status badges on the catalog listing) is implemented and does not affect lifecycle behavior.
 
 ### Extension Catalog (Future Design)
 
@@ -809,7 +811,7 @@ Created by migration `0049_create_catalog_extensions_table.php`.
 
 #### Catalog Admin UI (Future)
 
-- `GET /admin/extensions/catalog` — browse catalog extensions
+- `GET /admin/extensions/catalog` — browse catalog extensions (dependency status display implemented)
 - `GET /admin/extensions/catalog/submit` — submission form
 - `GET /admin/extensions/catalog/{slug}` — extension detail
 - `POST /admin/extensions/catalog/{slug}/install` — install extension
