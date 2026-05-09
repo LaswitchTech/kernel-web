@@ -1231,11 +1231,9 @@ Extension update checks compare installed extension versions against catalog ver
 
 #### Data Model
 
-New column on `catalog_extensions`:
+No new columns in Phase 2. The existing `catalog_extensions.version` field is used as the latest available version for local-only mode.
 
-| Column | Type | Default | Description |
-|--------|------|--|-----|
-| `available_version` | TEXT | `''` | Latest available version (locally mirrors `version`; future remote sync target) |
+A future `available_version` column (for remote sync) is deferred to Phase 3. See `docs/developer/extensions/updates.md`.
 
 #### Service
 
@@ -1244,8 +1242,9 @@ New column on `catalog_extensions`:
 - `checkAll()` → `ExtensionUpdate[]` keyed by slug
 - `check(string $slug)` → `?ExtensionUpdate`
 - Reads installed version from on-disk manifest
-- Reads latest version from `catalog_extensions.available_version`
+- Reads latest version from `catalog_extensions.version` (local-only)
 - Uses `version_compare()` + `ExtensionDependencyResolver` for constraint checking
+- Checks both installed extension's dependencies and new version's dependencies against current catalog state
 
 #### UI
 
@@ -1260,8 +1259,9 @@ New column on `catalog_extensions`:
 - No network calls in local-only mode
 - Admin must have `extensions.manage` permission
 - Auto-install is **not** enabled — updates are informational only
-- Dependency constraints on the installed extension can block update status
+- Dependency constraints can block update status (both installed extension's deps and new version's deps)
 - Update action reuses existing staged install workflow
+- Update preserves the existing `is_enabled` state
 
 For full design, see `docs/developer/extensions/updates.md`.
 

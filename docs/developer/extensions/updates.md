@@ -65,24 +65,35 @@ Remote catalog sync is a separate task that plugs into this system later. The de
 
 ## 5. Dependency Constraint Effects
 
-A dependency constraint on the installed extension **blocks** the update status only when:
+A dependency constraint **blocks** the update status when either check fails:
 
-1. The extension declares `dependencies` in its manifest
+**Check A — Installed extension's dependencies against new version:**
+1. The installed extension declares `dependencies` in its manifest
 2. The catalog's current version does **not** satisfy at least one declared constraint
 3. The catalog version is otherwise newer than the installed version
 
-If the constraint is satisfied → normal `update_available` status.
+**Check B — New version's dependencies against installed catalog entries:**
+1. The catalog entry declares `dependencies`
+2. One or more dependencies reference catalog extensions whose installed version does not satisfy the constraint
+3. The catalog version is otherwise newer than the installed version
 
-If the constraint is not satisfied → `blocked` status with the blocking dependency listed.
+If both checks pass → normal `update_available` status.
 
-**Example:**
+If either check fails → `blocked` status with the blocking dependency listed.
+
+**Example (Check A):**
 ```
-plugin:notes dependency on theme:default ^1.0.0
+Installed extension declares: theme:default ^1.0.0
 Catalog version for theme:default is 0.9.9
 0.9.9 does not satisfy ^1.0.0 → blocked
 ```
 
-**What about constraints the catalog entry declares?** The catalog's own `dependencies` field describes what the catalog entry requires to be installed. It does not affect update checks — it only affects install/enable validation. Update checks compare versions against the *installed extension's declared constraints* (its manifest).
+**Example (Check B):**
+```
+Catalog entry declares: plugin:notes >=2.0.0
+Installed plugin:notes version is 1.5.0
+1.5.0 does not satisfy >=2.0.0 → blocked
+```
 
 ---
 
@@ -110,7 +121,9 @@ Add two columns to the existing catalog DataTable:
 
 ### 7b. New action button
 
-When status is `update_available` and no blocking deps: add an **"Update"** action button (same workflow as existing install — staged copy from staging directory, just with different flash message: "Extension updated to {version}.").
+When status is `update_available` and no blocking deps: add an **"Update"** action button. The update action reuses the existing staged install workflow (same validations, same staged copy process, same target paths). Flash message: "Extension updated to {version}."
+
+**Important:** The update action **preserves the existing `is_enabled` state** — if the extension was enabled before the update, it remains enabled after.
 
 When status is `blocked`: show **"Update"** button but disabled, with tooltip explaining the blocking dependency.
 
@@ -179,12 +192,11 @@ readonly class ExtensionUpdate
 
 ### Scope for this iteration:
 
-1. **Migration** — add `available_version` column to `catalog_extensions` (defaults to same as `version`, for future remote sync compatibility)
-2. **Repository** — add `findAllInstalledWithCatalog()` method to fetch all installed catalog entries
-3. **UpdateChecker service** — the core comparison logic
-4. **Controller** — `GET /admin/extensions/catalog/updates` endpoint that returns the update statuses (called by JS or page render)
-5. **UI** — add "Local Version" and "Update" columns to the catalog table; add update action button
-6. **Docs** — create this file (updates.md)
+1. **Repository** — add `findAllInstalledWithCatalog()` method to fetch all installed catalog entries
+2. **UpdateChecker service** — the core comparison logic
+3. **Controller** — `GET /admin/extensions/catalog/updates` endpoint that returns the update statuses (called by JS or page render)
+4. **UI** — add "Local Version" and "Update" columns to the catalog table; add update action button
+5. **Docs** — create this file (updates.md)
 
 ### Out of scope for this slice:
 
@@ -194,18 +206,19 @@ readonly class ExtensionUpdate
 - Auto-install
 - Filesystem extensions page update indicators
 - Version history / changelog display
+- New catalog columns (add only when remote sync is built — use existing `version` field)
 
 ---
 
-## Data Model Changes
+## Deferred Data Model Changes
 
-### `catalog_extensions` table — new column
+### `catalog_extensions` table — `available_version` column (future)
 
 | Column | Type | Default | Description |
-|--------|------|---------|-----|
+|--------|------|--|-----|
 | `available_version` | TEXT | `''` | Latest available version (synced from remote in future; locally set to match `version`) |
 
-This column is the bridge between local and future remote sync. When remote sync is implemented, `available_version` will be updated by the sync process while `version` reflects the last locally approved version. For local-only mode, `available_version = version`.
+This column is the bridge between local and future remote sync. When remote sync is implemented, `available_version` will be updated by the sync process while `version` reflects the last locally approved version. For local-only mode, `available_version = version`. **Do not add in Phase 2.**
 
 ---
 
@@ -217,7 +230,6 @@ This column is the bridge between local and future remote sync. When remote sync
 | `app/Models/CatalogExtensionRepository.php` | **Modify** — add `findAllInstalledWithCatalog()` |
 | `app/Controllers/Admin/ExtensionsController.php` | **Modify** — add `handleUpdates()` + `renderUpdates()` |
 | `app/Views/admin/extensions/catalog.php` | **Modify** — add columns + update button |
-| `database/migrations/0050_add_available_version_to_catalog_extensions.php` | **Create** — new migration |
 | `routes/web.php` | **Modify** — add update check route(s) |
 | `docs/developer/extensions/updates.md` | **Create** — this file |
 | `DESIGN.md` | **Modify** — add Updates module section |
