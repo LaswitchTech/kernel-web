@@ -1212,20 +1212,58 @@ The administration system provides user and group management, permission managem
 - Uses the `panel.php` layout
 - Admin sidebar populated via MenuRegistry (`admin-sidebar`)
 
-### Updates Module (Future)
+### Updates Module (Partial — Extension Update Checks)
 
-Administration should eventually include an Updates section that separates update checks into three categories:
+Extension update checks compare installed extension versions against catalog versions and surface available updates in the admin UI.
 
-| Category | Source | Description |
-|------|----|-----|
-| Kernel updates | Remote repository / release tags | Kernel-Web core version updates |
-| Application updates | Local application override or config | Application-specific patches or hotfixes |
-| Extension updates | Extension catalog | Installed extension version checks |
+**Scope:** Local-only (Phase 2). No remote sync, no auto-install.
 
-**Design Rules:**
-- Updates should be a future admin module/foundation area
-- Do not implement updates until the remote catalog and update infrastructure exists
-- Extension update checks depend on the remote catalog sync system
+#### Update Status Types
+
+| Status | Key | Condition |
+|--------|-----|-----------|
+| Up-to-date | `up_to_date` | installed version equals catalog version |
+| Update available | `update_available` | catalog version is newer (by semver) |
+| Newer than catalog | `newer_than_catalog` | installed version is newer than catalog version |
+| No catalog entry | `no_catalog_entry` | installed extension has no catalog record |
+| Blocked | `blocked` | catalog version newer but dependency constraint not satisfied |
+| Invalid | `invalid` | on-disk manifest is missing or invalid |
+
+#### Data Model
+
+New column on `catalog_extensions`:
+
+| Column | Type | Default | Description |
+|--------|------|--|-----|
+| `available_version` | TEXT | `''` | Latest available version (locally mirrors `version`; future remote sync target) |
+
+#### Service
+
+`ExtensionUpdateChecker` — pure comparison service:
+
+- `checkAll()` → `ExtensionUpdate[]` keyed by slug
+- `check(string $slug)` → `?ExtensionUpdate`
+- Reads installed version from on-disk manifest
+- Reads latest version from `catalog_extensions.available_version`
+- Uses `version_compare()` + `ExtensionDependencyResolver` for constraint checking
+
+#### UI
+
+- "Local Version" column on catalog table (from on-disk manifest)
+- "Update" status badge column
+- "Update" action button (only when `update_available` + no blockers)
+- Same staged install workflow, just triggered by update button
+
+#### Design Rules
+
+- Update checks are read-only — no filesystem writes
+- No network calls in local-only mode
+- Admin must have `extensions.manage` permission
+- Auto-install is **not** enabled — updates are informational only
+- Dependency constraints on the installed extension can block update status
+- Update action reuses existing staged install workflow
+
+For full design, see `docs/developer/extensions/updates.md`.
 
 ---
 

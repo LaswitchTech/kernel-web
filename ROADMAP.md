@@ -35,7 +35,7 @@ Core infrastructure improvements that unlock future feature work.
 - [x] Extension uninstall workflow (reverse of install: run down migrations, disable hooks, remove files)
 - [x] Extension dependency resolver — design + first slice (Resolver service + controller integration)
 - [x] Dynamic LESS compilation (wikimedia/less.php, /css route, cache, theme/layout/plugin merge)
-- [ ] Extension update checks (local → catalog → remote)
+- [x] Extension update checks (design — local-only, no remote sync, no auto-install)
 - [ ] Documentation plugin (render markdown docs at clean routes)
 - [x] Extensions UI polish (improved listing, filtering, status indicators)
 - [x] Developer mode tools foundation (conditional code paths, permission gates)
@@ -119,7 +119,7 @@ These are planned or requested but are out of scope for the current development 
 | DataTables | Standardized | Consistent configuration across all admin tables |
 | Developer mode | Implemented | Admin page at /admin/developer, sidebar menu (debug-gated), planned-tools cards |
 | LESS compilation | Implemented | Hybrid: npm build + PHP dynamic merge at /css |
-| Updates module | Not implemented | Documented for Phase 2 |
+| Extension update checks | Designed | Design doc at docs/developer/extensions/updates.md — local-only comparison service, status types, catalog column, UI columns, dependency blocking. No remote sync, no auto-install. |
 | Documentation plugin | Not implemented | Documented for Phase 2 |
 | Setup session | Fixed | Session cookie config applied from auth.php |
 | Validation convention | Implemented | Keyed field errors, documented in /docs/developer/kernel/validation.md |

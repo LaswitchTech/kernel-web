@@ -350,16 +350,16 @@ Triggered when an installed catalog extension is uninstalled.
 - Runtime plugin activation controlled by catalog `is_enabled` for installed catalog extensions
 - Uninstall installed catalog entries (disable-first rule, lifecycle hook, file removal, catalog preservation)
 - Extension dependency resolution (resolver service, install/enable/disable/uninstall enforcement via flash messages)
+- Extension update checks design (local-only: on-disk manifest vs catalog version, status types, dependency blocking, UI columns — see updates.md)
 
 ## Deferred
 
 - Remote download
 - ZIP archive extraction
 - Upload / marketplace browsing
-- Remote updates
+- Remote updates (remote catalog sync — Phase 3)
 - Licensing
 - Dependency resolution UI
-- Dependency resolver implementation (design + first slice: resolver service + controller integration)
 - Theme switching
 - Layout switching
 - Non-reversible status transitions (pending --> approved can be changed back)
