@@ -79,6 +79,17 @@ class ExtensionsController extends Controller
             );
         }
 
+        // Compute update status for installed extensions.
+        $libBase = realpath(__DIR__ . '/../../../lib');
+        $updates = [];
+        if ($libBase !== false) {
+            $updateChecker = new \App\Services\Extensions\ExtensionUpdateChecker(
+                new \App\Models\CatalogExtensionRepository($this->container->get('db')),
+                $libBase
+            );
+            $updates = $updateChecker->checkAll();
+        }
+
         $pageTitle  = 'Extension Catalog';
         $activeSection = 'Admin Extensions';
         $appName    = $config['name'] ?? 'Kernel-Web';

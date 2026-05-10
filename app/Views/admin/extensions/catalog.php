@@ -103,11 +103,13 @@
                         <th>Slug</th>
                         <th>Type</th>
                         <th>Version</th>
+                        <th>Local Version</th>
                         <th>Dependencies</th>
                         <th>Status</th>
                         <th>Installed</th>
                         <th>Enabled</th>
                         <th>Blocked</th>
+                        <th>Update</th>
                         <th class="text-nowrap">Actions</th>
                     </tr>
                 </thead>
@@ -125,6 +127,15 @@
                             <?= ucfirst(htmlspecialchars($ext['type'])) ?>
                         </td>
                         <td class="text-muted small"><?= $ext['version'] !== '0.0.0' ? htmlspecialchars($ext['version']) : '<span class="text-muted fst-italic">—</span>' ?></td>
+                        <td class="text-muted small">
+                            <?php
+                            $update = $updates[$ext['slug']] ?? null;
+                            if ($update !== null && $update->installedVersion !== null): ?>
+                                <code><?= htmlspecialchars($update->installedVersion) ?></code>
+                            <?php else: ?>
+                                <span class="text-muted fst-italic">—</span>
+                            <?php endif; ?>
+                        </td>
                         <td>
                             <?php
                             $deps = $depAnalysis[(int) $ext['id']] ?? [];
@@ -269,6 +280,36 @@
                             <span class="text-muted small">—</span>
                             <?php endif; ?>
                         </td>
+                        <td class="text-center">
+                            <?php
+                            $update = $updates[$ext['slug']] ?? null;
+                            if ($update !== null):
+                                $badgeClass = 'secondary';
+                                $badgeLabel = '&mdash;';
+                                $badgeTitle = 'No update check available';
+                                if ($update->isUpToDate()):
+                                    $badgeClass = 'success';
+                                    $badgeLabel = 'Up-to-date';
+                                    $badgeTitle = 'Installed ' . htmlspecialchars($update->installedVersion) . ' matches catalog ' . htmlspecialchars($update->catalogVersion);
+                                elseif ($update->isBlocked()):
+                                    $badgeClass = 'warning text-dark';
+                                    $badgeLabel = 'Blocked';
+                                    $badgeTitle = implode("\n", $update->blockers);
+                                elseif ($update->isInvalid()):
+                                    $badgeClass = 'danger';
+                                    $badgeLabel = 'Invalid';
+                                    $badgeTitle = 'On-disk manifest is missing or invalid';
+                                endif;
+                            elseif ((int) $ext['is_installed'] === 1):
+                                $badgeClass = 'info text-dark';
+                                $badgeLabel = 'Up-to-date';
+                                $badgeTitle = 'Installed version matches catalog';
+                            endif;
+                            ?>
+                            <span class="badge bg-<?= htmlspecialchars($badgeClass) ?>" title="<?= htmlspecialchars($badgeTitle) ?>">
+                                <i class="bi bi-<?= htmlspecialchars($update->isUpToDate() || ((int) $ext['is_installed'] === 1 && $update !== null) ? 'check-circle' : ($update->isBlocked() ? 'exclamation-triangle' : ($update->isInvalid() ? 'x-circle' : 'info-circle')) ) ?> me-1"></i><?= $badgeLabel ?>
+                            </span>
+                        </td>
                         <td class="text-nowrap">
                             <div class="btn-group btn-group-sm" role="group">
                                 <?php if ((int) $ext['is_installed'] === 0 && $ext['status'] === 'approved'): ?>
@@ -318,7 +359,7 @@
 KernelWeb.dt.init('#admin-catalog-table', {
     order: [[0, 'asc']],
     columnDefs: [
-        { orderable: false, targets: [5, 6, 7, 8] }
+        { orderable: false, targets: [5, 6, 7, 8, 9, 10] }
     ]
 });
 </script>
