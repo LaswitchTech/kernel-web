@@ -16,7 +16,7 @@ Foundational work that should happen before major feature development.
 - [x] Add breadcrumbs to panel layout
 - [x] Add admin panel shortcut to topbar user menu (admin-only)
 - [x] Ensure all admin pages use panel layout consistently — audited (all 6 controllers use panel.php)
-- [x] Add tests for route registration, plugin lifecycle, and migrations — zero-dependency test framework with 3 suites (83 tests total)
+- [x] Add tests for route registration, plugin lifecycle, and migrations — zero-dependency test framework with 3 suites (86 assertions total)
 - [x] Document menu registry and hook registry in `/docs` — already documented (menu-registry.md, layout-hook-registry.md)
 - [x] Finalize and stabilize the `panel.php` layout — audited (stable, no issues)
 - [x] Add a `blank.php` layout override example for auth pages — polished (local assets, hooks)

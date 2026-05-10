@@ -3,8 +3,8 @@
 /**
  * Migration runner tests.
  *
- * Tests MigrationRunner with a temporary SQLite database (in-memory) and
- * real migration files from the tasks plugin.
+ * Tests MigrationRunner with an in-memory SQLite database and inline-created
+ * migration files using the same class-naming convention as the kernel.
  */
 
 require __DIR__ . '/bootstrap.php';
