@@ -287,27 +287,32 @@
                                 $badgeClass = 'secondary';
                                 $badgeLabel = '&mdash;';
                                 $badgeTitle = 'No update check available';
+                                $badgeIcon = 'info-circle';
                                 if ($update->isUpToDate()):
                                     $badgeClass = 'success';
                                     $badgeLabel = 'Up-to-date';
                                     $badgeTitle = 'Installed ' . htmlspecialchars($update->installedVersion) . ' matches catalog ' . htmlspecialchars($update->catalogVersion);
+                                    $badgeIcon = 'check-circle';
                                 elseif ($update->isBlocked()):
                                     $badgeClass = 'warning text-dark';
                                     $badgeLabel = 'Blocked';
                                     $badgeTitle = implode("\n", $update->blockers);
+                                    $badgeIcon = 'exclamation-triangle';
                                 elseif ($update->isInvalid()):
                                     $badgeClass = 'danger';
                                     $badgeLabel = 'Invalid';
                                     $badgeTitle = 'On-disk manifest is missing or invalid';
+                                    $badgeIcon = 'x-circle';
                                 endif;
                             elseif ((int) $ext['is_installed'] === 1):
                                 $badgeClass = 'info text-dark';
                                 $badgeLabel = 'Up-to-date';
                                 $badgeTitle = 'Installed version matches catalog';
+                                $badgeIcon = 'check-circle';
                             endif;
                             ?>
                             <span class="badge bg-<?= htmlspecialchars($badgeClass) ?>" title="<?= htmlspecialchars($badgeTitle) ?>">
-                                <i class="bi bi-<?= htmlspecialchars($update->isUpToDate() || ((int) $ext['is_installed'] === 1 && $update !== null) ? 'check-circle' : ($update->isBlocked() ? 'exclamation-triangle' : ($update->isInvalid() ? 'x-circle' : 'info-circle')) ) ?> me-1"></i><?= $badgeLabel ?>
+                                <i class="bi bi-<?= htmlspecialchars($badgeIcon) ?> me-1"></i><?= $badgeLabel ?>
                             </span>
                         </td>
                         <td class="text-nowrap">
