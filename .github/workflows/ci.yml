@@ -52,6 +52,22 @@ jobs:
           fi
           echo "All manifests valid"
 
+  test-runner:
+    name: Run Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          coverage: none
+
+      - name: Run test suite
+        run: php tests/run.php
+
   gitignore:
     name: Check .gitignore
     runs-on: ubuntu-latest

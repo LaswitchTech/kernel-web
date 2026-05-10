@@ -16,7 +16,7 @@ Foundational work that should happen before major feature development.
 - [x] Add breadcrumbs to panel layout
 - [x] Add admin panel shortcut to topbar user menu (admin-only)
 - [x] Ensure all admin pages use panel layout consistently — audited (all 6 controllers use panel.php)
-- [ ] Add tests for route registration, plugin lifecycle, and migrations — **deferred**: no test framework exists (Phase 2 candidate)
+- [x] Add tests for route registration, plugin lifecycle, and migrations — zero-dependency test framework with 3 suites (83 tests total)
 - [x] Document menu registry and hook registry in `/docs` — already documented (menu-registry.md, layout-hook-registry.md)
 - [x] Finalize and stabilize the `panel.php` layout — audited (stable, no issues)
 - [x] Add a `blank.php` layout override example for auth pages — polished (local assets, hooks)
@@ -24,7 +24,7 @@ Foundational work that should happen before major feature development.
 - [x] Document validation error convention (keyed field errors) — already documented (docs/developer/kernel/validation.md)
 - [x] Design extensible Profile Modal system (UI structure, core sections, plugin hook, API design, security rules)
 
-**Phase 1 Status:** 14 of 15 tasks completed. The remaining task (Add tests) is deferred — no test framework exists. Phase 1 stabilization is closed.
+**Phase 1 Status:** 15 of 15 tasks completed. Phase 1 stabilization is closed.
 
 ---
 
@@ -126,7 +126,7 @@ These are planned or requested but are out of scope for the current development 
 | GitHub workflows | Implemented | CI (PHP lint, JSON validate) + release workflow |
 | Contributing docs | Implemented | Documented in /docs/contributing.md |
 | Runtime DB safety | Hardened | DB files excluded from public/, .gitignore updated |
-| Phase 1 stabilization | Closed | 14/15 tasks done — tests deferred (no framework) |
+| Phase 1 stabilization | Closed | 15/15 tasks done |
 | Profile Modal | Implemented, full plugin architecture | API Tokens section with create/list/revoke UI. Section registry (ProfileModal class), /api/profile + /api/profile/sections endpoints, plugin tab rendering via JS, permission-gated sections. |
 | OAuth | Deferred | See Deferred section |
 | Licensing | Deferred | See Deferred section |
