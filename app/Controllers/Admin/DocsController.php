@@ -36,7 +36,7 @@ class DocsController
         }
 
         $html = $this->renderMarkdown($mdContent);
-        $toc = $this->extractTOC($content);
+        $toc = $this->extractTOC($mdContent);
         $relativePath = ($filePath !== null && is_file($filePath))
             ? $this->getRelativePath($filePath)
             : '';
@@ -44,9 +44,10 @@ class DocsController
             ? $this->listSiblings($filePath)
             : [];
 
+        $appName  = 'Kernel-Web';
         $pageTitle = ($filePath === null || !is_file($filePath))
             ? 'Page Not Found'
-            : $this->pageTitle($content);
+            : $this->pageTitle($mdContent);
         $user = $_SESSION['user'] ?? ['username' => 'admin'];
         $breadcrumbs = ($filePath === null || !is_file($filePath))
             ? [['label' => 'Docs', 'url' => '/docs/index'], ['label' => 'Not Found']]
@@ -326,7 +327,7 @@ class DocsController
         if (preg_match('/^>\s?(.*)/', $block)) {
             $lines = explode("\n", $block);
             $quoteLines = array_map(function ($l) {
-                return ltrim(preg_replace('/^>\s?/', '', $l), ' ');
+                return htmlspecialchars(ltrim(preg_replace('/^>\s?/', '', $l), ' '));
             }, $lines);
             return '<blockquote>' . implode("\n", $quoteLines) . '</blockquote>';
         }
@@ -381,8 +382,8 @@ class DocsController
     private function inline(string $text): string
     {
         $text = preg_replace('/`([^`]+)`/', '<code>$1</code>', $text);
-        $text = preg_replace('/!\[([^\]]*)\]\(([^)]+)\)/', '<img src="$2" alt="$1">', $text);
-        $text = preg_replace('/\[([^\]]+)\]\(([^)]+)\)/', '<a href="$2">$1</a>', $text);
+        $text = preg_replace('/!\[([^\]]*)\]\(([^)]+)\)/', '<img src="'. htmlspecialchars('$2', ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') .'" alt="'. htmlspecialchars('$1', ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') .'">', $text);
+        $text = preg_replace('/\[([^\]]+)\]\(([^)]+)\)/', '<a href="'. htmlspecialchars('$2', ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') .'">'. htmlspecialchars('$1', ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') .'</a>', $text);
         $text = preg_replace('/\*\*(.+?)\*\*/', '<strong>$1</strong>', $text);
         $text = preg_replace('/__(.+?)__/', '<strong>$1</strong>', $text);
         $text = preg_replace('/\*(.+?)\*/', '<em>$1</em>', $text);
