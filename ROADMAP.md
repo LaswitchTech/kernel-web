@@ -119,7 +119,7 @@ These are planned or requested but are out of scope for the current development 
 | DataTables | Standardized | Consistent configuration across all admin tables |
 | Developer mode | Implemented | Admin page at /admin/developer, sidebar menu (debug-gated), planned-tools cards |
 | LESS compilation | Implemented | Hybrid: npm build + PHP dynamic merge at /css |
-| Extension update checks | Designed | Design doc at docs/developer/extensions/updates.md — local-only comparison service, status types, catalog column, UI columns, dependency blocking. No remote sync, no auto-install. |
+| Extension update checks | Implemented | ExtensionUpdateChecker + ExtensionUpdate VO, controller integration, catalog table UI columns + badges, dependency blocking (Check A + Check B), design doc at docs/developer/extensions/updates.md — local-only comparison, no remote sync, no auto-install. |
 | Documentation plugin | Not implemented | Documented for Phase 2 |
 | Setup session | Fixed | Session cookie config applied from auth.php |
 | Validation convention | Implemented | Keyed field errors, documented in /docs/developer/kernel/validation.md |
