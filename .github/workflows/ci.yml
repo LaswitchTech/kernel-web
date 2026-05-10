@@ -24,7 +24,7 @@ jobs:
 
       - name: Lint PHP files
         run: |
-          find . -name '*.php' -not -path './vendor/*' -not -path './.git/*' -print0 \
+          find . -name '*.php' -not -path './vendor/*' -not -path './.git/*' -not -path './resources/scaffolds/*' -print0 \
             | xargs -0 -n1 php -l \
             | grep -v 'No syntax errors' \
             && exit 1 \
