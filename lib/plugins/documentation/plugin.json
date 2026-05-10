@@ -1,0 +1,23 @@
+{
+    "name": "documentation",
+    "version": "0.1.0",
+    "description": "Render markdown documentation from /docs at clean routes",
+    "enabled": true,
+    "routes": [
+        ["get", "/docs/{path*}", "Controllers\\Admin\\DocsController@index", []]
+    ],
+    "permissions": ["docs.read"],
+    "menus": [
+        {
+            "menu": "sidebar",
+            "item": {
+                "name": "docs",
+                "label": "Docs",
+                "url": "/docs/index",
+                "icon": "bi-book",
+                "permission": "docs.read",
+                "order": 100
+            }
+        }
+    ]
+}

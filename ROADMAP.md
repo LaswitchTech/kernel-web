@@ -36,7 +36,7 @@ Core infrastructure improvements that unlock future feature work.
 - [x] Extension dependency resolver — design + first slice (Resolver service + controller integration)
 - [x] Dynamic LESS compilation (wikimedia/less.php, /css route, cache, theme/layout/plugin merge)
 - [x] Extension update checks (design — local-only, no remote sync, no auto-install)
-- [ ] Documentation plugin (render markdown docs at clean routes)
+- [x] Documentation plugin (render markdown docs at clean routes)
 - [x] Extensions UI polish (improved listing, filtering, status indicators)
 - [x] Developer mode tools foundation (conditional code paths, permission gates)
 - [x] Profile Modal tabbed UI foundation (convert static modal to tabs, Overview section)
@@ -120,7 +120,7 @@ These are planned or requested but are out of scope for the current development 
 | Developer mode | Implemented | Admin page at /admin/developer, sidebar menu (debug-gated), planned-tools cards |
 | LESS compilation | Implemented | Hybrid: npm build + PHP dynamic merge at /css |
 | Extension update checks | Implemented | ExtensionUpdateChecker + ExtensionUpdate VO, controller integration, catalog table UI columns + badges, dependency blocking (Check A + Check B), design doc at docs/developer/extensions/updates.md — local-only comparison, no remote sync, no auto-install. |
-| Documentation plugin | Not implemented | Documented for Phase 2 |
+| Documentation plugin | Implemented | Plugin at lib/plugins/documentation/, DocsController with lightweight markdown renderer (headers, bold, italic, code, lists, links, images), panel layout with sidebar TOC + prev/next nav, breadcrumbs, Edit on GitHub link — see lib/plugins/documentation/ |
 | Setup session | Fixed | Session cookie config applied from auth.php |
 | Validation convention | Implemented | Keyed field errors, documented in /docs/developer/kernel/validation.md |
 | GitHub workflows | Implemented | CI (PHP lint, JSON validate) + release workflow |
