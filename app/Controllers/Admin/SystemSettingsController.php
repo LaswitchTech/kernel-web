@@ -17,16 +17,12 @@ use App\Services\SystemSettingService;
  * Both routes are protected by ['WebAuth', 'WebPermission:admin'].
  *
  * Phase 1 managed settings:
- *   app.name                    Application display name
- *   app.url                     Public-facing URL
- *   notifications.email_enabled Enable/disable email delivery
- *   monitoring.check_interval   Default monitoring check interval (seconds)
+ *   app.name    Application display name
+ *   app.url     Public-facing URL
  *
  * Validation rules:
- *   app.name              required, max 100 chars
- *   app.url               required, must start with http:// or https://, max 255 chars
- *   email_enabled         checkbox (bool)
- *   check_interval        integer, 5–3600
+ *   app.name    required, max 100 chars
+ *   app.url     required, must start with http:// or https://, max 255 chars
  *
  * Sensitive values (SMTP credentials, passwords) are never displayed
  * or managed here.
@@ -44,10 +40,8 @@ class SystemSettingsController extends Controller
         $service = $this->service();
 
         $settings = [
-            'app_name'           => $service->getString('app.name'),
-            'app_url'            => $service->getString('app.url'),
-            'email_enabled'      => $service->getBool('notifications.email_enabled'),
-            'check_interval'     => $service->getInt('monitoring.check_interval'),
+            'app_name' => $service->getString('app.name'),
+            'app_url'  => $service->getString('app.url'),
         ];
 
         $pageTitle     = 'Settings';
@@ -78,10 +72,8 @@ class SystemSettingsController extends Controller
         $service = $this->service();
 
         $input = [
-            'app_name'       => trim($_POST['app_name']       ?? ''),
-            'app_url'        => trim($_POST['app_url']        ?? ''),
-            'email_enabled'  => isset($_POST['email_enabled']),
-            'check_interval' => trim($_POST['check_interval'] ?? ''),
+            'app_name' => trim($_POST['app_name'] ?? ''),
+            'app_url'  => trim($_POST['app_url']  ?? ''),
         ];
 
         $errors = $this->validate($input);
@@ -89,10 +81,8 @@ class SystemSettingsController extends Controller
         if (!empty($errors)) {
             // Re-populate $settings from POST for the re-render.
             $settings = [
-                'app_name'       => $input['app_name'],
-                'app_url'        => $input['app_url'],
-                'email_enabled'  => $input['email_enabled'],
-                'check_interval' => $input['check_interval'] !== '' ? (int) $input['check_interval'] : $service->getInt('monitoring.check_interval'),
+                'app_name' => $input['app_name'],
+                'app_url'  => $input['app_url'],
             ];
 
             $pageTitle     = 'Settings';
@@ -114,17 +104,13 @@ class SystemSettingsController extends Controller
         }
 
         // Persist
-        $service->set('app.name',                    $input['app_name']);
-        $service->set('app.url',                     rtrim($input['app_url'], '/'));
-        $service->set('notifications.email_enabled', $input['email_enabled']);
-        $service->set('monitoring.check_interval',   (int) $input['check_interval']);
+        $service->set('app.name', $input['app_name']);
+        $service->set('app.url',  rtrim($input['app_url'], '/'));
 
         $actorId = (int) ($this->container->get('principal')['user']['id'] ?? 0);
         $this->auditLog($actorId, 'settings.update', 'system_settings', 0, [
-            'app_name'       => $input['app_name'],
-            'app_url'        => rtrim($input['app_url'], '/'),
-            'email_enabled'  => $input['email_enabled'] ? 'true' : 'false',
-            'check_interval' => (int) $input['check_interval'],
+            'app_name' => $input['app_name'],
+            'app_url'  => rtrim($input['app_url'], '/'),
         ]);
 
         $this->flash('success', 'System settings saved.');
@@ -157,14 +143,6 @@ class SystemSettingsController extends Controller
             $errors['app_url'] = 'Application URL must start with http:// or https://.';
         } elseif (strlen($input['app_url']) > 255) {
             $errors['app_url'] = 'Application URL must be 255 characters or fewer.';
-        }
-
-        if ($input['check_interval'] === '') {
-            $errors['check_interval'] = 'Check interval is required.';
-        } elseif (!ctype_digit($input['check_interval'])) {
-            $errors['check_interval'] = 'Check interval must be a positive integer.';
-        } elseif ((int) $input['check_interval'] < 5 || (int) $input['check_interval'] > 3600) {
-            $errors['check_interval'] = 'Check interval must be between 5 and 3600 seconds.';
         }
 
         return $errors;

@@ -9,16 +9,17 @@
 ### BUG-1: Settings NetMon leftovers
 **Severity:** Medium
 **Location:** `app/Controllers/Admin/SystemSettingsController.php`
+**Status:** FIXED (commit TBD)
 **Details:**
-- `monitoring.check_interval` setting still references NetMon monitoring. Should be removed.
-- `notifications.email_enabled` may be a NetMon leftover. Need to confirm if notification system is implemented.
-**Action:** Remove dead settings. Confirm notification settings are not in use.
+- `monitoring.check_interval` — NetMon monitoring. Removed from controller and view.
+- `notifications.email_enabled` — notification system exists as stub code in `app/Modules/Notifications/` (controllers, services, channels, repos) but has NO routes, NO migrations, NO plugin manifest. Dead code. Replaced with informational note in settings view.
+**Action:** Monitoring card removed from view. Notification section kept but marked as unimplemented. Controller updated to only manage app.name and app.url.
 
 ### BUG-2: Scaffold page topbar layout
 **Severity:** Medium
-**Location:** `app/Views/admin/developer/scaffold.php`
-**Details:** Page content renders above the fixed topbar. The topbar should be fixed to the top and content should appear below it.
-**Action:** Check panel layout CSS and scaffold view wrapper class. Likely needs `mt-5` or similar margin-top class on content container.
+**Location:** `app/Views/admin/developer/scaffold.php` / `app/Views/layouts/panel.php`
+**Details:** User reports page content rendering above the topbar. Analysis: scaffold.php is a content fragment rendered via panel.php's `#app-page-content` wrapper (padding: 1.5rem). The topbar uses `position: sticky` (not `fixed`) in a flex column. The layout structure is correct. The reported issue is likely CSS-specific. No structural bug found in scaffold view or panel layout.
+**Action:** Requires live browser inspection to diagnose. Deferred to sprint 2.
 
 ### BUG-3: Settings missing plugin hooks
 **Severity:** Low (feature gap, not a bug)
@@ -178,8 +179,8 @@ None. All items have been mapped above.
 ## Action Items
 
 ### Immediate (this sprint)
-- [ ] BUG-1: Remove NetMon leftovers from SystemSettingsController
-- [ ] BUG-2: Fix scaffold page topbar margin
+- [x] BUG-1: Remove NetMon leftovers from SystemSettingsController — Monitoring card removed, Notification section replaced with informational note. Controller only manages app.name and app.url.
+- [ ] BUG-2: Fix scaffold page topbar margin — requires live browser inspection
 - [ ] ARCH-1: Draft mailer design in DESIGN.md
 
 ### Next sprint
