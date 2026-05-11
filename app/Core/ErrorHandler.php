@@ -102,18 +102,25 @@ class ErrorHandler
      */
     private function statusFromException(\Throwable $e): int
     {
-        return match (true) {
-            $e instanceof \InvalidArgumentException  => 400,
-            $e instanceof \OverflowException         => 400,
-            $e instanceof \UnderflowException        => 400,
-            $e instanceof \RangeException            => 400,
-            $e instanceof \OutOfRangeException       => 400,
-            $e instanceof \LengthException           => 400,
-            $e instanceof \DomainException           => 422,
-            $e instanceof \OutOfBoundsException      => 404,
-            $e instanceof \UnexpectedValueException  => 422,
-            default                                  => 500,
-        };
+        if ($e instanceof \InvalidArgumentException
+            || $e instanceof \OverflowException
+            || $e instanceof \UnderflowException
+            || $e instanceof \RangeException
+            || $e instanceof \OutOfRangeException
+            || $e instanceof \LengthException
+        ) {
+            return 400;
+        }
+        if ($e instanceof \DomainException) {
+            return 422;
+        }
+        if ($e instanceof \OutOfBoundsException) {
+            return 404;
+        }
+        if ($e instanceof \UnexpectedValueException) {
+            return 422;
+        }
+        return 500;
     }
 
     /**
@@ -174,15 +181,32 @@ class ErrorHandler
 
     private function genericMessage(int $status): string
     {
-        return match ($status) {
-            400     => 'Bad Request',
-            401     => 'Unauthorized',
-            403     => 'Forbidden',
-            404     => 'Not Found',
-            405     => 'Method Not Allowed',
-            422     => 'Unprocessable Entity',
-            500     => 'Internal Server Error',
-            default => 'Error',
-        };
+        return $this->genericMessageFromStatus($status);
+    }
+
+    private function genericMessageFromStatus(int $status): string
+    {
+        if ($status === 400) {
+            return 'Bad Request';
+        }
+        if ($status === 401) {
+            return 'Unauthorized';
+        }
+        if ($status === 403) {
+            return 'Forbidden';
+        }
+        if ($status === 404) {
+            return 'Not Found';
+        }
+        if ($status === 405) {
+            return 'Method Not Allowed';
+        }
+        if ($status === 422) {
+            return 'Unprocessable Entity';
+        }
+        if ($status === 500) {
+            return 'Internal Server Error';
+        }
+        return 'Error';
     }
 }

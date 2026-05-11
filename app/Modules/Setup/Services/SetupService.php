@@ -180,14 +180,14 @@ class SetupService
      */
     public function buildDatabase(string $driver, array $params = []): DatabaseInterface
     {
-        return match ($driver) {
-            'sqlite' => new SQLiteDriver(
+        if ($driver === 'sqlite') {
+            return new SQLiteDriver(
                 $params['path'] ?? $this->rootPath . '/data/app.db'
-            ),
-            default  => throw new \RuntimeException(
-                "Database driver '{$driver}' is not yet supported."
-            ),
-        };
+            );
+        }
+        throw new \RuntimeException(
+            "Database driver '{$driver}' is not yet supported."
+        );
     }
 
     // -------------------------------------------------------------------------

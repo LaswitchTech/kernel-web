@@ -41,13 +41,17 @@ class TaskController extends Controller
         }
 
         // Fetch the task list for the active scope.
-        $tasks = match ($scope) {
-            'mine'       => $service->getForUser($userId),
-            'overdue'    => $service->getOverdueForUser($userId),
-            'due-today'  => $service->getDueTodayForUser($userId),
-            'unassigned' => $service->getUnassigned(),
-            default      => $service->getAll(),
-        };
+        if ($scope === 'mine') {
+            $tasks = $service->getForUser($userId);
+        } elseif ($scope === 'overdue') {
+            $tasks = $service->getOverdueForUser($userId);
+        } elseif ($scope === 'due-today') {
+            $tasks = $service->getDueTodayForUser($userId);
+        } elseif ($scope === 'unassigned') {
+            $tasks = $service->getUnassigned();
+        } else {
+            $tasks = $service->getAll();
+        }
 
         // Summary counts are always for the logged-in user regardless of scope.
         $countOpen       = $service->countOpenForUser($userId);
@@ -375,12 +379,16 @@ class TaskController extends Controller
      */
     private function entityUrl(string $entityType, int $entityId): string
     {
-        return match ($entityType) {
-            'device'   => '/devices/'   . $entityId . '#tasks',
-            'alert'    => '/alerts/'    . $entityId,
-            'finding'  => '/discovery/' . $entityId,
-            default    => '/tasks',
-        };
+        if ($entityType === 'device') {
+            return '/devices/' . $entityId . '#tasks';
+        }
+        if ($entityType === 'alert') {
+            return '/alerts/' . $entityId;
+        }
+        if ($entityType === 'finding') {
+            return '/discovery/' . $entityId;
+        }
+        return '/tasks';
     }
 
     private function ctx(): array

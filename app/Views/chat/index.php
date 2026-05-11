@@ -52,12 +52,14 @@ use App\Modules\Chat\Services\ChatService;
                 </thead>
                 <tbody>
                     <?php foreach ($rooms as $room):
-                        $typeBadge   = match ($room['type']) {
-                            'shared'  => 'bg-success-subtle text-success border border-success-subtle',
-                            'private' => 'bg-primary-subtle text-primary border border-primary-subtle',
-                            'system'  => 'bg-secondary-subtle text-secondary border border-secondary-subtle',
-                            default   => 'bg-secondary-subtle text-secondary border border-secondary-subtle',
-                        };
+                        $typeBadge   = 'bg-secondary-subtle text-secondary border border-secondary-subtle';
+                        if ($room['type'] === 'shared') {
+                            $typeBadge = 'bg-success-subtle text-success border border-success-subtle';
+                        } elseif ($room['type'] === 'private') {
+                            $typeBadge = 'bg-primary-subtle text-primary border border-primary-subtle';
+                        } elseif ($room['type'] === 'system') {
+                            $typeBadge = 'bg-secondary-subtle text-secondary border border-secondary-subtle';
+                        }
                         $typeLabel   = ChatService::ROOM_TYPE_LABELS[$room['type']] ?? $room['type'];
                         $userRole    = $room['user_role'] ?? null;
                         $unreadCount = (int) ($room['unread_count'] ?? 0);

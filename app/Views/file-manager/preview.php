@@ -44,12 +44,14 @@ use App\Modules\FileManager\Services\FileManagerService;
 
     <div class="d-flex align-items-center gap-2 flex-grow-1 min-width-0">
         <?php
-        $iconClass = match ($previewType) {
-            'image' => 'bi-file-image text-info',
-            'pdf'   => 'bi-file-pdf text-danger',
-            'text'  => 'bi-file-text text-body-secondary',
-            default => 'bi-file-earmark text-body-secondary',
-        };
+        $iconClass = 'bi-file-earmark text-body-secondary';
+        if ($previewType === 'image') {
+            $iconClass = 'bi-file-image text-info';
+        } elseif ($previewType === 'pdf') {
+            $iconClass = 'bi-file-pdf text-danger';
+        } elseif ($previewType === 'text') {
+            $iconClass = 'bi-file-text text-body-secondary';
+        }
         ?>
         <i class="bi <?= $iconClass ?> fs-5 flex-shrink-0"></i>
         <span class="fw-semibold text-truncate" title="<?= htmlspecialchars($filename) ?>">

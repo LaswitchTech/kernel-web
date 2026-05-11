@@ -10,22 +10,49 @@ namespace App\Core;
  */
 final class SettingsSection
 {
+    /** @var string */
+    public $id;
+    /** @var string */
+    public $label;
+    /** @var string */
+    public $column;
+    /** @var int */
+    public $order;
+    /** @var string|null */
+    public $permission;
+    /** @var callable|null */
+    public $render;
+    /** @var string[] */
+    public $keys;
+    /** @var callable|null */
+    public $validate;
+    /** @var callable|null */
+    public $save;
+    /** @var string */
+    public $source;
+
     public function __construct(
-        public readonly string    $id,
-        public readonly string    $label,
-        public readonly string    $column = 'left',
-        public readonly int       $order = 50,
-        public readonly ?string   $permission = null,
-        /** @var callable|null */
-        public readonly mixed     $render = null,
-        /** @var string[] */
-        public readonly array     $keys = [],
-        /** @var callable|null */
-        public readonly mixed     $validate = null,
-        /** @var callable|null */
-        public readonly mixed     $save = null,
-        public readonly string    $source = 'core',
+        string $id,
+        string $label,
+        string $column = 'left',
+        int $order = 50,
+        ?string $permission = null,
+        $render = null,
+        array $keys = [],
+        $validate = null,
+        $save = null,
+        string $source = 'core'
     ) {
+        $this->id = $id;
+        $this->label = $label;
+        $this->column = $column;
+        $this->order = $order;
+        $this->permission = $permission;
+        $this->render = $render;
+        $this->keys = $keys;
+        $this->validate = $validate;
+        $this->save = $save;
+        $this->source = $source;
         if (!preg_match('/^[a-z][a-z0-9_-]*$/', $id)) {
             throw new \InvalidArgumentException(
                 "Settings section ID must match '^[a-z][a-z0-9_-]*$', got: {$id}"

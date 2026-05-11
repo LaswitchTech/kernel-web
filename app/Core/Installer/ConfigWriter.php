@@ -156,15 +156,23 @@ class ConfigWriter
         return "[\n" . implode("\n", $lines) . "\n{$pad}]";
     }
 
-    private function formatScalar(mixed $value, int $depth): string
+    private function formatScalar($value, int $depth): string
     {
-        return match (true) {
-            is_array($value)  => $this->formatArray($value, $depth + 1),
-            is_bool($value)   => $value ? 'true' : 'false',
-            is_null($value)   => 'null',
-            is_int($value)    => (string) $value,
-            is_float($value)  => (string) $value,
-            default           => "'" . str_replace("'", "\\'", (string) $value) . "'",
-        };
+        if (is_array($value)) {
+            return $this->formatArray($value, $depth + 1);
+        }
+        if (is_bool($value)) {
+            return $value ? 'true' : 'false';
+        }
+        if (is_null($value)) {
+            return 'null';
+        }
+        if (is_int($value)) {
+            return (string) $value;
+        }
+        if (is_float($value)) {
+            return (string) $value;
+        }
+        return "'" . str_replace("'", "\\'", (string) $value) . "'";
     }
 }

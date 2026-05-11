@@ -171,13 +171,16 @@ $hasProblems = $devicesOffline > 0 || $openAlerts > 0 || $servicesDown > 0;
             <tbody>
 <?php foreach ($recentAlerts as $alert): ?>
 <?php
-    $statusBadge = match ($alert['status']) {
-        'open'         => ['class' => 'bg-danger',              'label' => 'Open'],
-        'resolved'     => ['class' => 'bg-success',             'label' => 'Resolved'],
-        'acknowledged' => ['class' => 'bg-warning text-dark',   'label' => "Ack'd"],
-        'suppressed'   => ['class' => 'bg-secondary',           'label' => 'Suppressed'],
-        default        => ['class' => 'bg-secondary',           'label' => htmlspecialchars($alert['status'])],
-    };
+    $statusBadge = ['class' => 'bg-secondary', 'label' => htmlspecialchars($alert['status'])];
+    if ($alert['status'] === 'open') {
+        $statusBadge = ['class' => 'bg-danger', 'label' => 'Open'];
+    } elseif ($alert['status'] === 'resolved') {
+        $statusBadge = ['class' => 'bg-success', 'label' => 'Resolved'];
+    } elseif ($alert['status'] === 'acknowledged') {
+        $statusBadge = ['class' => 'bg-warning text-dark', 'label' => "Ack'd"];
+    } elseif ($alert['status'] === 'suppressed') {
+        $statusBadge = ['class' => 'bg-secondary', 'label' => 'Suppressed'];
+    }
 
     $deviceLabel = ($alert['device_name'] ?? '') !== ''
         ? htmlspecialchars($alert['device_name'])
@@ -240,13 +243,16 @@ $hasProblems = $devicesOffline > 0 || $openAlerts > 0 || $servicesDown > 0;
             <tbody>
 <?php foreach ($recentChecks as $check): ?>
 <?php
-    $checkBadge = match ($check['status']) {
-        'online'  => ['class' => 'bg-success', 'label' => 'Online'],
-        'offline' => ['class' => 'bg-danger',  'label' => 'Offline'],
-        'timeout' => ['class' => 'bg-warning text-dark', 'label' => 'Timeout'],
-        'error'   => ['class' => 'bg-secondary', 'label' => 'Error'],
-        default   => ['class' => 'bg-secondary', 'label' => htmlspecialchars($check['status'])],
-    };
+    $checkBadge = ['class' => 'bg-secondary', 'label' => htmlspecialchars($check['status'])];
+    if ($check['status'] === 'online') {
+        $checkBadge = ['class' => 'bg-success', 'label' => 'Online'];
+    } elseif ($check['status'] === 'offline') {
+        $checkBadge = ['class' => 'bg-danger', 'label' => 'Offline'];
+    } elseif ($check['status'] === 'timeout') {
+        $checkBadge = ['class' => 'bg-warning text-dark', 'label' => 'Timeout'];
+    } elseif ($check['status'] === 'error') {
+        $checkBadge = ['class' => 'bg-secondary', 'label' => 'Error'];
+    }
 
     $latency = $check['latency_ms'] !== null
         ? (int) $check['latency_ms'] . ' ms'

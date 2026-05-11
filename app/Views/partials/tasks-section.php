@@ -52,13 +52,16 @@ $canManageTasks = in_array('tasks.manage', $permissions ?? [], true);
                 <tbody>
                 <?php foreach ($tasks as $t):
                     $statusLabel = TaskService::STATUS_LABELS[$t['status']] ?? $t['status'];
-                    $badgeClass  = match ($t['status']) {
-                        'open'        => 'bg-primary-subtle text-primary border border-primary-subtle',
-                        'in_progress' => 'bg-warning-subtle text-warning border border-warning-subtle',
-                        'completed'   => 'bg-success-subtle text-success border border-success-subtle',
-                        'canceled'    => 'bg-secondary-subtle text-secondary border border-secondary-subtle',
-                        default       => 'bg-secondary-subtle text-secondary border border-secondary-subtle',
-                    };
+                    $badgeClass = 'bg-secondary-subtle text-secondary border border-secondary-subtle';
+                    if ($t['status'] === 'open') {
+                        $badgeClass = 'bg-primary-subtle text-primary border border-primary-subtle';
+                    } elseif ($t['status'] === 'in_progress') {
+                        $badgeClass = 'bg-warning-subtle text-warning border border-warning-subtle';
+                    } elseif ($t['status'] === 'completed') {
+                        $badgeClass = 'bg-success-subtle text-success border border-success-subtle';
+                    } elseif ($t['status'] === 'canceled') {
+                        $badgeClass = 'bg-secondary-subtle text-secondary border border-secondary-subtle';
+                    }
                     $assignedName = '';
                     if ($t['assigned_type'] === 'user' && !empty($t['assigned_id'])) {
                         $assignedName = ($t['assigned_display'] ?? '') !== ''
