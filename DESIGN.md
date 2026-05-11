@@ -621,6 +621,7 @@ Architecture, User Guide, and Plugins are placeholders.
 - `docs/menu-registry.md` — menu registry reference
 - `docs/layout-hook-registry.md` — hook registry reference
 - `docs/root-htaccess.md` — root .htaccess reference
+- `docs/settings-hooks.md` — settings plugin hook system design
 
 To be expanded later:
 

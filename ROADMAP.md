@@ -46,7 +46,7 @@ Core infrastructure improvements that unlock future feature work.
 - [x] Plugin/theme/layout scaffold generator (design complete — see docs/developer/scaffolds.md)
 - [ ] Mailer foundation (default mail(), SMTP via plugin, settings hooks, templates)
 - [ ] Auth features (remember me, forgot password, email verification, 2FA)
-- [ ] Settings plugin hooks (extend system settings via registry)
+- [ ] Settings plugin hooks (extend system settings via registry) — designed at `docs/developer/settings-hooks.md`
 - [ ] CRUD test coverage (users, groups, permissions, tokens)
 - [ ] Remote catalog sync (periodic fetch of extension listings from a remote server)
 - [x] Extension manifest validation improvements (semver, dependency format)

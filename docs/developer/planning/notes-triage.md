@@ -22,9 +22,11 @@
 **Action:** Requires live browser inspection to diagnose. Deferred to sprint 2.
 
 ### BUG-3: Settings missing plugin hooks
-**Severity:** Low (feature gap, not a bug)
+**Severity:** Medium (feature gap, not a bug)
+**Location:** Design doc at `docs/developer/settings-hooks.md`
+**Status:** DESIGNED (not implemented)
 **Details:** SystemSettingsController has no extensibility mechanism for plugins to inject their own settings sections.
-**Action:** Add settings hook registry. Plugins register sections at key points (after core sections, etc.).
+**Action:** Design complete — see `docs/developer/settings-hooks.md`. Implementation: SettingsRegistry class + controller integration + settings.php loop. Plugin declares `keys`, `validate`, `save`, `render` callbacks. Sensitive values (passwords) never displayed.
 
 ---
 
@@ -171,7 +173,7 @@ None. All items have been mapped above.
 |----|----------|----------|------------|
 | ARCH-1 | Mailer abstraction | High (unlocks auth features) | None |
 | ARCH-2 | Multi-database architecture | Low (deferred to Phase 3+) | None |
-| ARCH-3 | Settings hooks | Medium (needed for SMTP plugin) | None |
+| ARCH-3 | Settings hooks | Medium (needed for SMTP plugin) | None — DESIGNED at `docs/developer/settings-hooks.md` |
 | ARCH-4 | Auth token architecture | High (unlocks remember/forgot/2FA) | ARCH-1 |
 
 ---
@@ -181,6 +183,7 @@ None. All items have been mapped above.
 ### Immediate (this sprint)
 - [x] BUG-1: Remove NetMon leftovers from SystemSettingsController — Monitoring card removed, Notification section replaced with informational note. Controller only manages app.name and app.url.
 - [ ] BUG-2: Fix scaffold page topbar margin — requires live browser inspection
+- [x] ARCH-3: Settings hooks design complete — see `docs/developer/settings-hooks.md`
 - [ ] ARCH-1: Draft mailer design in DESIGN.md
 
 ### Next sprint
