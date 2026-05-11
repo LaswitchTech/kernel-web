@@ -53,3 +53,21 @@ Releases use semantic versioning: `vX.Y.Z`
 - `stable`: requires PR + approval
 - `dev`: requires PR + approval
 - Releases are created via the [release workflow](../.github/workflows/release.yml)
+
+## Testing
+
+Kernel-Web uses a zero-dependency test framework (no Composer, no PHPUnit).
+
+```bash
+# Run all suites
+php tests/run.php
+
+# Run a single suite
+php tests/run.php router       # route registration
+php tests/run.php plugin       # plugin manifest and lifecycle
+php tests/run.php migration    # migration runner
+```
+
+See [Testing docs](developer/testing.md) for details on writing new test suites.
+
+All test suites run automatically in CI on every push and pull request.

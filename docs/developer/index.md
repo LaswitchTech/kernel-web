@@ -7,6 +7,7 @@
 - [Service Design](kernel/services.md) — Service layer patterns and conventions
 - [Schema Reference](kernel/schema.md) — Database schema reference
 - [Domain Model](kernel/domain-model.md) — Core domain entities and relationships
+- [Testing](testing.md) — Zero-dependency test framework, running tests, writing new suites
 
 ## Plugin Development
 
