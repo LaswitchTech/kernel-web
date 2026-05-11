@@ -1,6 +1,6 @@
 # Settings Plugin Hook System
 
-> **Status:** Designed (not yet implemented)
+> **Status:** Implemented (PHASE2-3)
 > **Roadmap:** PHASE2-3
 > **Related:** ARCH-3
 
@@ -417,9 +417,9 @@ These are fired via the existing `HookRegistry` mechanism. Low priority — add 
 
 | Item | Phase | Priority |
 |------|-------|----------|
-| SettingsRegistry + SettingsSection classes | PHASE2-3 | Medium |
-| SystemSettingsController integration | PHASE2-3 | Medium |
-| settings.php view refactor | PHASE2-3 | Medium |
+| SettingsRegistry + SettingsSection classes | PHASE2-3 | Done (commit b992c07) |
+| SystemSettingsController integration | PHASE2-3 | Done (commit b992c07) |
+| settings.php view refactor | PHASE2-3 | Done (commit b992c07) |
 | SMTP plugin (example) | PHASE2-3+ | Low |
 | `settings.before_save` / `settings.after_save` hooks | PHASE3 | Deferred |
 
