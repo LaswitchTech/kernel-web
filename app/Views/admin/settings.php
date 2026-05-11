@@ -71,7 +71,7 @@
                     <span class="fw-semibold small"><?= htmlspecialchars($section->label) ?></span>
                 </div>
                 <div class="card-body">
-                    <?= $section->renderBody($errors: $errors, settings: $settings) ?>
+                    <?= $section->renderBody(['errors' => $errors, 'settings' => $settings]) ?>
                 </div>
             </div>
         <?php endforeach; ?>
@@ -104,7 +104,7 @@
                     <span class="fw-semibold small"><?= htmlspecialchars($section->label) ?></span>
                 </div>
                 <div class="card-body">
-                    <?= $section->renderBody($errors: $errors, settings: $settings) ?>
+                    <?= $section->renderBody(['errors' => $errors, 'settings' => $settings]) ?>
                 </div>
             </div>
         <?php endforeach; ?>
