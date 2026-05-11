@@ -54,16 +54,16 @@ class SettingsRegistry
     {
         if (!$section instanceof SettingsSection) {
             $section = new SettingsSection(
-                id: $section['id'],
-                label: $section['label'],
-                column: $section['column'] ?? 'left',
-                order: $section['order'] ?? 50,
-                permission: $section['permission'] ?? null,
-                render: $section['render'] ?? null,
-                keys: $section['keys'] ?? [],
-                validate: $section['validate'] ?? null,
-                save: $section['save'] ?? null,
-                source: $section['source'] ?? 'core',
+                $section['id'],
+                $section['label'],
+                $section['column'] ?? 'left',
+                (int) ($section['order'] ?? 50),
+                $section['permission'] ?? null,
+                $section['render'] ?? null,
+                $section['keys'] ?? [],
+                $section['validate'] ?? null,
+                $section['save'] ?? null,
+                $section['source'] ?? 'core',
             );
         }
 

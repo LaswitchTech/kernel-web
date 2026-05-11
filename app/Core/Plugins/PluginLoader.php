@@ -913,16 +913,16 @@ class PluginLoader
                 }
 
                 $item = new \App\Core\MenuItem(
-                    name:        $itemData['name'] ?? '',
-                    label:       $itemData['label'] ?? '',
-                    url:         $itemData['url'] ?? null,
-                    icon:        $itemData['icon'] ?? null,
-                    styleClass:  $itemData['styleClass'] ?? null,
-                    permission:  $itemData['permission'] ?? null,
-                    order:       (int) ($itemData['order'] ?? 0),
-                    parentId:    $itemData['parentId'] ?? null,
-                    source:      $plugin->name(),
-                    sections:    $itemData['sections'] ?? [],
+                    $itemData['name'] ?? '',
+                    $itemData['label'] ?? '',
+                    $itemData['url'] ?? null,
+                    $itemData['icon'] ?? null,
+                    $itemData['styleClass'] ?? null,
+                    $itemData['permission'] ?? null,
+                    (int) ($itemData['order'] ?? 0),
+                    $itemData['parentId'] ?? null,
+                    $plugin->name(),
+                    $itemData['sections'] ?? [],
                 );
 
                 \App\Core\MenuRegistry::add($menuName, $item);

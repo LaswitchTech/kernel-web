@@ -42,13 +42,13 @@ class ProfileModal
     {
         if (!$section instanceof ProfileModalSection) {
             $section = new ProfileModalSection(
-                id: $section['id'],
-                label: $section['label'],
-                icon: $section['icon'] ?? null,
-                order: $section['order'] ?? 50,
-                callback: $section['callback'] ?? null,
-                permission: $section['permission'] ?? null,
-                source: $section['source'] ?? 'core',
+                $section['id'],
+                $section['label'],
+                $section['icon'] ?? null,
+                (int) ($section['order'] ?? 50),
+                $section['callback'] ?? null,
+                $section['permission'] ?? null,
+                $section['source'] ?? 'core',
             );
         }
 
