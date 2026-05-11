@@ -23,10 +23,8 @@ use App\Models\SystemSettingRepository;
  *
  * Known setting keys (Phase 1):
  *
- *   app.name                    Application display name
- *   app.url                     Public-facing URL (no trailing slash)
- *   notifications.email_enabled Email delivery master switch (bool)
- *   monitoring.check_interval   Default check interval in seconds (int)
+ *   app.name    Application display name
+ *   app.url     Public-facing URL (no trailing slash)
  *
  * Unknown keys (not in the KNOWN_KEYS list) have no config fallback;
  * they return their DB value or the provided $default.
@@ -38,18 +36,14 @@ class SystemSettingService
      * null config values mean there is no file-based fallback for this key.
      */
     private const KNOWN_KEYS = [
-        'app.name'                    => ['app',                  'name'],
-        'app.url'                     => ['app',                  'url'],
-        'notifications.email_enabled' => ['notifications-module', 'email.enabled'],
-        'monitoring.check_interval'   => [null,                   null],
+        'app.name' => ['app', 'name'],
+        'app.url'  => ['app', 'url'],
     ];
 
     /** Hardcoded defaults when no DB row and no config value exists. */
     private const DEFAULTS = [
-        'app.name'                    => 'Kernel-Web',
-        'app.url'                     => 'http://localhost',
-        'notifications.email_enabled' => false,
-        'monitoring.check_interval'   => 60,
+        'app.name' => 'Kernel-Web',
+        'app.url'  => 'http://localhost',
     ];
 
     private SystemSettingRepository $repo;
