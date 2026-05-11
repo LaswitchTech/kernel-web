@@ -44,6 +44,10 @@ Core infrastructure improvements that unlock future feature work.
 - [x] Profile Modal API Tokens section (integrate existing TokenService into modal)
 - [x] Profile Modal plugin-provided sections (tab loading, permission gating)
 - [x] Plugin/theme/layout scaffold generator (design complete — see docs/developer/scaffolds.md)
+- [ ] Mailer foundation (default mail(), SMTP via plugin, settings hooks, templates)
+- [ ] Auth features (remember me, forgot password, email verification, 2FA)
+- [ ] Settings plugin hooks (extend system settings via registry)
+- [ ] CRUD test coverage (users, groups, permissions, tokens)
 - [ ] Remote catalog sync (periodic fetch of extension listings from a remote server)
 - [x] Extension manifest validation improvements (semver, dependency format)
 - [ ] Organizations system design (optional, plugin-based data scoping)
@@ -127,6 +131,7 @@ These are planned or requested but are out of scope for the current development 
 | Contributing docs | Implemented | Documented in /docs/contributing.md |
 | Runtime DB safety | Hardened | DB files excluded from public/, .gitignore updated |
 | Phase 1 stabilization | Closed | 15/15 tasks done |
+| Testing | Partially implemented | Zero-dependency test framework with 3 suites (86 assertions) — router, plugin, migration. CRUD coverage needed for users/groups/permissions/tokens. See docs/developer/testing.md and docs/developer/planning/notes-triage.md |
 | Profile Modal | Implemented, full plugin architecture | API Tokens section with create/list/revoke UI. Section registry (ProfileModal class), /api/profile + /api/profile/sections endpoints, plugin tab rendering via JS, permission-gated sections. |
 | OAuth | Deferred | See Deferred section |
 | Licensing | Deferred | See Deferred section |
