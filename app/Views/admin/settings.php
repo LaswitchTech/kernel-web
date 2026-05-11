@@ -62,6 +62,20 @@
             </div>
         </div>
 
+        <!-- Plugin sections (left column) -->
+        <?php foreach ($sections as $section): ?>
+            <?php if ($section->column !== 'left'): continue; endif; ?>
+
+            <div class="card mb-4">
+                <div class="card-header">
+                    <span class="fw-semibold small"><?= htmlspecialchars($section->label) ?></span>
+                </div>
+                <div class="card-body">
+                    <?= $section->renderBody($errors: $errors, settings: $settings) ?>
+                </div>
+            </div>
+        <?php endforeach; ?>
+
     </div>
 
     <!-- ── Right column ──────────────────────────────────────────────── -->
@@ -80,6 +94,20 @@
                 </p>
             </div>
         </div>
+
+        <!-- Plugin sections (right column) -->
+        <?php foreach ($sections as $section): ?>
+            <?php if ($section->column !== 'right'): continue; endif; ?>
+
+            <div class="card mb-4">
+                <div class="card-header">
+                    <span class="fw-semibold small"><?= htmlspecialchars($section->label) ?></span>
+                </div>
+                <div class="card-body">
+                    <?= $section->renderBody($errors: $errors, settings: $settings) ?>
+                </div>
+            </div>
+        <?php endforeach; ?>
 
         <!-- Notifications -->
         <div class="card mt-4">

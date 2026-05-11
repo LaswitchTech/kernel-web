@@ -23,10 +23,9 @@
 
 ### BUG-3: Settings missing plugin hooks
 **Severity:** Medium (feature gap, not a bug)
-**Location:** Design doc at `docs/developer/settings-hooks.md`
-**Status:** DESIGNED (not implemented)
-**Details:** SystemSettingsController has no extensibility mechanism for plugins to inject their own settings sections.
-**Action:** Design complete — see `docs/developer/settings-hooks.md`. Implementation: SettingsRegistry class + controller integration + settings.php loop. Plugin declares `keys`, `validate`, `save`, `render` callbacks. Sensitive values (passwords) never displayed.
+**Status:** FIXED
+**Details:** SystemSettingsController now supports plugin settings sections via SettingsRegistry.
+**Action:** Fixed: SettingsRegistry + SettingsSection classes added. Controller merges plugin keys, validates, saves. View loops over sections. Plugin declares `keys`, `validate`, `save`, `render` callbacks.
 
 ---
 

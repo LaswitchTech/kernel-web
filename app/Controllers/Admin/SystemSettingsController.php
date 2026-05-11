@@ -3,6 +3,7 @@
 namespace App\Controllers\Admin;
 
 use App\Core\Controller;
+use App\Core\SettingsRegistry;
 use App\Models\AuditLogRepository;
 use App\Models\SystemSettingRepository;
 use App\Services\SystemSettingService;
@@ -16,16 +17,19 @@ use App\Services\SystemSettingService;
  *
  * Both routes are protected by ['WebAuth', 'WebPermission:admin'].
  *
- * Phase 1 managed settings:
+ * Core managed settings:
  *   app.name    Application display name
  *   app.url     Public-facing URL
+ *
+ * Plugins can register additional settings sections via SettingsRegistry::addSection().
+ * Plugin keys must use the format `<plugin>.<key>` (enforced at registration).
  *
  * Validation rules:
  *   app.name    required, max 100 chars
  *   app.url     required, must start with http:// or https://, max 255 chars
  *
- * Sensitive values (SMTP credentials, passwords) are never displayed
- * or managed here.
+ * Sensitive values (passwords, secrets) are never displayed
+ * or managed by core — plugins handle their own sensitive fields.
  */
 class SystemSettingsController extends Controller
 {
@@ -43,6 +47,8 @@ class SystemSettingsController extends Controller
             'app_name' => $service->getString('app.name'),
             'app_url'  => $service->getString('app.url'),
         ];
+
+        $sections = SettingsRegistry::getSections($permissions);
 
         $pageTitle     = 'Settings';
         $activeSection = '/admin/settings';
@@ -72,17 +78,52 @@ class SystemSettingsController extends Controller
         $service = $this->service();
 
         $input = [
-            'app_name' => trim($_POST['app_name'] ?? ''),
-            'app_url'  => trim($_POST['app_url']  ?? ''),
+            'app.name' => trim($_POST['app_name'] ?? ''),
+            'app.url'  => trim($_POST['app_url']  ?? ''),
         ];
 
-        $errors = $this->validate($input);
+        // Merge plugin keys from $_POST.
+        $pluginSections = SettingsRegistry::getSections($permissions);
+        foreach ($pluginSections as $section) {
+            $keys = SettingsRegistry::getSectionKeys($section->id);
+            foreach ($keys as $key) {
+                $field = str_replace('.', '_', $key);
+                if (isset($_POST[$field])) {
+                    $input[$key] = trim($_POST[$field] ?? '');
+                }
+            }
+        }
+
+        // Core validation (uses form field names).
+        $coreInput = [
+            'app_name' => $input['app.name'],
+            'app_url'  => $input['app.url'],
+        ];
+        $errors = $this->validateCore($coreInput);
+
+        // Plugin section validation (uses dot-key names).
+        foreach ($pluginSections as $section) {
+            $keys = SettingsRegistry::getSectionKeys($section->id);
+            if (empty($keys)) {
+                continue;
+            }
+            $sectionInput = [];
+            foreach ($keys as $key) {
+                if (isset($input[$key])) {
+                    $sectionInput[$key] = $input[$key];
+                }
+            }
+            $sectionErrors = SettingsRegistry::validateSection($section->id, $sectionInput, $permissions);
+            foreach ($sectionErrors as $field => $msg) {
+                $errors[str_replace('.', '_', $field)] = $msg;
+            }
+        }
 
         if (!empty($errors)) {
             // Re-populate $settings from POST for the re-render.
             $settings = [
-                'app_name' => $input['app_name'],
-                'app_url'  => $input['app_url'],
+                'app_name' => $input['app.name'],
+                'app_url'  => $input['app.url'],
             ];
 
             $pageTitle     = 'Settings';
@@ -103,14 +144,29 @@ class SystemSettingsController extends Controller
             return;
         }
 
-        // Persist
-        $service->set('app.name', $input['app_name']);
-        $service->set('app.url',  rtrim($input['app_url'], '/'));
+        // Persist core
+        $service->set('app.name', $input['app.name']);
+        $service->set('app.url',  rtrim($input['app.url'], '/'));
+
+        // Persist plugin sections
+        foreach ($pluginSections as $section) {
+            $keys = SettingsRegistry::getSectionKeys($section->id);
+            if (empty($keys)) {
+                continue;
+            }
+            $sectionInput = [];
+            foreach ($keys as $key) {
+                if (isset($input[$key])) {
+                    $sectionInput[$key] = $input[$key];
+                }
+            }
+            SettingsRegistry::saveSection($section->id, $sectionInput, $service);
+        }
 
         $actorId = (int) ($this->container->get('principal')['user']['id'] ?? 0);
         $this->auditLog($actorId, 'settings.update', 'system_settings', 0, [
-            'app_name' => $input['app_name'],
-            'app_url'  => rtrim($input['app_url'], '/'),
+            'app_name' => $input['app.name'],
+            'app_url'  => rtrim($input['app.url'], '/'),
         ]);
 
         $this->flash('success', 'System settings saved.');
@@ -123,11 +179,11 @@ class SystemSettingsController extends Controller
     // -------------------------------------------------------------------------
 
     /**
-     * Validate settings input.
+     * Validate core settings input (app.name, app.url).
      *
      * @return array<string, string>  Field → error message; empty = valid.
      */
-    private function validate(array $input): array
+    private function validateCore(array $input): array
     {
         $errors = [];
 
