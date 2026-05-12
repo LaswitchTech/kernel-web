@@ -52,8 +52,8 @@
 - Email verification (send link during registration)
 - User registration form
 - Two-factor authentication (second auth factor)
-**Status:** Design phase. Each item needs architectural decisions before implementation.
-**Dependencies:** Mailer foundation (PHASE2-2) for forgot password and email verification.
+**Status:** **DESIGNED** — see `docs/developer/auth-features.md`. All five features designed: Remember Me, Forgot Password, Email Verification, Registration, 2FA. Implementation order: remember me → forgot password + verification → registration → 2FA.
+**Dependencies:** Mailer foundation (done) for forgot password and email verification.
 
 ### PHASE2-2: Mailer foundation
 **Location:** NOTES.md, Mailer section
@@ -129,6 +129,7 @@
 - 2FA: TOTP (Google Authenticator) vs. SMS code?
 - How are auth tokens stored and rotated?
 **Recommendation:** Remember me = database-backed long-lived token (revocable, visible in profile). Forgot password = DB token + email link. 2FA = TOTP (works without SMS). Auth tokens = existing TokenService with extended expiry.
+**Status:** **DESIGNED** — see `docs/developer/auth-features.md`. All decisions captured: database-backed tokens, TOTP-only, per-user, soft gate for email verification, config-gated registration.
 
 ---
 
@@ -146,11 +147,11 @@
 | Mailer attachments | PHASE2-2 | Deferred to later sprint |
 | Mailer SMTP plugin | PHASE2-2 | Depends on PHASE2-3 settings hooks |
 | Mailer error handling | PHASE2-2 | Part of mailer implementation |
-| Auth remember me | PHASE2-1 + ARCH-4 | Needs design |
-| Auth forgot password | PHASE2-1 + ARCH-4 | Depends on mailer |
-| Auth email verification | PHASE2-1 + ARCH-4 | Depends on mailer |
-| Auth registration | PHASE2-1 | Already partially designed in DESIGN.md |
-| Auth 2FA | PHASE2-1 + ARCH-4 | Needs design |
+| Auth remember me | PHASE2-1 + ARCH-4 | Designed — see docs/developer/auth-features.md |
+| Auth forgot password | PHASE2-1 + ARCH-4 | Designed — see docs/developer/auth-features.md |
+| Auth email verification | PHASE2-1 + ARCH-4 | Designed — see docs/developer/auth-features.md |
+| Auth registration | PHASE2-1 | Designed — see docs/developer/auth-features.md |
+| Auth 2FA | PHASE2-1 + ARCH-4 | Designed — see docs/developer/auth-features.md |
 | Messenger SMS | PHASE3-1 | Deferred |
 | Messenger templates | PHASE3-1 | Part of messenger design |
 | Messenger queue | PHASE3-1 | Deferred |
@@ -192,7 +193,7 @@ None. All items have been mapped above.
 - [ ] TEST-1: Add CRUD test coverage
 
 ### Later
-- [ ] ARCH-4: Draft auth token design in DESIGN.md
+- [x] ARCH-4: Draft auth token design in DESIGN.md + docs/developer/auth-features.md
 - [ ] PHASE2-1: Implement auth features (order: remember me → forgot password → verification → registration → 2FA)
 - [ ] ARCH-2: Draft multi-database design
 - [ ] PHASE3-1: Messenger foundation

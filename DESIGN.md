@@ -465,6 +465,34 @@ Organizations are a future optional concept for grouping users and data.
 
 ---
 
+## Auth Features Design
+
+The following auth features are designed in `docs/developer/auth-features.md`:
+
+| Feature | Status | Phase |
+|------|-----|---|-----|
+| **Remember Me** | Designed | Phase 2 (first slice) |
+| **Forgot Password / Reset** | Designed | Phase 2 |
+| **Email Verification** | Designed | Phase 2 |
+| **User Registration** | Designed | Phase 3 |
+| **Two-Factor Authentication (2FA)** | Designed | Phase 4 |
+
+Design doc: [`docs/developer/auth-features.md`](docs/developer/auth-features.md)
+
+### Core design decisions
+
+- **Remember Me**: Database-backed long-lived token, cookie lifetime configurable, token rotation on each use, one-at-a-time.
+- **Password Reset**: Email-based, single-use token, 60-minute expiry, stored in `auth_password_resets` table.
+- **Email Verification**: Email-based, single-use token, 24-hour expiry, stored in `auth_email_verifications` table. Soft gate in Phase 1.
+- **Registration**: Config-gated (`config/auth.php['registration']['enabled']`), disabled by default.
+- **2FA**: TOTP (RFC 6238) only, per-user, 10 recovery codes, QR code onboarding.
+
+### Mailer integration
+
+All email-based features use the Mailer foundation. Templates: `password_reset`, `email_verification`.
+
+---
+
 ## Registration Design
 
 ### Rule

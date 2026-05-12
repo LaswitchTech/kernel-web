@@ -53,7 +53,7 @@ Core infrastructure improvements that unlock future feature work.
 - [x] Profile Modal plugin-provided sections (tab loading, permission gating)
 - [x] Plugin/theme/layout scaffold generator (design complete — see docs/developer/scaffolds.md)
 - [x] Mailer foundation (default mail(), SMTP via plugin, settings hooks, templates)
-- [ ] Auth features (remember me, forgot password, email verification, 2FA)
+- [ ] Auth features (remember me, forgot password, email verification, 2FA) — design at docs/developer/auth-features.md
 - [x] Settings plugin hooks (extend system settings via registry) — implemented: SettingsRegistry, SettingsSection, controller integration, view loop
 - [x] CRUD test coverage (users, groups, permissions, tokens)
 - [ ] Remote catalog sync (periodic fetch of extension listings from a remote server)
@@ -123,6 +123,7 @@ These are planned or requested but are out of scope for the current development 
 | Layout system | Implemented | `app.php` (app), `panel.php` (admin), `blank.php` (auth, local assets, hooks) |
 | Theme system | Partially implemented | Bootstrap 5, LESS, dark/light mode |
 | Auth system | Partially implemented | Users, groups, permissions, tokens, sessions |
+| Auth features | Designed | Remember Me, Forgot Password, Email Verification, Registration, 2FA. Design at docs/developer/auth-features.md. Not implemented. |
 | Organizations | Planned | Design phase — optional, plugin-based scoping |
 | Theme preview | Implemented | GET /admin/themes/preview, all Bootstrap components, panel layout with breadcrumbs |
 | Plugin migrations | Implemented | Migration runner, catalog integration |
