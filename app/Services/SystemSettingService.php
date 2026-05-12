@@ -63,7 +63,7 @@ class SystemSettingService
      * Returns the raw string from DB, or the typed value from the config
      * fallback, or $default.
      */
-    public function get(string $key, $default = null)
+    public function get(string $key, mixed $default = null): mixed
     {
         // 1. DB
         $dbValue = $this->repo->get($key);
@@ -164,7 +164,7 @@ class SystemSettingService
      * Booleans are stored as '1' or '0'.
      * Other values are cast to string.
      */
-    public function set(string $key, $value): void
+    public function set(string $key, mixed $value): void
     {
         $str = is_bool($value) ? ($value ? '1' : '0') : (string) $value;
         $this->repo->set($key, $str);

@@ -138,13 +138,13 @@ $emptyMsg = $emptyMessages[$scope] ?? 'No tasks.';
                 <tbody>
                     <?php foreach ($tasks as $t):
                         $statusLabel = TaskService::STATUS_LABELS[$t['status']] ?? $t['status'];
-                        $badgeClass = 'bg-secondary-subtle text-secondary border border-secondary-subtle';
-                        switch ($t['status']) {
-                            case 'open':        $badgeClass = 'bg-primary-subtle text-primary border border-primary-subtle'; break;
-                            case 'in_progress': $badgeClass = 'bg-warning-subtle text-warning border border-warning-subtle'; break;
-                            case 'completed':   $badgeClass = 'bg-success-subtle text-success border border-success-subtle'; break;
-                            case 'canceled':    $badgeClass = 'bg-secondary-subtle text-secondary border border-secondary-subtle'; break;
-                        }
+                        $badgeClass = match ($t['status']) {
+                            'open'        => 'bg-primary-subtle text-primary border border-primary-subtle',
+                            'in_progress' => 'bg-warning-subtle text-warning border border-warning-subtle',
+                            'completed'   => 'bg-success-subtle text-success border border-success-subtle',
+                            'canceled'    => 'bg-secondary-subtle text-secondary border border-secondary-subtle',
+                            default       => 'bg-secondary-subtle text-secondary border border-secondary-subtle',
+                        };
                         $assignedName = '';
                         if ($t['assigned_type'] === 'user' && !empty($t['assigned_id'])) {
                             $assignedName = ($t['assigned_display'] ?? '') !== ''
@@ -159,12 +159,12 @@ $emptyMsg = $emptyMessages[$scope] ?? 'No tasks.';
                         // Build entity link cell
                         $entityCell = '—';
                         if (!empty($t['entity_type']) && !empty($t['entity_id'])) {
-                            $entityUrl = null;
-                            switch ($t['entity_type']) {
-                                case 'device':  $entityUrl = '/devices/'   . (int) $t['entity_id']; break;
-                                case 'alert':   $entityUrl = '/alerts/'    . (int) $t['entity_id']; break;
-                                case 'finding': $entityUrl = '/discovery/' . (int) $t['entity_id']; break;
-                            }
+                            $entityUrl = match ($t['entity_type']) {
+                                'device'  => '/devices/'   . (int) $t['entity_id'],
+                                'alert'   => '/alerts/'    . (int) $t['entity_id'],
+                                'finding' => '/discovery/' . (int) $t['entity_id'],
+                                default   => null,
+                            };
                             $entityLabel = ucfirst(htmlspecialchars($t['entity_type'])) . ' #' . (int) $t['entity_id'];
                             $entityCell  = $entityUrl
                                 ? '<a href="' . $entityUrl . '" class="text-decoration-none small">' . $entityLabel . '</a>'

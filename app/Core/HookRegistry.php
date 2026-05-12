@@ -44,7 +44,7 @@ class HookRegistry
      * @param mixed   $content Callable string, or HookRenderable object
      * @param int     $priority Higher values render later (default: 0)
      */
-    public static function register(string $hook, $content, int $priority = 0): void
+    public static function register(string $hook, mixed $content, int $priority = 0): void
     {
         self::$hooks[$hook][] = [
             'priority' => $priority,

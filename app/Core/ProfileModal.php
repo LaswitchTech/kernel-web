@@ -38,10 +38,7 @@ class ProfileModal
      *     source?: string
      * }|ProfileModalSection $section
      */
-    /**
-     * @param array|ProfileModalSection $section
-     */
-    public static function addSection($section): void
+    public static function addSection(array|ProfileModalSection $section): void
     {
         if (!$section instanceof ProfileModalSection) {
             $section = new ProfileModalSection(

@@ -6,7 +6,7 @@ class Container
 {
     private array $bindings = [];
 
-    public function set(string $key, $value): void
+    public function set(string $key, mixed $value): void
     {
         $this->bindings[$key] = $value;
     }

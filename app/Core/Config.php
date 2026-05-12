@@ -57,7 +57,7 @@ class Config
      * @param  string|null $key  Top-level key to retrieve
      * @param  mixed  $default  Returned when the key is absent
      */
-    public static function get(string $file, ?string $key = null, $default = null)
+    public static function get(string $file, ?string $key = null, mixed $default = null): mixed
     {
         $data = self::load($file);
 
