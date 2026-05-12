@@ -47,6 +47,36 @@ Use this file to:
 
 ---
 
+## Platform & Runtime
+
+### PHP Version
+
+- **Minimum**: PHP 8.1
+- **CI target**: PHP 8.2
+- **composer platform**: `8.1`
+
+### Design Decisions
+
+Kernel-Web is designed around modern PHP 8.x. The following are intentional:
+
+- **readonly** value objects — immutability without boilerplate
+- **union types** — explicit API contracts (e.g. `array|SettingsSection`)
+- **mixed types** — clarity where any type is valid (container, config, hooks)
+- **match** expressions — concise value mapping over switch
+- **Constructor property promotion** — fewer lines, same semantics
+- **Native `str_contains` / `str_starts_with`** — no polyfills
+
+**Rationale:**
+- Readability and stronger typing
+- Reduced boilerplate
+- Cleaner domain/value object modeling
+- CI validates against PHP 8.2
+
+PHP 7.x compatibility is not a goal. Any code that reverts modern PHP syntax
+for backward compatibility is incorrect.
+
+---
+
 ## High-Level Architecture
 
 Kernel-Web is composed of 4 major layers:
@@ -129,7 +159,7 @@ Each plugin has a `plugin.json` at its root:
     "version": "0.1.0",
     "description": "Short description",
     "enabled": true,
-    "requires": { "kernel": "8.1" },
+    "requires": { "php": "8.1" },
     "dependencies": { "plugin:notes": ">=0.1.0" },
     "permissions": ["permission.string"],
     "routes": [],

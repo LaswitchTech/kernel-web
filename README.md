@@ -9,6 +9,16 @@
 
 ---
 
+## Requirements
+
+- **PHP 8.1+** (target: PHP 8.2)
+- Composer (`wikimedia/less.php`)
+- Web server with PHP support (Apache / Nginx)
+
+> PHP 7.x is **not** supported. Kernel-Web uses modern PHP 8.x features (readonly, union types, mixed, match, constructor property promotion).
+
+---
+
 ## Description
 
 **Author**: Louis Ouellet

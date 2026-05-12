@@ -4,6 +4,14 @@ Priority-based roadmap for Kernel-Web development. Tasks are organized by phase 
 
 ---
 
+## Platform
+
+PHP 8.1+ baseline. Future development may freely use modern PHP 8.x features
+(readonly, union types, mixed, match, constructor property promotion).
+PHP 7.x compatibility must not be reintroduced.
+
+---
+
 ## Phase 1: Immediate / Stabilization
 
 Foundational work that should happen before major feature development.

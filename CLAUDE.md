@@ -32,7 +32,7 @@ Repository:
 - Local development URL: `https://kernel-web.local/`
 
 Stack summary:
-- PHP backend, no heavy framework
+- PHP 8.1+ backend (CI: PHP 8.2), no heavy framework
 - JavaScript frontend
 - Bootstrap 5 and Bootstrap Icons
 - LESS for styling and theming
