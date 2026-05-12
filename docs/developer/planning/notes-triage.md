@@ -63,7 +63,7 @@
 - Email templates for different types (password reset, verification, notifications)
 - Plugin extensibility for custom email types
 - Error handling (logging, user feedback)
-**Status:** Needs design doc in DESIGN.md. See ARCH-1 for mailer abstraction design.
+**Status:** **DESIGNED** — see `docs/developer/mailer.md`. Full design including Mailer service, Transport interface (default mail()), TemplateRegistry, Attachment, MailerException, SMTP plugin integration via SettingsRegistry, and implementation priorities.
 
 ### PHASE2-3: Settings hooks for plugins
 **Location:** BUG-3 + NOTES.md, Settings section
@@ -107,6 +107,7 @@
 - How does the SMTP plugin declare its settings?
 - Should the default mailer use `mail()` or throw until configured?
 **Recommendation:** Interface + transport plug-in pattern. Default transport = `mail()`. SMTP = plugin. Templates = registry with filesystem fallback.
+**Status:** **DESIGNED** — see `docs/developer/mailer.md`. Design covers Mailer service, Transport interface, default mail() transport, TemplateRegistry, Attachment value object, MailerException, SMTP plugin via SettingsRegistry, error handling strategy, and implementation priorities.
 
 ### ARCH-2: Database driver architecture
 **Questions:**
@@ -139,7 +140,7 @@
 | Settings NetMon leftovers | BUG-1 | Remove dead config immediately |
 | Settings notification leftovers | BUG-1 | Remove if notification system not implemented |
 | Settings hooks | PHASE2-3 | Needs design |
-| Mailer | PHASE2-2 + ARCH-1 | Needs design |
+| Mailer | PHASE2-2 + ARCH-1 | Designed (DESIGN ONLY, not implemented) — see docs/developer/mailer.md |
 | Mailer email templates | PHASE2-2 | Part of mailer design |
 | Mailer queue system | PHASE2-2 | Deferred to later sprint |
 | Mailer attachments | PHASE2-2 | Deferred to later sprint |
@@ -183,7 +184,7 @@ None. All items have been mapped above.
 - [x] BUG-1: Remove NetMon leftovers from SystemSettingsController — Monitoring card removed, Notification section replaced with informational note. Controller only manages app.name and app.url.
 - [ ] BUG-2: Fix scaffold page topbar margin — requires live browser inspection
 - [x] ARCH-3: Settings hooks design complete — see `docs/developer/settings-hooks.md`
-- [ ] ARCH-1: Draft mailer design in DESIGN.md
+- [x] ARCH-1: Mailer design complete — see `docs/developer/mailer.md`
 
 ### Next sprint
 - [ ] PHASE2-3: Implement settings hook registry

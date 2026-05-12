@@ -493,6 +493,40 @@ Organizations are a future optional concept for grouping users and data.
 
 ---
 
+## Mailer Foundation
+
+### Purpose
+
+A pluggable mail transport system for Kernel-Web. Default transport uses PHP `mail()`. SMTP provided by a plugin.
+
+### Architecture
+
+```
+[Messenger]
+  Mailer → Transport (interface)
+           ├── MailTransport (core, mail())
+           └── SmtpTransport (plugin)
+
+[Mailer → Templates]
+  Mailer → TemplateRegistry → Template paths (core + plugins)
+
+[Mailer → Settings]
+  SMTP plugin → SettingsRegistry → system_settings table
+```
+
+### Design Decisions
+
+- **Core** provides: `Mailer`, `MailMessage`, `Attachment`, `Transport` interface, `MailTransport` (mail()), `TemplateRegistry`, `MailerException`
+- **Plugin** provides: SMTP transport, SMTP settings (via SettingsRegistry), email templates
+- **Purpose-agnostic**: mailer knows nothing about forgot-password, verification, or notifications — those are auth/notification-layer concerns that compose `MailMessage` with templates
+- **Error handling**: all send failures throw `MailerException`
+- **Attachments**: supported by transport-agnostic `Attachment` value object; mail() transport throws if attachments requested
+- **Queueing**: deferred — design supports a `QueuedTransport` decorator later
+
+For the full design, see `docs/developer/mailer.md`.
+
+---
+
 ## Landing Page Design
 
 ### Public Landing Page

@@ -141,6 +141,7 @@ These are planned or requested but are out of scope for the current development 
 | Phase 1 stabilization | Closed | 15/15 tasks done |
 | Testing | Partially implemented | Zero-dependency test framework with 4 suites (191 assertions) — router, plugin, migration, auth. CRUD coverage for users/groups/permissions/tokens complete. See docs/developer/testing.md |
 | Profile Modal | Implemented, full plugin architecture | API Tokens section with create/list/revoke UI. Section registry (ProfileModal class), /api/profile + /api/profile/sections endpoints, plugin tab rendering via JS, permission-gated sections. |
+| Mailer | Designed | Default mail() transport + SMTP plugin via SettingsRegistry. Design at docs/developer/mailer.md. Not implemented. |
 | OAuth | Deferred | See Deferred section |
 | Licensing | Deferred | See Deferred section |
 | Registration | Planned | Config toggle (disabled by default) — Phase 3 |
