@@ -52,7 +52,7 @@ Core infrastructure improvements that unlock future feature work.
 - [x] Profile Modal API Tokens section (integrate existing TokenService into modal)
 - [x] Profile Modal plugin-provided sections (tab loading, permission gating)
 - [x] Plugin/theme/layout scaffold generator (design complete — see docs/developer/scaffolds.md)
-- [ ] Mailer foundation (default mail(), SMTP via plugin, settings hooks, templates)
+- [x] Mailer foundation (default mail(), SMTP via plugin, settings hooks, templates)
 - [ ] Auth features (remember me, forgot password, email verification, 2FA)
 - [x] Settings plugin hooks (extend system settings via registry) — implemented: SettingsRegistry, SettingsSection, controller integration, view loop
 - [x] CRUD test coverage (users, groups, permissions, tokens)
@@ -139,9 +139,9 @@ These are planned or requested but are out of scope for the current development 
 | Contributing docs | Implemented | Documented in /docs/contributing.md |
 | Runtime DB safety | Hardened | DB files excluded from public/, .gitignore updated |
 | Phase 1 stabilization | Closed | 15/15 tasks done |
-| Testing | Partially implemented | Zero-dependency test framework with 4 suites (191 assertions) — router, plugin, migration, auth. CRUD coverage for users/groups/permissions/tokens complete. See docs/developer/testing.md |
+| Testing | Partially implemented | Zero-dependency test framework with 5 suites (252 assertions) — router, plugin, migration, auth, mailer. CRUD coverage for users/groups/permissions/tokens complete. Mailer foundation implemented. See docs/developer/testing.md |
 | Profile Modal | Implemented, full plugin architecture | API Tokens section with create/list/revoke UI. Section registry (ProfileModal class), /api/profile + /api/profile/sections endpoints, plugin tab rendering via JS, permission-gated sections. |
-| Mailer | Designed | Default mail() transport + SMTP plugin via SettingsRegistry. Design at docs/developer/mailer.md. Not implemented. |
+| Mailer | Implemented | Core infrastructure: MailMessage, Attachment, TemplateRegistry, TransportInterface, MailTransport (mail()), Mailer facade, MailerException. Config at config/mail.php. 61 assertions. Design at docs/developer/mailer.md. |
 | OAuth | Deferred | See Deferred section |
 | Licensing | Deferred | See Deferred section |
 | Registration | Planned | Config toggle (disabled by default) — Phase 3 |
