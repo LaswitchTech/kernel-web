@@ -412,6 +412,34 @@ assert_not_null($foundRevoked['revoked_at'], 'revoked_at is set on revoked token
 $emptyList = $tokenService->listForUser(99999);
 assert_equal(0, count($emptyList), 'listForUser returns empty for non-existent user');
 
+// --- verify returns null for expired token ---
+$expireUserId = $userRepo->create([
+    'display_name'  => 'Expiry User',
+    'username'      => 'expiryuser',
+    'email'         => 'expiry@example.com',
+    'password_hash' => password_hash('password', PASSWORD_DEFAULT),
+]);
+$expToken = $tokenService->generate($expireUserId, 'expiring-token', null);
+// Insert a separate token with expires_at in the past (different raw to avoid UNIQUE conflict)
+$expRaw = bin2hex(random_bytes(32));
+$pastDate = '2020-01-01 00:00:00';
+$db->execute(
+    'INSERT INTO api_tokens (user_id, name, token_hash, expires_at, created_at) VALUES (?, ?, ?, ?, ?)',
+    [$expireUserId, 'expired-token', hash('sha256', $expRaw), $pastDate, date('Y-m-d H:i:s')]
+);
+assert_null($tokenService->verify($expRaw), 'verify returns null for expired token');
+
+// --- verify returns null when token user is inactive ---
+$inactiveUserId = $userRepo->create([
+    'display_name'  => 'Deactivated User',
+    'username'      => 'deactivated_user',
+    'email'         => 'deactivated@example.com',
+    'password_hash' => password_hash('password', PASSWORD_DEFAULT),
+    'is_active'     => 0,
+]);
+$deactivatedToken = $tokenService->generate($inactiveUserId, 'inactive-token', null);
+assert_null($tokenService->verify($deactivatedToken['raw']), 'verify returns null for token belonging to inactive user');
+
 // ================================================
 // GATE (permission checking)
 // ================================================

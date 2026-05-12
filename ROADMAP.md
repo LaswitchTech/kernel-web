@@ -139,7 +139,7 @@ These are planned or requested but are out of scope for the current development 
 | Contributing docs | Implemented | Documented in /docs/contributing.md |
 | Runtime DB safety | Hardened | DB files excluded from public/, .gitignore updated |
 | Phase 1 stabilization | Closed | 15/15 tasks done |
-| Testing | Partially implemented | Zero-dependency test framework with 4 suites (189 assertions) — router, plugin, migration, auth. CRUD coverage for users/groups/permissions/tokens complete. See docs/developer/testing.md |
+| Testing | Partially implemented | Zero-dependency test framework with 4 suites (191 assertions) — router, plugin, migration, auth. CRUD coverage for users/groups/permissions/tokens complete. See docs/developer/testing.md |
 | Profile Modal | Implemented, full plugin architecture | API Tokens section with create/list/revoke UI. Section registry (ProfileModal class), /api/profile + /api/profile/sections endpoints, plugin tab rendering via JS, permission-gated sections. |
 | OAuth | Deferred | See Deferred section |
 | Licensing | Deferred | See Deferred section |
