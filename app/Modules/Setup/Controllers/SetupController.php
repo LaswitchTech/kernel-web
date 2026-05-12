@@ -39,16 +39,23 @@ class SetupController
 
     public function dispatch(string $method, string $path): void
     {
-        match (true) {
-            $method === 'GET'  && $path === '/setup'          => $this->handleGetWizard(),
-            $method === 'POST' && $path === '/setup/check'    => $this->handlePostCheck(),
-            $method === 'POST' && $path === '/setup/db'       => $this->handlePostDb(),
-            $method === 'POST' && $path === '/setup/config'   => $this->handlePostConfig(),
-            $method === 'POST' && $path === '/setup/admin'    => $this->handlePostAdmin(),
-            $method === 'POST' && $path === '/setup/install'  => $this->handlePostInstall(),
-            $method === 'GET'  && $path === '/setup/done'     => $this->handleGetDone(),
-            default                                           => $this->notFound(),
-        };
+        if ($method === 'GET'  && $path === '/setup') {
+            $this->handleGetWizard();
+        } elseif ($method === 'POST' && $path === '/setup/check') {
+            $this->handlePostCheck();
+        } elseif ($method === 'POST' && $path === '/setup/db') {
+            $this->handlePostDb();
+        } elseif ($method === 'POST' && $path === '/setup/config') {
+            $this->handlePostConfig();
+        } elseif ($method === 'POST' && $path === '/setup/admin') {
+            $this->handlePostAdmin();
+        } elseif ($method === 'POST' && $path === '/setup/install') {
+            $this->handlePostInstall();
+        } elseif ($method === 'GET'  && $path === '/setup/done') {
+            $this->handleGetDone();
+        } else {
+            $this->notFound();
+        }
     }
 
     /**
