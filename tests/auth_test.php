@@ -107,6 +107,9 @@ $db->execute("CREATE TABLE api_tokens (
     FOREIGN KEY (user_id) REFERENCES users(id)
 )");
 
+// Index on user_id for findByUserId performance — mirrors production migration
+$db->execute("CREATE INDEX api_tokens_user_id ON api_tokens (user_id)");
+
 // --- Instantiate repositories ---
 
 $userRepo = new UserRepository($db);
@@ -115,6 +118,14 @@ $permRepo = new PermissionRepository($db);
 $tokenRepo = new TokenRepository($db);
 $gate = new Gate($db);
 $tokenService = new TokenService($tokenRepo, $userRepo, $gate);
+
+// --- Constructor sanity check: all repos accept DatabaseInterface ---
+assert_instance_of($userRepo, 'App\Models\UserRepository', 'UserRepository accepts DatabaseInterface');
+assert_instance_of($groupRepo, 'App\Models\GroupRepository', 'GroupRepository accepts DatabaseInterface');
+assert_instance_of($permRepo, 'App\Models\PermissionRepository', 'PermissionRepository accepts DatabaseInterface');
+assert_instance_of($tokenRepo, 'App\Models\TokenRepository', 'TokenRepository accepts DatabaseInterface');
+assert_instance_of($gate, 'App\Core\Gate', 'Gate accepts DatabaseInterface');
+assert_instance_of($tokenService, 'App\Auth\TokenService', 'TokenService accepts TokenRepository + UserRepository + Gate');
 
 // ================================================
 // USERS
@@ -178,6 +189,12 @@ $userRepo->update($newId, ['display_name' => 'Updated Name', 'email' => 'updated
 $updated = $userRepo->findById($newId);
 assert_equal('Updated Name', $updated['display_name'], 'update changes display_name');
 assert_equal('updated@example.com', $updated['email'], 'update changes email');
+
+// --- Update password ---
+$newHash = password_hash('newpass', PASSWORD_DEFAULT);
+$userRepo->setPassword($newId, $newHash);
+$userRecheck = $userRepo->findById($newId);
+assert_true(password_verify('newpass', $userRecheck['password_hash']), 'setPassword updates hash correctly');
 
 // --- Find non-existent user ---
 assert_null($userRepo->findById(99999), 'findById returns null for missing ID');
@@ -417,6 +434,10 @@ assert_equal(0, count($emptyPerms), 'permissionsForUser returns empty for user w
 $principal2 = ['permissions' => ['admin', 'users.view']];
 assert_true($gate->can($principal2, 'admin'), 'can returns true for permission in principal');
 assert_false($gate->can($principal2, 'missing.perm'), 'can returns false for missing permission');
+
+// --- Gate can() with missing permissions key ---
+$principalNoPerms = ['auth_method' => 'session'];
+assert_false($gate->can($principalNoPerms, 'admin'), 'can returns false when permissions key is absent');
 
 // --- Summary ===
 summary();

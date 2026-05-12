@@ -104,9 +104,9 @@ Tests `PluginManifest` parsing, validation, and field accessors. Covers required
 
 Tests `MigrationRunner` with an in-memory SQLite database via a `TestDB` wrapper implementing `DatabaseInterface`. Covers pending detection, file discovery, `run()`, `applied()`, idempotent `run()` on already-applied migrations, invalid class detection, rollback with missing files, and migration name derivation.
 
-### Auth tests (`auth_test.php`) — 95 assertions
+### Auth tests (`auth_test.php`) — 103 assertions
 
-Tests CRUD operations for core auth entities using an in-memory SQLite database. Covers `UserRepository` (create, findById, findByUsername, findByEmail, findByIdAny, findAllActive, findAll, update, setActive, isUsernameTaken, isEmailTaken), `GroupRepository` (create, findById, findAll, update, delete, isNameTaken, isSystemGroup, findMembers, syncPermissions), `PermissionRepository` (create, findById, findAll, update, delete, isCodeTaken, isInUse), `TokenService` (generate, verify, revoke, listForUser with ownership validation), and `Gate` (permissionsForUser, userCan, can). Tests cross-entity behavior: group-user membership via `UserRepository::syncGroups()`, group-permission assignment, and permission inheritance.
+Tests CRUD operations for core auth entities using an in-memory SQLite database with a production-equivalent schema (including `user_id` index on `api_tokens`). Covers `UserRepository` (create, findById, findByUsername, findByEmail, findByIdAny, findAllActive, findAll, update, update password, setActive, isUsernameTaken, isEmailTaken), `GroupRepository` (create, findById, findAll, update, delete, isNameTaken, isSystemGroup, findMembers, syncPermissions), `PermissionRepository` (create, findById, findAll, update, delete, isCodeTaken, isInUse), `TokenService` (generate, verify, revoke, listForUser with ownership validation), and `Gate` (permissionsForUser, userCan, can with missing permissions key). Constructor sanity checks verify all repos/services accept `DatabaseInterface`. Tests cross-entity behavior: group-user membership via `UserRepository::syncGroups()`, group-permission assignment, and permission inheritance.
 
 ## Dependencies
 
