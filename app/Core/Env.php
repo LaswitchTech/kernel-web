@@ -93,7 +93,7 @@ class Env
      * Checks in order: values loaded from .env, $_ENV, getenv().
      * Returns $default if the key is not found in any source.
      */
-    public static function get(string $key, mixed $default = null): mixed
+    public static function get(string $key, $default = null)
     {
         if (array_key_exists($key, self::$values)) {
             return self::$values[$key];

@@ -67,21 +67,27 @@ class ErrorPage
             $location  = htmlspecialchars($e->getFile() . ':' . $e->getLine(), ENT_QUOTES, 'UTF-8');
         }
 
-        $suggestion = match ($status) {
-            404  => 'The page you requested may have been moved or deleted.',
-            405  => 'The HTTP method is not allowed for this endpoint.',
-            429  => 'Please wait a moment before trying again.',
-            503  => 'The service is temporarily unavailable. Please try again later.',
-            default => null,
-        };
+        $suggestion = null;
+        if ($status === 404) {
+            $suggestion = 'The page you requested may have been moved or deleted.';
+        } elseif ($status === 405) {
+            $suggestion = 'The HTTP method is not allowed for this endpoint.';
+        } elseif ($status === 429) {
+            $suggestion = 'Please wait a moment before trying again.';
+        } elseif ($status === 503) {
+            $suggestion = 'The service is temporarily unavailable. Please try again later.';
+        }
 
-        $action = match ($status) {
-            401  => ['href' => '/auth/login', 'label' => 'Sign In'],
-            403  => ['href' => '/', 'label' => 'Go Home'],
-            404  => ['href' => '/', 'label' => 'Go Home'],
-            500, 501, 502, 503 => ['href' => '/', 'label' => 'Go Home'],
-            default => null,
-        };
+        $action = null;
+        if ($status === 401) {
+            $action = ['href' => '/auth/login', 'label' => 'Sign In'];
+        } elseif ($status === 403) {
+            $action = ['href' => '/', 'label' => 'Go Home'];
+        } elseif ($status === 404) {
+            $action = ['href' => '/', 'label' => 'Go Home'];
+        } elseif (in_array($status, [500, 501, 502, 503], true)) {
+            $action = ['href' => '/', 'label' => 'Go Home'];
+        }
 
         extract([
             'status'   => $status,

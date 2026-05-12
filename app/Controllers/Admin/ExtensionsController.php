@@ -1032,15 +1032,15 @@ class ExtensionsController extends Controller
     {
         $details = [];
         foreach ($blockers as $blocker) {
-            $typeLabel = match ($blocker['type']) {
-                'missing' => 'Missing',
-                'pending' => 'Pending review',
-                'rejected' => 'Rejected',
-                'version' => 'Version mismatch',
-                'circular' => 'Circular dependency',
-                'dependent' => 'Reverse dependency',
-                default => $blocker['type'],
-            };
+            $typeLabel = $blocker['type'];
+            switch ($blocker['type']) {
+                case 'missing':      $typeLabel = 'Missing'; break;
+                case 'pending':      $typeLabel = 'Pending review'; break;
+                case 'rejected':     $typeLabel = 'Rejected'; break;
+                case 'version':      $typeLabel = 'Version mismatch'; break;
+                case 'circular':     $typeLabel = 'Circular dependency'; break;
+                case 'dependent':    $typeLabel = 'Reverse dependency'; break;
+            }
             $depKey = htmlspecialchars($blocker['dependency'] ?? '');
             $details[] = sprintf('%s: <code>%s</code>', $typeLabel, $depKey);
         }

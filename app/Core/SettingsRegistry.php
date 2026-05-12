@@ -50,7 +50,10 @@ class SettingsRegistry
      *     source?: string
      * }|SettingsSection $section
      */
-    public static function addSection(array|SettingsSection $section): void
+    /**
+     * @param array|SettingsSection $section
+     */
+    public static function addSection($section): void
     {
         if (!$section instanceof SettingsSection) {
             $section = new SettingsSection(
