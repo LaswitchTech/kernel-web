@@ -182,6 +182,28 @@ assert_raises(
     'MailTransport throws MailerException when message has attachments'
 );
 
+// --- MailTransport rejects BCC ---
+$transportBcc = new MailTransport('noreply@test.local', 'Test Mailer');
+$msgBcc = new MailMessage('noreply@test.local', 'Test', 'to@test.local', '', 'Subject', '<b>body</b>');
+$msgBccBcc = $msgBcc->withBcc('bcc@example.com');
+
+assert_raises(
+    fn () => $transportBcc->send($msgBccBcc),
+    MailerException::class,
+    'MailTransport throws MailerException when message has BCC addresses'
+);
+
+// --- MailTransport rejects header injection in CC ---
+$transportCc = new MailTransport('noreply@test.local', 'Test Mailer');
+$msgInject = new MailMessage('noreply@test.local', 'Test', 'to@test.local', '', 'Subject', '<b>body</b>');
+$msgInjectCc = $msgInject->withCc("innocent@example.com\r\nInjected: header");
+
+assert_raises(
+    fn () => $transportCc->send($msgInjectCc),
+    MailerException::class,
+    'MailTransport rejects CC address with newline (header injection)'
+);
+
 // --- MailTransport identifier ---
 assert_equal('mail', $transport->identifier(), 'MailTransport identifier is mail');
 

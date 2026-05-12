@@ -33,9 +33,17 @@ class MailTransport implements TransportInterface
             'Content-Type: text/html; charset=UTF-8',
         ];
 
-        // Add CC headers.
+        // Add CC headers (validate to prevent header injection).
         foreach ($message->cc as $cc) {
+            if (str_contains($cc, "\r") || str_contains($cc, "\n") || str_contains($cc, "\0")) {
+                throw new MailerException("Invalid CC address: contains control characters", code: 422, transportName: 'mail');
+            }
             $headers[] = "Cc: {$cc}";
+        }
+
+        // BCC: mail() has no native BCC mechanism — reject if any BCC addresses are set.
+        if (!empty($message->bcc)) {
+            throw new MailerException('BCC not supported by mail() transport. Use SMTP transport for BCC.', code: 422, transportName: 'mail');
         }
 
         $result = mail(

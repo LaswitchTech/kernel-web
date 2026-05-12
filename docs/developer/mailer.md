@@ -1,7 +1,7 @@
 # Mailer Foundation Design
 
-> **Status:** Designed (DESIGN ONLY — not implemented)
-> **Roadmap:** Phase 2 — unchecked
+> **Status:** Core implemented (Phase 2) — SMTP plugin, queueing, and core templates deferred
+> **Roadmap:** Phase 2 — done
 > **Related:** ARCH-1 (notes-triage.md), PHASE2-2
 
 ---
@@ -449,7 +449,6 @@ At boot, after config is loaded:
 return [
     'from_address' => getenv('MAIL_FROM_ADDRESS') ?: 'noreply@localhost',
     'from_name'    => getenv('MAIL_FROM_NAME')    ?: 'Kernel-Web',
-    'default'      => getenv('MAIL_DEFAULT')      ?: 'mail',   // 'mail' or 'smtp'
 ];
 ```
 
@@ -657,32 +656,22 @@ HookRegistry::register('mailer.transport', function(Container $c): Transport {
 
 ---
 
-## Smallest Safe Implementation Slice
+## Implementation (done — commit fd93d4c)
 
-After design, the first implementation would be:
-
-1. **Core files (6 files)**:
+1. **Core files (7 files)**:
    - `app/Core/Mailer.php` — facade service
-   - `app/Core/MailMessage.php` — value object
-   - `app/Core/Attachment.php` — value object
-   - `app/Core/Transport.php` — interface
-   - `app/Core/MailTransport.php` — default `mail()` transport
-   - `app/Core/MailerException.php` — error type
+   - `app/Core/Mail/MailMessage.php` — value object (clone pattern)
+   - `app/Core/Mail/Attachment.php` — readonly value object with `file()` factory
+   - `app/Core/Mail/TransportInterface.php` — interface
+   - `app/Core/Mail/MailTransport.php` — default `mail()` transport
+   - `app/Core/Mail/MailerException.php` — error type
+   - `app/Core/Mail/TemplateRegistry.php` — template path registry
 
 2. **Config**: `config/mail.php` (from_address, from_name)
 
-3. **Core templates (3 files)**:
-   - `app/Views/emails/layout.html.php`
-   - `app/Views/emails/welcome.html.php`
-   - `app/Views/emails/notification.html.php`
+3. **Test suite (1 file)**: `tests/mailer_test.php` (61 assertions → 63 after security fixes)
 
-4. **TemplateRegistry (1 file)**: `app/Core/TemplateRegistry.php`
-
-5. **Container wiring**: `public/index.php` — bind `mailer` and `mailer.transport`
-
-**Not in first slice**: SMTP plugin, SMTP settings, queueing, custom transport examples, notification channel integration.
-
-Total: ~10 files, all additive, no breaking changes.
+**Not implemented**: SMTP plugin, SMTP settings, queueing, core email templates (`app/Views/emails/`), container wiring (deferred to auth features phase).
 
 ---
 

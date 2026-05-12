@@ -139,7 +139,7 @@ These are planned or requested but are out of scope for the current development 
 | Contributing docs | Implemented | Documented in /docs/contributing.md |
 | Runtime DB safety | Hardened | DB files excluded from public/, .gitignore updated |
 | Phase 1 stabilization | Closed | 15/15 tasks done |
-| Testing | Partially implemented | Zero-dependency test framework with 5 suites (252 assertions) — router, plugin, migration, auth, mailer. CRUD coverage for users/groups/permissions/tokens complete. Mailer foundation implemented. See docs/developer/testing.md |
+| Testing | Partially implemented | Zero-dependency test framework with 5 suites (254 assertions) — router, plugin, migration, auth, mailer. CRUD coverage for users/groups/permissions/tokens complete. Mailer foundation implemented. See docs/developer/testing.md |
 | Profile Modal | Implemented, full plugin architecture | API Tokens section with create/list/revoke UI. Section registry (ProfileModal class), /api/profile + /api/profile/sections endpoints, plugin tab rendering via JS, permission-gated sections. |
 | Mailer | Implemented | Core infrastructure: MailMessage, Attachment, TemplateRegistry, TransportInterface, MailTransport (mail()), Mailer facade, MailerException. Config at config/mail.php. 61 assertions. Design at docs/developer/mailer.md. |
 | OAuth | Deferred | See Deferred section |
