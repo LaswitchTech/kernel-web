@@ -4,6 +4,7 @@ namespace App\Controllers;
 
 use App\Auth\AuthService;
 use App\Auth\EmailVerificationService;
+use App\Auth\TwoFactorService;
 use App\Core\Controller;
 
 class AuthController extends Controller
@@ -70,6 +71,12 @@ class AuthController extends Controller
         if ($user === null) {
             // Deliberately vague — do not reveal whether the identity exists
             $this->json(['error' => 'Invalid credentials'], 401);
+            return;
+        }
+
+        // If user has 2FA enabled, redirect to 2FA form (pending state stored in AuthService)
+        if ($auth->hasTwoFactorEnabled($user['id'])) {
+            $this->json(['user' => $user, 'two_factor_required' => true]);
             return;
         }
 
@@ -575,6 +582,235 @@ class AuthController extends Controller
     }
 
     // -------------------------------------------------------------------
+    // Two-Factor Authentication
+    // -----------------------------------------------
+
+    /**
+     * GET /auth/2fa — render the 2FA code form.
+     *
+     * Shown when login credentials are valid but the user has 2FA enabled.
+     * A pending 2FA state must exist in the session.
+     */
+    public function twoFactorForm(array $params = []): void
+    {
+        /** @var AuthService $auth */
+        $auth = $this->container->get('auth');
+
+        if (!$auth->hasPendingTwoFactor()) {
+            header('Location: /signin', true, 302);
+            exit;
+        }
+
+        $userId = $auth->getPendingTwoFactorUserId();
+        $user   = $userId !== null ? $auth->user() : null;
+
+        $config    = $this->container->get('config');
+        $appName   = $config['name'] ?? 'Kernel-Web';
+        $viewsPath = __DIR__ . '/../Views';
+
+        http_response_code(200);
+        header('Content-Type: text/html; charset=utf-8');
+
+        ob_start();
+        require $viewsPath . '/auth/two-factor.php';
+        $content = ob_get_clean();
+
+        require $viewsPath . '/layouts/blank.php';
+    }
+
+    /**
+     * POST /auth/2fa — verify TOTP code or recovery code.
+     *
+     * On success: promotes pending 2FA to full session.
+     * On failure: returns 401 JSON with generic error.
+     */
+    public function twoFactor(array $params = []): void
+    {
+        /** @var AuthService $auth */
+        $auth = $this->container->get('auth');
+
+        if (!$auth->hasPendingTwoFactor()) {
+            header('Location: /signin', true, 302);
+            exit;
+        }
+
+        $userId = $auth->getPendingTwoFactorUserId();
+        if ($userId === null) {
+            $this->json(['error' => 'Invalid session'], 401);
+            return;
+        }
+
+        $code = (string) $this->input('code', '');
+        $type = (string) $this->input('type', 'totp'); // 'totp' or 'recovery'
+
+        /** @var TwoFactorService $twoFactor */
+        $twoFactor = $this->container->get('two_factor');
+
+        $verified = false;
+
+        if ($type === 'recovery') {
+            $verified = $twoFactor->validateRecoveryCode($userId, $code);
+        } else {
+            $verified = $twoFactor->verifyTotp($userId, $code);
+        }
+
+        if (!$verified) {
+            $this->json(['error' => 'Invalid code. Please try again.'], 401);
+            return;
+        }
+
+        // Verify user is still active
+        $user = $auth->user();
+        if ($user === null || !$user['is_active']) {
+            $this->json(['error' => 'Account is not active.'], 401);
+            return;
+        }
+
+        $remember = (bool) $this->input('remember', '0');
+        $auth->completeTwoFactor($remember);
+
+        $this->json(['success' => true]);
+    }
+
+    // ------ Profile Modal 2FA endpoints (SessionAuth) ------
+
+    /**
+     * GET /api/profile/2fa/status
+     */
+    public function profileTwoFactorStatus(array $params = []): void
+    {
+        /** @var AuthService $auth */
+        $auth = $this->container->get('auth');
+        $user = $auth->user();
+
+        if ($user === null) {
+            $this->json(['error' => 'Not authenticated'], 401);
+            return;
+        }
+
+        /** @var TwoFactorService $twoFactor */
+        $twoFactor = $this->container->get('two_factor');
+        $enabled   = $twoFactor->isEnabled($user['id']);
+
+        $this->json(['enabled' => $enabled]);
+    }
+
+    /**
+     * POST /api/profile/2fa/generate
+     */
+    public function profileTwoFactorGenerate(array $params = []): void
+    {
+        /** @var AuthService $auth */
+        $auth = $this->container->get('auth');
+        $user = $auth->user();
+
+        if ($user === null) {
+            $this->json(['error' => 'Not authenticated'], 401);
+            return;
+        }
+
+        /** @var TwoFactorService $twoFactor */
+        $twoFactor = $this->container->get('two_factor');
+        $secret = $twoFactor->generateSecret($user['id']);
+
+        if ($secret === null) {
+            $this->json(['error' => 'User not found'], 404);
+            return;
+        }
+
+        $appName = ($this->container->get('config')['name'] ?? 'Kernel-Web');
+        $uri = $twoFactor->getOtpauthUri($user['id'], $appName, $user['email']);
+
+        $this->json(['secret' => $secret, 'uri' => $uri]);
+    }
+
+    /**
+     * POST /api/profile/2fa/enable
+     */
+    public function profileTwoFactorEnable(array $params = []): void
+    {
+        /** @var AuthService $auth */
+        $auth = $this->container->get('auth');
+        $user = $auth->user();
+
+        if ($user === null) {
+            $this->json(['error' => 'Not authenticated'], 401);
+            return;
+        }
+
+        $code = (string) $this->input('code', '');
+
+        /** @var TwoFactorService $twoFactor */
+        $twoFactor = $this->container->get('two_factor');
+
+        if (!$twoFactor->verifyTotp($user['id'], $code)) {
+            $this->json(['error' => 'Invalid code. Please verify with your authenticator app.'], 400);
+            return;
+        }
+
+        $result = $twoFactor->enable($user['id']);
+
+        $this->json([
+            'enabled'       => true,
+            'recoveryCodes' => $result['recoveryCodes'],
+        ]);
+    }
+
+    /**
+     * POST /api/profile/2fa/recovery-codes
+     */
+    public function profileTwoFactorRegenerateRecoveryCodes(array $params = []): void
+    {
+        /** @var AuthService $auth */
+        $auth = $this->container->get('auth');
+        $user = $auth->user();
+
+        if ($user === null) {
+            $this->json(['error' => 'Not authenticated'], 401);
+            return;
+        }
+
+        /** @var TwoFactorService $twoFactor */
+        $twoFactor = $this->container->get('two_factor');
+
+        $result = $twoFactor->enable($user['id']);
+
+        $this->json([
+            'recoveryCodes' => $result['recoveryCodes'],
+        ]);
+    }
+
+    /**
+     * POST /api/profile/2fa/disable
+     */
+    public function profileTwoFactorDisable(array $params = []): void
+    {
+        /** @var AuthService $auth */
+        $auth = $this->container->get('auth');
+        $user = $auth->user();
+
+        if ($user === null) {
+            $this->json(['error' => 'Not authenticated'], 401);
+            return;
+        }
+
+        /** @var TwoFactorService $twoFactor */
+        $twoFactor = $this->container->get('two_factor');
+
+        $code = (string) $this->input('code', '');
+
+        // Require current TOTP code to disable (prevent unauthorized disabling)
+        if (!$twoFactor->verifyTotp($user['id'], $code)) {
+            $this->json(['error' => 'Invalid code. Please verify with your authenticator app.'], 400);
+            return;
+        }
+
+        $twoFactor->disable($user['id']);
+
+        $this->json(['enabled' => false]);
+    }
+
+    // --------
     // GET /api/profile
     // -------------------------------------
 

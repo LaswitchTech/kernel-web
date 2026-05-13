@@ -28,6 +28,12 @@ class AuthService
     /** @var array|null In-request cache — avoid re-querying DB on every call */
     private ?array $cachedUser = null;
 
+    /** @var \App\Core\Container|null DI container (for TwoFactorService access) */
+    private ?\App\Core\Container $container = null;
+
+    // 5-minute window for pending 2FA state
+    private const TWO_FACTOR_PENDING_LIFETIME = 300;
+
     public function __construct(
         AuthProviderInterface $provider,
         array $config,
@@ -53,7 +59,11 @@ class AuthService
      * Attempt to log in with the given credentials.
      * Returns the safe user array on success, null on failure.
      *
-     * @param bool $remember Whether to issue a Remember Me cookie.
+     * If the user has 2FA enabled, stores a pending 2FA state and returns
+     * the safe user array for the caller to present the 2FA form.
+     *
+     * @param bool $remember Whether to issue a Remember Me cookie (only after 2FA completes).
+     * @return array|null Safe user array, or null on failure.
      */
     public function login(array $credentials, bool $remember = false): ?array
     {
@@ -68,6 +78,13 @@ class AuthService
         // Regenerate session ID to prevent session fixation attacks
         @session_regenerate_id(true);
 
+        // Check if user has 2FA enabled
+        if ($this->hasTwoFactorEnabled($user['id'])) {
+            // Store pending 2FA state — not a full session
+            $this->storeTwoFactorPending($user['id']);
+            return $user;
+        }
+
         $_SESSION['user_id'] = $user['id'];
 
         $this->cachedUser = $user;
@@ -79,6 +96,73 @@ class AuthService
         }
 
         return $user;
+    }
+
+    /**
+     * Complete 2FA verification and promote the pending state to a full session.
+     *
+     * Called after the user successfully enters their TOTP code or recovery code.
+     */
+    public function completeTwoFactor(bool $remember = false): void
+    {
+        $userId = (int) ($_SESSION['_2fa_user_id'] ?? 0);
+        $expires = $_SESSION['_2fa_expires'] ?? 0;
+
+        // Clear pending state regardless of validity (one-time use)
+        $this->clearTwoFactorPending();
+
+        if ($userId === 0 || $expires <= time()) {
+            return; // Expired or invalid — don't create session
+        }
+
+        $_SESSION['user_id'] = $userId;
+
+        $this->cachedUser = $this->provider->getUserById($userId);
+
+        if ($remember && $this->rememberMe !== null) {
+            $this->rememberMe->issue($userId);
+        }
+    }
+
+    /**
+     * Check if the user has 2FA enabled.
+     */
+    public function hasTwoFactorEnabled(int $userId): bool
+    {
+        if (!isset($this->container)) {
+            // TwoFactorService not available — can't check 2FA (shouldn't happen in normal boot)
+            return false;
+        }
+        $service = $this->container->get('two_factor');
+        return $service->isEnabled($userId);
+    }
+
+    /**
+     * Check if there is a pending 2FA state.
+     */
+    public function hasPendingTwoFactor(): bool
+    {
+        if (!isset($this->container)) {
+            return false;
+        }
+        $userId = (int) ($_SESSION['_2fa_user_id'] ?? 0);
+        $expires = (int) ($_SESSION['_2fa_expires'] ?? 0);
+
+        if ($userId === 0 || $expires <= time()) {
+            $this->clearTwoFactorPending();
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Get the pending 2FA user ID.
+     */
+    public function getPendingTwoFactorUserId(): ?int
+    {
+        $userId = (int) ($_SESSION['_2fa_user_id'] ?? 0);
+        return $userId > 0 ? $userId : null;
     }
 
     /**
@@ -167,6 +251,31 @@ class AuthService
         $_SESSION['user_id'] = $userId;
 
         $this->cachedUser = $this->provider->getUserById($userId);
+    }
+
+    /**
+     * Set the DI container for 2FA checks.
+     */
+    public function setContainer(\App\Core\Container $container): void
+    {
+        $this->container = $container;
+    }
+
+    /**
+     * Store a pending 2FA state for the given user.
+     */
+    private function storeTwoFactorPending(int $userId): void
+    {
+        $_SESSION['_2fa_user_id'] = $userId;
+        $_SESSION['_2fa_expires'] = time() + self::TWO_FACTOR_PENDING_LIFETIME;
+    }
+
+    /**
+     * Clear the pending 2FA state.
+     */
+    private function clearTwoFactorPending(): void
+    {
+        unset($_SESSION['_2fa_user_id'], $_SESSION['_2fa_expires']);
     }
 
     private function startSession(): void

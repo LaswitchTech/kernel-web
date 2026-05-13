@@ -190,7 +190,14 @@ if (!empty($authConfig['remember_me']['enabled'])) {
     $rememberMeService  = new RememberMeService($rememberRepo, $userRepo, $authConfig);
 }
 
-$container->set('auth',   new AuthService(new LocalAuthProvider($userRepo), $authConfig, $rememberMeService));
+$authService = new AuthService(new LocalAuthProvider($userRepo), $authConfig, $rememberMeService);
+$container->set('auth', $authService);
+$authService->setContainer($container);
+
+// Two Factor service — available to AuthController for 2FA setup.
+$twoFactorRepo  = new \App\Models\TwoFactorRepository($container->get('db'));
+$twoFactorService = new \App\Auth\TwoFactorService($twoFactorRepo, $userRepo);
+$container->set('two_factor', $twoFactorService);
 $container->set('gate',   $gate);
 $container->set('tokens', new TokenService($tokenRepo, $userRepo, $gate));
 
@@ -398,7 +405,19 @@ if ($pluginsDir !== false && is_dir($pluginsDir)) {
     'source'   => 'core',
 ]);
 
-// ---------------------------------------------------------------------------
+// ------ Profile Modal — 2FA Section (core) ------
+// Registers 2FA management via AJAX endpoints on AuthController.
+\App\Core\ProfileModal::addSection([
+    'id'       => 'two-factor',
+    'label'    => 'Two-Factor Auth',
+    'icon'     => 'bi-shield-lock',
+    'order'    => 30,
+    'callback' => fn () => '<div id="pm-two-factor-content"></div>',
+    'permission' => null,
+    'source'   => 'core',
+]);
+
+// ---------------------
 // Application Routes
 // ---------------------------------------------------------------------------
 require __DIR__ . '/../routes/web.php';

@@ -125,6 +125,13 @@ $router->get('/api/profile', 'AuthController@profile', ['SessionAuth']);
 $router->get('/api/profile/sections', 'ProfileModalController@index', ['SessionAuth']);
 $router->get('/api/profile/sections/{id}', 'ProfileModalController@content', ['SessionAuth']);
 
+// Profile Modal — 2FA endpoints.
+$router->get('/api/profile/2fa/status', 'AuthController@profileTwoFactorStatus', ['SessionAuth']);
+$router->post('/api/profile/2fa/generate', 'AuthController@profileTwoFactorGenerate', ['SessionAuth']);
+$router->post('/api/profile/2fa/enable', 'AuthController@profileTwoFactorEnable', ['SessionAuth']);
+$router->post('/api/profile/2fa/recovery-codes', 'AuthController@profileTwoFactorRegenerateRecoveryCodes', ['SessionAuth']);
+$router->post('/api/profile/2fa/disable', 'AuthController@profileTwoFactorDisable', ['SessionAuth']);
+
 // Chat JSON API — SessionAuth for AJAX callers.
 $router->get('/api/chat/unread', 'Modules\Chat\Controllers\ChatController@unreadCount', ['SessionAuth']);
 
@@ -154,6 +161,10 @@ $router->post('/auth/verify/resend', 'AuthController@resendVerification', ['Sess
 
 // Email verification — SessionAuth (returns JSON for banner check)
 $router->get('/api/email-verification/status', 'AuthController@verifyBanner', ['SessionAuth']);
+
+// Two-Factor Authentication — public (intermediate auth step)
+$router->get('/auth/2fa', 'AuthController@twoFactorForm');
+$router->post('/auth/2fa', 'AuthController@twoFactor');
 
 // -------------------------------- Token Management ------
 $router->get('/api/tokens', 'TokenController@index', ['SessionAuth']);

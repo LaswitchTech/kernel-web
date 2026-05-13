@@ -125,7 +125,11 @@
             const data = await res.json();
 
             if (res.ok && data.user) {
-                window.location.href = '/';
+                if (data.two_factor_required) {
+                    window.location.href = '/auth/2fa';
+                } else {
+                    window.location.href = '/';
+                }
             } else {
                 showError(data.error ?? 'Login failed. Please try again.');
             }
