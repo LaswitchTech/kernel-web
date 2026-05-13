@@ -142,6 +142,13 @@ $router->get('/auth/forgot-password/sent', 'AuthController@forgotSent');
 $router->get('/auth/reset-password', 'AuthController@resetForm');
 $router->post('/auth/reset-password', 'AuthController@reset');
 
+// Email verification — public
+$router->get('/auth/verify/email', 'AuthController@verifyEmail');
+$router->post('/auth/verify/resend', 'AuthController@resendVerification', ['SessionAuth']);
+
+// Email verification — SessionAuth (returns JSON for banner check)
+$router->get('/api/email-verification/status', 'AuthController@verifyBanner', ['SessionAuth']);
+
 // -------------------------------- Token Management ------
 $router->get('/api/tokens', 'TokenController@index', ['SessionAuth']);
 $router->post('/api/tokens', 'TokenController@create', ['SessionAuth']);

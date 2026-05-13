@@ -63,7 +63,7 @@ class UserRepository
     public function findByIdAny(int $id): ?array
     {
         return $this->db->fetchOne(
-            'SELECT id, display_name, username, email, is_active, created_at, updated_at
+            'SELECT id, display_name, username, email, is_active, email_verified_at, created_at, updated_at
              FROM users WHERE id = ? LIMIT 1',
             [$id]
         );
@@ -82,7 +82,8 @@ class UserRepository
     public function findAllActive(): array
     {
         return $this->db->fetch(
-            'SELECT * FROM users WHERE is_active = 1 ORDER BY id ASC',
+            'SELECT id, display_name, username, email, is_active, email_verified_at, created_at, updated_at
+             FROM users WHERE is_active = 1 ORDER BY id ASC',
             []
         );
     }
@@ -97,7 +98,7 @@ class UserRepository
     public function findAll(): array
     {
         return $this->db->fetch(
-            'SELECT id, display_name, username, email, is_active, created_at, updated_at
+            'SELECT id, display_name, username, email, is_active, email_verified_at, created_at, updated_at
              FROM users
              ORDER BY display_name ASC',
             []
@@ -287,6 +288,20 @@ class UserRepository
         $this->db->execute(
             'UPDATE users SET is_active = ?, updated_at = ? WHERE id = ?',
             [$active ? 1 : 0, date('Y-m-d H:i:s'), $id]
+        );
+    }
+
+    /**
+     * Set the email verification timestamp for a user.
+     *
+     * @param int    $id         User ID.
+     * @param string $verifiedAt Verified timestamp.
+     */
+    public function setEmailVerified(int $id, string $verifiedAt): void
+    {
+        $this->db->execute(
+            'UPDATE users SET email_verified_at = ?, updated_at = ? WHERE id = ?',
+            [$verifiedAt, $verifiedAt, $id]
         );
     }
 }

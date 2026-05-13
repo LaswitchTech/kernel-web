@@ -107,6 +107,39 @@ Session security:
 
 ---
 
+## Email Verification
+
+**Classes:** `App\Auth\EmailVerificationService`, `App\Models\EmailVerificationRepository`
+
+| Method | Description |
+|---|---|
+| `generate(int $userId): ?array` | Generate token for unverified user; returns `['selector','userId','email','display_name']` or null |
+| `resend(string $email): ?array` | Resend verification email; enumeration-safe (returns null if not found) |
+| `validate(string $token): ?array` | Verify token; sets `email_verified_at`, returns `['user'=>'array','token_id'=>int]` or null |
+| `sendEmail(string $to, string $toName, string $verifyUrl, ...): bool` | Send verification email with template |
+
+**Security model:**
+- Token is `random_bytes(32)` → hex, hashed with SHA-256 before storage
+- Single-use — `used_at` set on successful verification
+- Expires after 24 hours
+- Inactive users can still verify their email (verification is separate from activation)
+- Already-verified users cannot generate new tokens
+
+**Routes:**
+- `GET /auth/verify/email?token=xxx` — validate token, show success page
+- `POST /auth/verify/resend` — resend verification email (requires SessionAuth)
+- `GET /api/email-verification/status` — check if logged-in user's email is verified (JSON)
+
+**Email template:** `app/Views/emails/email_verification.php` — `userName`, `verifyUrl`
+
+**Migration:** `database/migrations/0050_add_email_verification_support.php`
+
+**User schema:** `users.email_verified_at` — nullable VARCHAR(32). NULL = not verified.
+
+**Soft gate:** Unverified users can log in and access the application. A banner can be shown to prompt verification. Hard gate deferred to admin config.
+
+---
+
 ## Token Authentication
 
 **Class:** `App\Auth\TokenService`

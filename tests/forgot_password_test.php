@@ -78,6 +78,7 @@ $db->execute("CREATE TABLE users (
     display_name TEXT DEFAULT '',
     password_hash TEXT NOT NULL,
     is_active INTEGER DEFAULT 1,
+    email_verified_at VARCHAR(32),
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL
 )");

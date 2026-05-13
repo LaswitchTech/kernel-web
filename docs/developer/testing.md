@@ -34,6 +34,7 @@ tests/
   migration_test.php   — Migration runner with in-memory SQLite
   auth_test.php        — CRUD tests for Users, Groups, Permissions, Tokens
   remember_me_test.php — Remember Me token repo, service, and AuthService integration
+  email_verification_test.php — Email Verification token repo, service, and mailer integration
 ```
 
 ### Test runner
@@ -116,6 +117,10 @@ Tests zero-dependency mailer infrastructure using a `FakeTransport` for capture-
 ### Remember Me tests (`remember_me_test.php`) — 54 assertions
 
 Tests `RememberTokenRepository` and `RememberMeService` with in-memory SQLite. Covers token creation, selector lookup, revoke, revokeAllForUser, token rotation, cookie parsing (null, no-colon, empty, normal, multi-colon), valid token attempt with rotation verification, expired token rejection, revoked token rejection, inactive user rejection, wrong validator rejection, and AuthService integration (login with/without remember, restoreSession).
+
+### Email Verification tests (`email_verification_test.php`) — 38 assertions
+
+Tests `EmailVerificationRepository` and `EmailVerificationService` with in-memory SQLite. Covers token generation (64-char hex, SHA-256 hash storage), already-verified user rejection, nonexistent user handling, valid token verification with `email_verified_at` update, expired token rejection, used token rejection, nonexistent token rejection, inactive user email verification, token revocation after verification, email template rendering, email sending with mailer (FakeTransport), null mailer handling, resend (new token replaces old), resend for verified user, resend for nonexistent user (enumeration-safe), and revokeAllForUser.
 
 ## Dependencies
 

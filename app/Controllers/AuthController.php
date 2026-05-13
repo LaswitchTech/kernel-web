@@ -3,6 +3,7 @@
 namespace App\Controllers;
 
 use App\Auth\AuthService;
+use App\Auth\EmailVerificationService;
 use App\Core\Controller;
 
 class AuthController extends Controller
@@ -248,6 +249,138 @@ class AuthController extends Controller
         }
 
         $this->json(['success' => true]);
+    }
+
+    // -------------------------------------------------------------------
+    // Email Verification
+    // -------------------------------------------------
+
+    /**
+     * GET /auth/verify — show pending-verification banner when user is logged in
+     * but has not verified their email.
+     */
+    public function verifyBanner(array $params = []): void
+    {
+        /** @var AuthService $auth */
+        $auth = $this->container->get('auth');
+        $user = $auth->user();
+
+        if ($user === null) {
+            $this->json(['error' => 'Not authenticated'], 401);
+            return;
+        }
+
+        // Already verified — no banner needed
+        if (!empty($user['email_verified_at'])) {
+            $this->json(['verified' => true]);
+            return;
+        }
+
+        $this->json([
+            'verified'     => false,
+            'email'        => (string) ($user['email'] ?? ''),
+            'display_name' => (string) ($user['display_name'] ?? ''),
+        ]);
+    }
+
+    /**
+     * GET /auth/verify/email — validate token and mark email as verified.
+     */
+    public function verifyEmail(array $params = []): void
+    {
+        $token = (string) $this->input('token', '');
+
+        if ($token === '') {
+            http_response_code(200);
+            header('Content-Type: text/html; charset=utf-8');
+
+            $config    = $this->container->get('config');
+            $appName   = $config['name'] ?? 'Kernel-Web';
+            $viewsPath = __DIR__ . '/../Views';
+
+            ob_start();
+            require $viewsPath . '/auth/verify-invalid.php';
+            $content = ob_get_clean();
+
+            require $viewsPath . '/layouts/blank.php';
+            return;
+        }
+
+        /** @var EmailVerificationService $verifyService */
+        $verifyService = $this->container->get('email_verification');
+        $validated     = $verifyService->validate($token);
+
+        if ($validated === null) {
+            http_response_code(200);
+            header('Content-Type: text/html; charset=utf-8');
+
+            $config    = $this->container->get('config');
+            $appName   = $config['name'] ?? 'Kernel-Web';
+            $viewsPath = __DIR__ . '/../Views';
+
+            ob_start();
+            require $viewsPath . '/auth/verify-expired.php';
+            $content = ob_get_clean();
+
+            require $viewsPath . '/layouts/blank.php';
+            return;
+        }
+
+        // Success — show verified page
+        http_response_code(200);
+        header('Content-Type: text/html; charset=utf-8');
+
+        $config    = $this->container->get('config');
+        $appName   = $config['name'] ?? 'Kernel-Web';
+        $viewsPath = __DIR__ . '/../Views';
+
+        ob_start();
+        require $viewsPath . '/auth/verify-success.php';
+        $content = ob_get_clean();
+
+        require $viewsPath . '/layouts/blank.php';
+    }
+
+    /**
+     * POST /auth/verify/resend — resend verification email.
+     */
+    public function resendVerification(array $params = []): void
+    {
+        /** @var AuthService $auth */
+        $auth = $this->container->get('auth');
+        $user = $auth->user();
+
+        if ($user === null) {
+            $this->json(['error' => 'Not authenticated'], 401);
+            return;
+        }
+
+        if (!empty($user['email_verified_at'])) {
+            $this->json(['success' => true, 'already_verified' => true]);
+            return;
+        }
+
+        /** @var EmailVerificationService $verifyService */
+        $verifyService = $this->container->get('email_verification');
+        $result        = $verifyService->resend($user['email']);
+
+        if ($result === null) {
+            // Enumeration-safe: always report success even if the account
+            // doesn't exist or is already verified.
+            $this->json(['success' => true]);
+            return;
+        }
+
+        $resetUrl = '/auth/verify/email?token=' . urlencode($result['selector']);
+        $sent = $verifyService->sendEmail(
+            $result['email'],
+            $result['display_name'],
+            $resetUrl,
+            'noreply@localhost',
+            'Kernel-Web'
+        );
+
+        $this->json(['success' => true, 'sent' => $sent]);
     }
 
     // -------------------------------------------------------------------

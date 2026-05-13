@@ -1,6 +1,6 @@
 # Auth Features Design
 
-> **Status:** Partially implemented (Remember Me, Forgot Password done; email verification, 2FA pending)
+> **Status:** Partially implemented (Remember Me, Forgot Password, Email Verification done; 2FA pending)
 > **Roadmap:** Phase 2
 > **Related:** MAILER-1 (Mailer), SETTINGS-1 (SettingsRegistry), PHASE2-1
 
@@ -35,6 +35,11 @@
 | Password reset repository | `app/Models/PasswordResetRepository.php` | `auth_password_resets` table queries |
 | Password reset views | `app/Views/auth/forgot-password.php`, `forgot-password-sent.php`, `reset-password.php` | |
 | Password reset email | `app/Views/emails/password_reset.php` | Bootstrap-styled template |
+| Email verification service | `app/Auth/EmailVerificationService.php` | generate, resend, validate, sendEmail |
+| Email verification repository | `app/Models/EmailVerificationRepository.php` | `auth_email_verifications` table queries |
+| Email verification views | `app/Views/auth/verify-email.php`, `verify-success.php`, `verify-expired.php`, `verify-invalid.php` | |
+| Email verification email | `app/Views/emails/email_verification.php` | Bootstrap-styled template |
+| users.email_verified_at | `database/migrations/0050_add_email_verification_support.php` | nullable VARCHAR(32) — NULL = not verified |
 | Remember Me service | `app/Auth/RememberMeService.php` | issue, attempt, revokeAll |
 | Remember Me repository | `app/Models/RememberTokenRepository.php` | `auth_remember_tokens` table queries |
 | Settings | `config/mail.php` | from_address, from_name |
@@ -713,21 +718,27 @@ All auth tokens follow the same pattern:
 
 ### Phase 2: Email Verification
 
-**Status**: Forgot Password is **done** (Phase 2 item). Email Verification remains pending.
+**Status**: **Done** — implemented alongside Forgot Password as part of the stabilization pass.
 
-**Why separated**: Forgot Password was accelerated into the current stabilization phase. Email Verification is deferred to Phase 3+ to keep focus on core UX first.
+**Implementation**: Follows the same selector/validator token pattern as Remember Me and Forgot Password. Soft gate: unverified users can log in but see a verification banner. Hard gate deferred to admin config.
 
-**Planned migration**: `0031_add_email_verification_support.php` (add `email_verified_at` column + `auth_email_verifications` table)
+**Migration**: `0050_add_email_verification_support.php` — adds `email_verified_at` column to `users` table + creates `auth_email_verifications` table.
 
-**Planned files**:
-- `app/Auth/EmailVerificationService.php`
-- `app/Models/EmailVerificationRepository.php`
-- `app/Controllers/AuthController.php` (verify actions)
-- `app/Views/auth/verify-email.php`
-- `app/Views/auth/verify-email-sent.php`
-- `app/Views/emails/email_verification.php`
+**Files**:
+- `app/Auth/EmailVerificationService.php` — generate, resend, validate, sendEmail
+- `app/Models/EmailVerificationRepository.php` — `auth_email_verifications` CRUD
+- `app/Controllers/AuthController.php` — `verifyBanner()`, `verifyEmail()`, `resendVerification()`
+- `app/Views/auth/verify-success.php`, `verify-expired.php`, `verify-invalid.php`
+- `app/Views/emails/email_verification.php` — Bootstrap-styled template
+- `routes/web.php` — 3 new routes
+- `public/index.php` — DI registration
 
-**Dependencies**: Email verification is gated on UX priorities — users will access the kernel without verified email during initial rollout.
+**Routes**:
+- `GET /auth/verify/email` — validate token, mark email verified
+- `POST /auth/verify/resend` — resend verification email (SessionAuth)
+- `GET /api/email-verification/status` — check verification status (SessionAuth, JSON)
+
+**Security rules**: Token is `random_bytes(32)` → hex, hashed with SHA-256. Single-use, 24-hour expiry. Enumeration-safe (always returns a result). Inactive users can verify their email.
 
 ### Phase 3: User Registration
 

@@ -206,6 +206,11 @@ $resetRepo      = new \App\Models\PasswordResetRepository($container->get('db'))
 $resetService   = new \App\Auth\PasswordResetService($resetRepo, $userRepo, $mailer);
 $container->set('password_reset', $resetService);
 
+// Email verification service — wired so AuthController can resolve it from container.
+$verifyRepo     = new \App\Models\EmailVerificationRepository($container->get('db'));
+$verifyService  = new \App\Auth\EmailVerificationService($verifyRepo, $userRepo, $mailer);
+$container->set('email_verification', $verifyService);
+
 // Notifications module — reusable in-app inbox service
 // NotificationService is registered here so it is available to web controllers
 // (inbox reads, dispatch for future web-triggered events, etc.).
