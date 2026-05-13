@@ -9,10 +9,20 @@
 - [Schema Reference](developer/kernel/schema.md)
 - [Domain Model](developer/kernel/domain-model.md)
 - [Routing Conventions](routing.md)
+- [Migrations](migrations.md)
+- [Auth System](auth.md)
+- [Auth Features](developer/auth-features.md)
+- [Testing](developer/testing.md)
 - [Plugin System](developer/plugins/notes-plugin.md)
 - [Theme System](developer/layouts/theming.md)
 - [Menu Registry](menu-registry.md)
 - [Hook Registry](layout-hook-registry.md)
+- [Breadcrumbs](developer/breadcrumbs.md)
+- [Profile Modal](developer/profile-modal.md)
+- [Settings Hooks](developer/settings-hooks.md)
+- [Mailer](developer/mailer.md)
+- [Scaffold Generator](developer/scaffolds.md)
+- [Developer Mode Tools](developer/developer-mode-tools.md)
 - [Root .htaccess](root-htaccess.md)
 
 ## For Users
@@ -28,6 +38,17 @@
 ## System Design
 
 - [Override System](override-system.md) — How to override routes and layouts
+
+## Reference
+
+- [API Reference](api.md)
+- [Database](database.md)
+- [Operations](operations.md)
+- [Organizations](developer/organizations.md)
+
+## Community
+
+- [Contributing](contributing.md)
 
 ## External Links
 
