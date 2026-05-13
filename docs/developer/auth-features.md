@@ -1,6 +1,6 @@
 # Auth Features Design
 
-> **Status:** Partially implemented (Remember Me, Forgot Password, Email Verification done; 2FA pending)
+> **Status:** Partially implemented (Remember Me, Forgot Password, Email Verification, User Registration done; 2FA pending)
 > **Roadmap:** Phase 2
 > **Related:** MAILER-1 (Mailer), SETTINGS-1 (SettingsRegistry), PHASE2-1
 
@@ -25,7 +25,7 @@
 | `TokenAuth` | `app/Middleware/TokenAuth.php` | Token-based auth middleware → writes `principal` to container |
 | `WebAuth` | `app/Middleware/WebAuth.php` | Any auth gate (session or token) |
 | `WebPermission` | `app/Middleware/WebPermission.php` | Permission gate on top of `principal` |
-| `AuthController` | `app/Controllers/AuthController.php` | `/signin` (GET), `/auth/login` (POST), `/auth/logout` (POST), `/auth/me` (GET), forgot/reset password |
+| `AuthController` | `app/Controllers/AuthController.php` | `/signin` (GET), `/auth/login` (POST), `/auth/logout` (POST), `/auth/me` (GET), forgot/reset password, register |
 | `config/auth.php` | `config/auth.php` | Provider + session config |
 | `blank.php` layout | `app/Views/layouts/blank.php` | Auth pages — local assets, hooks, no sidebar |
 | User table | `database/migrations/0002_create_users_table.php` | id, username, email, password_hash, is_active, created_at, updated_at |
@@ -65,7 +65,6 @@
 
 ### What is missing (the gap)
 
-- **No User Registration** — `config/auth.php` has no `registration` key; no registration route exists.
 - **No 2FA** — single-factor auth only.
 
 ---
@@ -342,58 +341,60 @@ CREATE INDEX auth_email_verifications_user_id ON auth_email_verifications (user_
 
 ## 5. User Registration
 
+**Status:** Implemented (Phase 2). Routes at `/auth/register` (GET/POST), view at `app/Views/auth/register.php`, success page at `app/Views/auth/register-success.php`.
+
 ### Purpose
 
 Allow new users to create accounts. Controlled by a single configuration toggle. **Disabled by default.**
 
-### Design
+### Implemented Behavior
 
 - **Config-gated** — `config/auth.php['registration']['enabled']` must be `true`. When false, all registration routes return 404.
-- **No open registration without email verification** — if email verification is enabled, user must verify before full activation.
+- **Email verification** — if `require_email_verification` is `true`, a verification email is sent after account creation. User is created active (`is_active = 1`) but unverified (`email_verified_at = NULL`).
 - **Admin can always create users** — admin user management is unaffected.
-- **Registration form fields**: username, email, password, password confirmation, display name
-- **Server-side validation** — keyed field errors, reuse existing `UserRepository` methods
-- **On success**: creates user (inactive if verification pending, active if verification disabled), auto-logs in, redirects to `/`
+- **Registration form fields**: display_name, username, email, password, password confirmation
+- **Server-side validation** — keyed field errors (HTTP 422), reuse existing `UserRepository::isUsernameTaken()` / `isEmailTaken()`
+- **On success with verification**: redirects to `/auth/register/sent` (check-your-email page)
+- **On success without verification**: auto-logs in and redirects to `config/auth.php['registration']['redirect']`
 
 ### Configuration
 
 ```php
 // config/auth.php
 'registration' => [
-    'enabled'       => false,
-    'require_email_verification' => false,  // requires email_verification feature
-    'auto_login'    => true,                // auto-login after registration
-    'redirect'      => '/',                  // where to redirect after registration
+    'enabled'                  => false,
+    'require_email_verification' => true,  // sends verification email after creation
+    'auto_login'               => true,    // auto-login after registration
+    'redirect'                 => '/',     // where to redirect after registration
 ],
 ```
 
-### Controller changes
+### Controller actions
 
-| Controller | Change |
-|-----------|--------|
-| `AuthController` | New actions: `registerForm()` (GET /auth/register), `register()` (POST /auth/register) |
+| Action | Route | Description |
+|------|--|-----|--|
+| `registerForm()` | GET /auth/register | Renders registration form. Returns 404 if disabled. Redirects to `/` if already logged in. |
+| `register()` | POST /auth/register | Validates, creates user, sends verification email (if required). Returns JSON with redirect URL. |
+| `registerSent()` | GET /auth/register/sent | Renders "check your email" confirmation. |
 
-### View changes
-
-| View | Change |
-|------|--------|
-| `app/Views/auth/register.php` | Form: display_name, username, email, password, password confirmation. Blank layout. "Already have an account? Sign in" link. |
-
-### Validation
+### Validation (HTTP 422 keyed errors)
 
 | Field | Rules |
 |-------|-------|
-| display_name | required, 1-100 chars |
-| username | required, 3-64 chars, alphanumeric + hyphens, unique |
-| email | required, valid email, unique |
-| password | required, min 8 chars, confirmation match |
+| display_name | required, 1–100 chars |
+| username | required, 3–64 chars, alphanumeric + hyphens, unique |
+| email | required, valid email format, unique |
+| password + password_confirm | required, min 8 chars, must match |
+
+Duplicate username or email returns a single generic error: "A user with that username or email already exists." (no account enumeration)
 
 ### Security rules
 
 - Password validated with `password_hash()` (bcrypt, PHP default)
 - Rate limiting (deferred) — prevent abuse
 - No account enumeration — errors show generically if username or email taken
-- User created with `is_active = 0` if email verification required, `1` if not
+- User created as **active but unverified** when verification required
+- Verification email sent via `EmailVerificationService` after account creation
 
 ---
 
@@ -681,17 +682,25 @@ All auth tokens follow the same pattern:
 | `recovery_code_wrong` | Wrong code rejected |
 | `totp_disable_revokes` | Disabling 2FA revokes secret and codes |
 
-### Registration tests
+### Registration tests (tests/registration_test.php — 55 assertions)
 
 | Test | Description |
 |------|-------------|
-| `registration_disabled` | Registration routes return 404 when disabled |
-| `registration_enabled` | Registration form renders when enabled |
-| `registration_valid` | Valid data creates user, logs in |
-| `registration_validation` | Invalid data returns field errors |
-| `registration_email_taken` | Duplicate email error |
-| `registration_username_taken` | Duplicate username error |
-| `registration_verification_pending` | User inactive when verification required |
+| `user_creation` | Creates user, verifies all fields, `is_active=1`, `email_verified_at=NULL` |
+| `password_hashing` | PASSWORD_DEFAULT (bcrypt), `password_verify` confirms |
+| `duplicate_username_detection` | `isUsernameTaken()` returns true for existing, false for new |
+| `duplicate_email_detection` | `isEmailTaken()` returns true for existing, false for new |
+| `verification_token_and_email` | Token generated, record in DB, email sent via mailer |
+| `verification_sets_timestamp` | `setEmailVerified()` sets `email_verified_at` |
+| `already_verified_cannot_generate` | Verified user cannot generate new token |
+| `validation_rules` | display_name, username, email, password validation patterns |
+| `unique_constraint_username` | `RuntimeException` on duplicate username |
+| `unique_constraint_email` | `RuntimeException` on duplicate email |
+| `create_inactive_user` | `is_active=0` user created successfully |
+| `inactive_user_can_verify` | Inactive user can generate and validate verification token |
+| `no_mailer_graceful` | `sendEmail()` returns false when mailer is null |
+| `revoke_all_for_user` | `revokeAllForUser()` clears all pending tokens |
+| `config_shape` | `registration` section has all 4 keys with correct defaults |
 
 ---
 
@@ -739,15 +748,15 @@ All auth tokens follow the same pattern:
 
 ### Phase 3: User Registration
 
-**Why third**: Registration triggers both email verification and (optionally) auto-login (which depends on Remember Me for long sessions).
+**Status:** Implemented. Same file structure as designed, moved to Phase 2 alongside other auth features.
 
 **Files**:
-- `app/Controllers/AuthController.php` (register actions)
-- `app/Views/auth/register.php`
-- `config/auth.php` (add `registration` config)
-- `tests/auth_test.php` (add registration tests)
-
-**Dependencies**: Phase 2 (email verification), Auth features design
+- `app/Controllers/AuthController.php` — `registerForm()`, `register()`, `registerSent()`
+- `app/Views/auth/register.php` — blank layout form with keyed field errors
+- `app/Views/auth/register-success.php` — "check your email" page
+- `config/auth.php` — `registration` config section
+- `routes/web.php` — GET/POST `/auth/register`, GET `/auth/register/sent`
+- `tests/registration_test.php` — 55 assertions
 
 ### Phase 4: Two-Factor Authentication
 

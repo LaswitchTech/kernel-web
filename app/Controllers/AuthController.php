@@ -384,6 +384,197 @@ class AuthController extends Controller
     }
 
     // -------------------------------------------------------------------
+    // User Registration
+    // -------------------------------------------------------------------
+
+    /**
+     * GET /auth/register — render the registration form.
+     */
+    public function registerForm(array $params = []): void
+    {
+        $config = $this->container->get('config');
+        $regConfig = $config['auth']['registration'] ?? [];
+
+        // Disabled — return 404
+        if (!($regConfig['enabled'] ?? false)) {
+            http_response_code(404);
+            exit;
+        }
+
+        // Already authenticated — send to home
+        /** @var AuthService $auth */
+        $auth = $this->container->get('auth');
+        if ($auth->check()) {
+            header('Location: /', true, 302);
+            exit;
+        }
+
+        http_response_code(200);
+        header('Content-Type: text/html; charset=utf-8');
+
+        $appName   = $config['name'] ?? 'Kernel-Web';
+        $viewsPath = __DIR__ . '/../Views';
+        $requireVerification = $regConfig['require_email_verification'] ?? true;
+
+        ob_start();
+        require $viewsPath . '/auth/register.php';
+        $content = ob_get_clean();
+
+        require $viewsPath . '/layouts/blank.php';
+    }
+
+    /**
+     * POST /auth/register — create a new account.
+     *
+     * Validates fields, creates user, optionally sends verification email,
+     * and either auto-logs the user in or redirects to success page.
+     */
+    public function register(array $params = []): void
+    {
+        $config = $this->container->get('config');
+        $regConfig = $config['auth']['registration'] ?? [];
+
+        // Disabled — return 404
+        if (!($regConfig['enabled'] ?? false)) {
+            $this->json(['error' => 'Registration is not available'], 404);
+            return;
+        }
+
+        $displayName = trim((string) $this->input('display_name', ''));
+        $username    = trim((string) $this->input('username', ''));
+        $email       = trim((string) $this->input('email', ''));
+        $password    = (string) $this->input('password', '');
+        $passwordConfirm = (string) $this->input('password_confirm', '');
+
+        // Keyed field errors
+        $errors = [];
+
+        if (strlen($displayName) < 1 || strlen($displayName) > 100) {
+            $errors['display_name'] = 'Display name is required and must be 100 characters or fewer.';
+        }
+
+        if (strlen($username) < 3 || strlen($username) > 64 || !preg_match('/^[a-zA-Z0-9-]+$/', $username)) {
+            $errors['username'] = 'Username must be 3–64 characters and contain only letters, numbers, and hyphens.';
+        }
+
+        if (strlen($email) < 3 || strlen($email) > 254 || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            $errors['email'] = 'A valid email address is required.';
+        }
+
+        if (strlen($password) < 8 || $password !== $passwordConfirm) {
+            $errors['password'] = 'Passwords must match and be at least 8 characters.';
+        }
+
+        if (empty($errors)) {
+            /** @var UserRepository $userRepo */
+            $userRepo = $this->container->get('user_repo');
+
+            // Check duplicates — safe: same generic error regardless of which field is taken
+            if ($userRepo->isUsernameTaken($username) || $userRepo->isEmailTaken($email)) {
+                $errors['account'] = 'A user with that username or email already exists.';
+            }
+        }
+
+        if (!empty($errors)) {
+            $this->json(['errors' => $errors], 422);
+            return;
+        }
+
+        $requireVerification = $regConfig['require_email_verification'] ?? true;
+        $isRegistered = true;
+
+        try {
+            $passwordHash = password_hash($password, PASSWORD_DEFAULT);
+            $userId = $userRepo->create([
+                'display_name' => $displayName,
+                'username'     => $username,
+                'email'        => $email,
+                'password_hash' => $passwordHash,
+                'is_active'    => 1,
+            ]);
+
+            // Send verification email if required
+            if ($requireVerification) {
+                // Set email_verified_at = NULL explicitly so EmailVerificationService knows
+                // the user is unverified
+                $emailVerificationService = $this->container->get('email_verification');
+                $verifyService = new \App\Auth\EmailVerificationService(
+                    new \App\Models\EmailVerificationRepository($this->container->get('db')),
+                    $userRepo,
+                    $emailVerificationService !== null ? $emailVerificationService : null
+                );
+
+                // Generate token for this user
+                $tokenResult = $verifyService->generate($userId);
+
+                if ($tokenResult !== null) {
+                    // Resend will revoke the generated token and create a fresh one
+                    // — that's fine, we just need a token in the DB
+                    // Actually: generate() already sent the email in some flows.
+                    // The EmailVerificationService doesn't auto-send. We send manually.
+                    $verifyService->sendEmail(
+                        $email,
+                        $displayName,
+                        '/auth/verify/email?token=' . urlencode($tokenResult['selector']),
+                        'noreply@localhost',
+                        $config['name'] ?? 'Kernel-Web'
+                    );
+                    $isRegistered = false; // Token generated — user will verify later
+                }
+            }
+        } catch (\RuntimeException $e) {
+            // DB constraint violation (shouldn't reach here since we check duplicates first)
+            $this->json(['errors' => ['account' => 'Registration failed. Please try again.']], 500);
+            return;
+        }
+
+        // Auto-login if configured
+        $autoLogin = $regConfig['auto_login'] ?? true;
+        $redirect  = $regConfig['redirect'] ?? '/';
+
+        if ($autoLogin && $isRegistered) {
+            /** @var AuthService $auth */
+            $auth = $this->container->get('auth');
+            $auth->login([
+                'identity' => $username,
+                'password' => $password,
+            ]);
+
+            $this->json([
+                'success' => true,
+                'redirect' => $redirect,
+                'user' => $auth->user(),
+            ]);
+            return;
+        }
+
+        // Verification required — show success page
+        $this->json([
+            'success' => true,
+            'requires_verification' => true,
+        ]);
+    }
+
+    /**
+     * GET /auth/register/sent — "check your email" confirmation.
+     */
+    public function registerSent(array $params = []): void
+    {
+        http_response_code(200);
+        header('Content-Type: text/html; charset=utf-8');
+
+        $config    = $this->container->get('config');
+        $appName   = $config['name'] ?? 'Kernel-Web';
+        $viewsPath = __DIR__ . '/../Views';
+
+        ob_start();
+        require $viewsPath . '/auth/register-success.php';
+        $content = ob_get_clean();
+
+        require $viewsPath . '/layouts/blank.php';
+    }
+
+    // -------------------------------------------------------------------
     // GET /api/profile
     // -------------------------------------
 

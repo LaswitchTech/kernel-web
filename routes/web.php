@@ -142,6 +142,12 @@ $router->get('/auth/forgot-password/sent', 'AuthController@forgotSent');
 $router->get('/auth/reset-password', 'AuthController@resetForm');
 $router->post('/auth/reset-password', 'AuthController@reset');
 
+// User registration — public (config-gated, returns 404 when disabled)
+$router->get('/auth/register', 'AuthController@registerForm');
+$router->post('/auth/register', 'AuthController@register');
+$router->get('/auth/register/sent', 'AuthController@registerSent');
+$router->post('/auth/reset-password', 'AuthController@reset');
+
 // Email verification — public
 $router->get('/auth/verify/email', 'AuthController@verifyEmail');
 $router->post('/auth/verify/resend', 'AuthController@resendVerification', ['SessionAuth']);

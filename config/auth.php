@@ -19,4 +19,11 @@ return [
         'lifetime' => 2592000, // 30 days in seconds
         'cookie'   => 'kernel_remember',
     ],
+
+    'registration' => [
+        'enabled'                  => false,
+        'require_email_verification' => true,
+        'auto_login'               => true,
+        'redirect'                 => '/',
+    ],
 ];

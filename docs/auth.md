@@ -312,8 +312,57 @@ Returns the current user's tokens. Hashes never included.
 
 Revoke one of the current user's tokens. Ownership enforced.
 
-**200:** `{ "success": true }`  
+**200:** `{ "success": true }`
 **404:** not found or already revoked
+
+---
+
+### `GET /auth/register` — public (config-gated)
+
+Renders the registration form (`app/Views/auth/register.php`).
+
+- If registration is disabled (`config/auth.php['registration']['enabled']` is `false`), returns 404.
+- If the user is already authenticated, redirects to `/` with 302.
+- Otherwise returns 200 with the registration form HTML.
+
+The form submits via AJAX to `POST /auth/register` and either redirects to `/` on success or
+to `/auth/register/sent` if email verification is required.
+
+---
+
+### `POST /auth/register` — public (config-gated)
+
+**Body (form-encoded):** `{ "display_name": "Alice Smith", "username": "alice", "email": "alice@example.com", "password": "secret123", "password_confirm": "secret123" }`
+
+`config/auth.php` settings:
+- `registration.enabled` — must be `true` for this endpoint to work
+- `registration.require_email_verification` — if `true`, user is created unverified and redirected to `/auth/register/sent`
+- `registration.auto_login` — if `true` and verification is not required, auto-logs in after creation
+- `registration.redirect` — where to redirect after successful auto-login
+
+**200 with auto-login:**
+```json
+{ "success": true, "redirect": "/", "user": { ... } }
+```
+**200 with verification required:**
+```json
+{ "success": true, "requires_verification": true }
+```
+**404:** registration disabled
+**422:** validation errors — `{ "errors": { "username": "error", "email": "error", ... } }`
+
+Validation rules:
+- `display_name` — required, 1–100 chars
+- `username` — required, 3–64 chars, alphanumeric + hyphens, unique
+- `email` — required, valid email format, unique
+- `password` / `password_confirm` — required, min 8 chars, must match
+- Duplicate username or email returns a single generic error (no account enumeration)
+
+---
+
+### `GET /auth/register/sent` — public
+
+Renders a "check your email" confirmation page (`app/Views/auth/register-success.php`).
 
 ---
 
@@ -384,6 +433,8 @@ return [
 | File | Route | Description |
 |---|---|---|
 | `app/Views/auth/login.php` | `GET /auth/login` | Minimal Bootstrap 5 login form. Submits via AJAX to `POST /auth/login`. Redirects to `/` on success. |
+| `app/Views/auth/register.php` | `GET /auth/register` | Registration form (config-gated, disabled by default). Submits via AJAX to `POST /auth/register`. |
+| `app/Views/auth/register-success.php` | `GET /auth/register/sent` | "Check your email" confirmation after registration. |
 | `app/Views/profile/index.php` | `GET /profile` | Profile page — account summary, notification preferences, API token management. Reached from topbar user menu. |
 | `app/Views/admin/index.php` | `GET /admin` | Admin landing page — stat cards and quick-nav links. Requires `admin` permission. |
 | `app/Views/admin/users.php` | `GET /admin/users` | Users list (DataTable). Requires `admin` permission. |
