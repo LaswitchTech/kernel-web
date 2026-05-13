@@ -7,6 +7,7 @@ declare(strict_types=1);
 // ---------------------------------------------------------------------------
 use App\Auth\AuthService;
 use App\Auth\LocalAuthProvider;
+use App\Auth\RememberMeService;
 use App\Auth\TokenService;
 use App\Core\Config;
 use App\Core\Container;
@@ -15,6 +16,8 @@ use App\Core\ErrorHandler;
 use App\Core\Gate;
 use App\Core\Installer\InstallLock;
 use App\Core\Logger;
+use App\Core\Mail\MailTransport;
+use App\Core\Mail\Mailer;
 use App\Core\MenuRegistry;
 use App\Core\Router;
 use App\Core\SQLiteDriver;
@@ -180,9 +183,28 @@ $userRepo   = new UserRepository($container->get('db'));
 $tokenRepo  = new TokenRepository($container->get('db'));
 $gate       = new Gate($container->get('db'));
 
-$container->set('auth',   new AuthService(new LocalAuthProvider($userRepo), $authConfig));
+// Remember Me
+$rememberMeService = null;
+if (!empty($authConfig['remember_me']['enabled'])) {
+    $rememberRepo       = new \App\Models\RememberTokenRepository($container->get('db'));
+    $rememberMeService  = new RememberMeService($rememberRepo, $userRepo, $authConfig);
+}
+
+$container->set('auth',   new AuthService(new LocalAuthProvider($userRepo), $authConfig, $rememberMeService));
 $container->set('gate',   $gate);
 $container->set('tokens', new TokenService($tokenRepo, $userRepo, $gate));
+
+// Mailer — used by password reset and future email-triggered flows.
+$mailCfg = Config::load('mail');
+$mailer  = new Mailer(
+    new MailTransport($mailCfg['from_address'], $mailCfg['from_name'])
+);
+$container->set('mailer', $mailer);
+
+// Password reset service — wired so AuthController can resolve it from container.
+$resetRepo      = new \App\Models\PasswordResetRepository($container->get('db'));
+$resetService   = new \App\Auth\PasswordResetService($resetRepo, $userRepo, $mailer);
+$container->set('password_reset', $resetService);
 
 // Notifications module — reusable in-app inbox service
 // NotificationService is registered here so it is available to web controllers

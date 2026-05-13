@@ -65,6 +65,9 @@
                     <label class="form-check-label" for="remember">Remember me</label>
                 </div>
             </div>
+            <div class="text-end mb-3">
+                <a href="/auth/forgot-password" class="small">Forgot password?</a>
+            </div>
             <button type="submit" class="btn btn-primary w-100" id="submit-btn">
                 <span id="submit-label">Sign In</span>
                 <span id="submit-spinner" class="spinner-border spinner-border-sm ms-1 d-none" role="status"></span>

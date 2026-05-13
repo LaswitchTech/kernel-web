@@ -135,6 +135,13 @@ $router->get('/auth/login', 'AuthController@loginRedirect');
 $router->post('/auth/logout', 'AuthController@logout');
 $router->get('/auth/me', 'AuthController@me', ['SessionAuth']);
 
+// Password reset — public
+$router->get('/auth/forgot-password', 'AuthController@forgotForm');
+$router->post('/auth/forgot-password', 'AuthController@forgot');
+$router->get('/auth/forgot-password/sent', 'AuthController@forgotSent');
+$router->get('/auth/reset-password', 'AuthController@resetForm');
+$router->post('/auth/reset-password', 'AuthController@reset');
+
 // -------------------------------- Token Management ------
 $router->get('/api/tokens', 'TokenController@index', ['SessionAuth']);
 $router->post('/api/tokens', 'TokenController@create', ['SessionAuth']);

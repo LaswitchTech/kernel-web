@@ -107,6 +107,139 @@ class AuthController extends Controller
     }
 
     // -------------------------------------------------------------------
+    // Password Reset
+    // -------------------------------------------------------
+
+    /**
+     * GET /auth/forgot-password — render the forgot password form.
+     */
+    public function forgotForm(array $params = []): void
+    {
+        http_response_code(200);
+        header('Content-Type: text/html; charset=utf-8');
+
+        $config    = $this->container->get('config');
+        $appName   = $config['name'] ?? 'Kernel-Web';
+        $viewsPath = __DIR__ . '/../Views';
+
+        ob_start();
+        require $viewsPath . '/auth/forgot-password.php';
+        $content = ob_get_clean();
+
+        require $viewsPath . '/layouts/blank.php';
+    }
+
+    /**
+     * POST /auth/forgot-password — initiate a password reset.
+     *
+     * Always returns 200 — never leaks whether the account exists.
+     */
+    public function forgot(array $params = []): void
+    {
+        $email = trim((string) $this->input('email', ''));
+
+        /** @var PasswordResetService $resetService */
+        $resetService = $this->container->get('password_reset');
+        $result       = $resetService->initiate($email);
+
+        // Always return 200 — do not reveal whether the account exists.
+        $this->json(['success' => true]);
+    }
+
+    /**
+     * GET /auth/forgot-password/sent — "check your email" confirmation.
+     */
+    public function forgotSent(array $params = []): void
+    {
+        http_response_code(200);
+        header('Content-Type: text/html; charset=utf-8');
+
+        $config    = $this->container->get('config');
+        $appName   = $config['name'] ?? 'Kernel-Web';
+        $viewsPath = __DIR__ . '/../Views';
+
+        ob_start();
+        require $viewsPath . '/auth/forgot-password-sent.php';
+        $content = ob_get_clean();
+
+        require $viewsPath . '/layouts/blank.php';
+    }
+
+    /**
+     * GET /auth/reset-password?token=xxx — render the reset password form.
+     */
+    public function resetForm(array $params = []): void
+    {
+        $token = (string) $this->input('token', '');
+
+        if ($token === '') {
+            $this->json(['error' => 'Missing reset token'], 400);
+            return;
+        }
+
+        http_response_code(200);
+        header('Content-Type: text/html; charset=utf-8');
+
+        $config    = $this->container->get('config');
+        $appName   = $config['name'] ?? 'Kernel-Web';
+        $viewsPath = __DIR__ . '/../Views';
+
+        ob_start();
+        require $viewsPath . '/auth/reset-password.php';
+        $content = ob_get_clean();
+
+        require $viewsPath . '/layouts/blank.php';
+    }
+
+    /**
+     * POST /auth/reset-password — complete the password reset.
+     *
+     * Validates the token, updates the password, revokes the token
+     * and all remember tokens.
+     */
+    public function reset(array $params = []): void
+    {
+        $token  = (string) $this->input('token', '');
+        $password = (string) $this->input('password', '');
+        $confirm  = (string) $this->input('password_confirm', '');
+
+        if ($token === '') {
+            $this->json(['error' => 'Missing reset token'], 400);
+            return;
+        }
+
+        if (strlen($password) < 8 || $password !== $confirm) {
+            $this->json(['error' => 'Passwords do not match or are too short.'], 400);
+            return;
+        }
+
+        /** @var PasswordResetService $resetService */
+        $resetService = $this->container->get('password_reset');
+        $validated    = $resetService->validate($token);
+
+        if ($validated === null) {
+            $this->json(['error' => 'Invalid or expired reset link.'], 401);
+            return;
+        }
+
+        $passwordHash = password_hash($password, PASSWORD_DEFAULT);
+        $resetService->completeReset(
+            $validated['user']['id'],
+            $passwordHash,
+            $validated['token_id']
+        );
+
+        // Revoke all remember tokens for this user.
+        $authService = $this->container->get('auth');
+        $rememberService = $authService->getRememberMeService();
+        if ($rememberService !== null) {
+            $rememberService->revokeAll($validated['user']['id']);
+        }
+
+        $this->json(['success' => true]);
+    }
+
+    // -------------------------------------------------------------------
     // GET /api/profile
     // -------------------------------------
 

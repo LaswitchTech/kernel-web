@@ -37,6 +37,14 @@ class AuthService
         $this->config   = $config;
     }
 
+    /**
+     * Get the configured Remember Me service, or null if disabled.
+     */
+    public function getRememberMeService(): ?RememberMeService
+    {
+        return $this->rememberMe;
+    }
+
     // -------------------------------------------------------------------------
     // Public API
     // -------------------------------------------------------------------------
