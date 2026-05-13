@@ -139,10 +139,21 @@ class AuthController extends Controller
         $email = trim((string) $this->input('email', ''));
 
         /** @var PasswordResetService $resetService */
-        $resetService = $this->container->get('password_reset');
-        $result       = $resetService->initiate($email);
+        $resetService   = $this->container->get('password_reset');
+        $result         = $resetService->initiate($email);
 
         // Always return 200 — do not reveal whether the account exists.
+        if ($result !== null) {
+            $resetUrl = '/auth/reset-password?token=' . urlencode($result['selector']);
+            $resetService->sendEmail(
+                $result['email'],
+                $result['display_name'],
+                $resetUrl,
+                'noreply@localhost',
+                'Kernel-Web'
+            );
+        }
+
         $this->json(['success' => true]);
     }
 

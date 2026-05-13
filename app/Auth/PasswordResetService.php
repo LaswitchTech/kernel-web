@@ -31,10 +31,11 @@ class PasswordResetService
      * Initiate a password reset for a user by email.
      *
      * Only active users can receive a reset email.
-     * Returns the raw token (to be embedded in email URL) or null if the
-     * user cannot be found.
+     * Returns the raw token, user ID, and user email/display_name
+     * (needed by caller to send the email) or null if the user
+     * cannot be found.
      *
-     * @return array{selector: string, userId: int}|null
+     * @return array{selector: string, userId: int, email: string, display_name: string}|null
      */
     public function initiate(string $email): ?array
     {
@@ -43,7 +44,15 @@ class PasswordResetService
             return null;
         }
 
-        return $this->createToken((int) $user['id']);
+        $userId  = (int) $user['id'];
+        $token   = $this->createToken($userId);
+
+        return [
+            'selector'     => $token['selector'],
+            'userId'       => $userId,
+            'email'        => $user['email'],
+            'display_name' => $user['display_name'],
+        ];
     }
 
     /**
@@ -78,26 +87,6 @@ class PasswordResetService
         }
 
         return ['user' => $user, 'token_id' => (int) $tokenRecord['id']];
-    }
-
-    /**
-     * Complete the reset: update the password and revoke the token.
-     *
-     * @param int    $tokenId         Token record ID (used to look up user)
-     * @param string $newPasswordHash New hashed password
-     */
-    public function complete(int $tokenId, string $newPasswordHash): void
-    {
-        $record = $this->repository->findByHash(
-            // No — we need the user_id from the token record.
-            // Use findByHash of the token we just validated.
-            // Actually, the caller passes $tokenId which is the record ID.
-            // We need to look up the user_id.
-        );
-
-        // We already validated the token before calling complete().
-        // The caller has the user_id from validate() result.
-        // Use the user_id directly via setPassword instead.
     }
 
     /**
@@ -138,14 +127,13 @@ class PasswordResetService
      *
      * Returns true if the email was sent successfully.
      */
-    public function sendEmail(string $to, string $toName, string $selector, string $resetUrl): bool
+    public function sendEmail(string $to, string $toName, string $resetUrl, string $fromAddress = 'noreply@localhost', string $fromName = 'Kernel-Web'): bool
     {
         if ($this->mailer === null) {
             return false;
         }
 
-        $userName = '';
-        $html     = self::renderEmailTemplate($userName, $resetUrl, 60);
+        $html = self::renderEmailTemplate($toName, $resetUrl, 60);
         if ($html === '') {
             $html = '<p>Click the link below to reset your password:</p>'
                   . '<p><a href="' . htmlspecialchars($resetUrl) . '">'
@@ -154,8 +142,8 @@ class PasswordResetService
         }
 
         $message = new MailMessage(
-            from: 'noreply@localhost',
-            fromName: 'Kernel-Web',
+            from: $fromAddress,
+            fromName: $fromName,
             to: $to,
             toName: $toName,
             subject: 'Reset your password',

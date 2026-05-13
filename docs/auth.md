@@ -74,6 +74,39 @@ Session security:
 
 ---
 
+## Forgot Password (Password Reset)
+
+**Classes:** `App\Auth\PasswordResetService`, `App\Models\PasswordResetRepository`
+
+| Method | Description |
+|---|---|
+| `initiate(string $email): ?array` | Generate token for active user; returns `['selector', 'userId', 'email', 'display_name']` or null |
+| `validate(string $token): ?array` | Verify token; returns `['user' => ..., 'token_id' => int]` or null |
+| `completeReset(int $userId, string $passwordHash, int $tokenId): void` | Update password, revoke all reset tokens |
+| `sendEmail(string $to, string $toName, string $resetUrl, ...): bool` | Send reset email with template |
+
+**Security model:**
+- Token is `random_bytes(32)` → hex, hashed with SHA-256 before storage
+- Single-use — `used_at` set on successful password change
+- Expires after 60 minutes
+- Only active users can initiate a reset
+- Controller always returns 200 for initiate (prevents account enumeration)
+- Token must be valid and user must be active to use the reset link
+- All pending reset tokens are revoked on password change
+
+**Routes:**
+- `GET /auth/forgot-password` — render form
+- `POST /auth/forgot-password` — initiate (always 200)
+- `GET /auth/forgot-password/sent` — confirmation page
+- `GET /auth/reset-password?token=xxx` — render reset form
+- `POST /auth/reset-password` — complete reset (validates token, updates password)
+
+**Email template:** `app/Views/emails/password_reset.php` — `userName`, `resetUrl`, `expiresMinutes`
+
+**Migration:** `database/migrations/0031_add_password_reset_support.php`
+
+---
+
 ## Token Authentication
 
 **Class:** `App\Auth\TokenService`

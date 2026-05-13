@@ -108,15 +108,17 @@ $resetService  = new PasswordResetService($tokenRepo, $userRepo, $mailer);
 
 // ============= 1. TOKEN GENERATION ============
 
-$selector = $resetService->initiate('test@example.com');
-assert_not_null($selector, 'initiate returns token for active user');
-assert_true(strlen($selector['selector']) === 64, 'token is 64-char hex');
-assert_true($selector['userId'] === 1, 'token has correct userId');
+$token = $resetService->initiate('test@example.com');
+assert_not_null($token, 'initiate returns token for active user');
+assert_true(strlen($token['selector']) === 64, 'token is 64-char hex');
+assert_true($token['userId'] === 1, 'token has correct userId');
+assert_true(str_contains($token['email'], 'test@example.com'), 'token includes user email');
+assert_true(str_contains($token['display_name'], 'Test User'), 'token includes display name');
 
 // Verify token is stored as hash in DB
 $dbRecords = $db->fetch("SELECT * FROM auth_password_resets WHERE user_id = 1");
 assert_true(count($dbRecords) > 0, 'token record created');
-assert_false($dbRecords[0]['token_hash'] === $selector['selector'], 'stored as hash, not raw');
+assert_false($dbRecords[0]['token_hash'] === $token['selector'], 'stored as hash, not raw');
 
 // ============= 2. NO USER (enumeration-safe) ============
 
@@ -209,14 +211,15 @@ assert_true(str_contains($html, '60'), 'email contains expiry');
 
 // ============= 11. EMAIL SENT WITH MAILER ============
 
-$selector = $resetService->initiate('test@example.com');
-assert_not_null($selector, 'token generated');
+$token = $resetService->initiate('test@example.com');
+assert_not_null($token, 'token generated');
 
 $sent = $resetService->sendEmail(
     'test@example.com',
     'Test User',
-    $selector['selector'],
-    'https://example.com/reset?token=' . $selector['selector']
+    'https://example.com/reset?token=' . $token['selector'],
+    'noreply@test.local',
+    'Test Mailer'
 );
 assert_true($sent, 'email sent successfully');
 assert_true($transport->sendCount >= 1, 'transport was called');

@@ -1,6 +1,6 @@
 # Auth Features Design
 
-> **Status:** Partially implemented (Remember Me done; forgot password, email verification, 2FA pending)
+> **Status:** Partially implemented (Remember Me, Forgot Password done; email verification, 2FA pending)
 > **Roadmap:** Phase 2
 > **Related:** MAILER-1 (Mailer), SETTINGS-1 (SettingsRegistry), PHASE2-1
 
@@ -25,11 +25,18 @@
 | `TokenAuth` | `app/Middleware/TokenAuth.php` | Token-based auth middleware → writes `principal` to container |
 | `WebAuth` | `app/Middleware/WebAuth.php` | Any auth gate (session or token) |
 | `WebPermission` | `app/Middleware/WebPermission.php` | Permission gate on top of `principal` |
-| `AuthController` | `app/Controllers/AuthController.php` | `/signin` (GET), `/auth/login` (POST), `/auth/logout` (POST), `/auth/me` (GET) |
+| `AuthController` | `app/Controllers/AuthController.php` | `/signin` (GET), `/auth/login` (POST), `/auth/logout` (POST), `/auth/me` (GET), forgot/reset password |
 | `config/auth.php` | `config/auth.php` | Provider + session config |
 | `blank.php` layout | `app/Views/layouts/blank.php` | Auth pages — local assets, hooks, no sidebar |
 | User table | `database/migrations/0002_create_users_table.php` | id, username, email, password_hash, is_active, created_at, updated_at |
 | API tokens table | `database/migrations/0007_create_api_tokens_table.php` | id, user_id, name, token_hash, last_used_at, expires_at, revoked_at, created_at |
+| Password reset table | `database/migrations/0031_add_password_reset_support.php` | id, user_id, token_hash, expires_at, used_at, created_at |
+| Password reset service | `app/Auth/PasswordResetService.php` | initiate, validate, completeReset, sendEmail |
+| Password reset repository | `app/Models/PasswordResetRepository.php` | `auth_password_resets` table queries |
+| Password reset views | `app/Views/auth/forgot-password.php`, `forgot-password-sent.php`, `reset-password.php` | |
+| Password reset email | `app/Views/emails/password_reset.php` | Bootstrap-styled template |
+| Remember Me service | `app/Auth/RememberMeService.php` | issue, attempt, revokeAll |
+| Remember Me repository | `app/Models/RememberTokenRepository.php` | `auth_remember_tokens` table queries |
 | Settings | `config/mail.php` | from_address, from_name |
 
 ### Session configuration
@@ -704,29 +711,23 @@ All auth tokens follow the same pattern:
 
 **Dependencies**: None
 
-### Phase 2: Forgot Password + Email Verification
+### Phase 2: Email Verification
 
-**Why together**: Both use the same token pattern and email templates. Shared infrastructure.
+**Status**: Forgot Password is **done** (Phase 2 item). Email Verification remains pending.
 
-**Files**:
-- Migration: `0031_add_email_verification_support.php` (add `email_verified_at` column + `auth_email_verifications` table)
-- Migration: `0032_add_password_reset_support.php` (new `auth_password_resets` table)
-- `app/Auth/PasswordResetService.php`
+**Why separated**: Forgot Password was accelerated into the current stabilization phase. Email Verification is deferred to Phase 3+ to keep focus on core UX first.
+
+**Planned migration**: `0031_add_email_verification_support.php` (add `email_verified_at` column + `auth_email_verifications` table)
+
+**Planned files**:
 - `app/Auth/EmailVerificationService.php`
-- `app/Models/PasswordResetRepository.php`
 - `app/Models/EmailVerificationRepository.php`
-- `app/Controllers/AuthController.php` (forgot/reset/verify actions)
-- `app/Views/auth/forgot-password.php`
-- `app/Views/auth/forgot-password-sent.php`
-- `app/Views/auth/reset-password.php`
+- `app/Controllers/AuthController.php` (verify actions)
 - `app/Views/auth/verify-email.php`
 - `app/Views/auth/verify-email-sent.php`
-- `app/Views/emails/password_reset.php`
 - `app/Views/emails/email_verification.php`
-- `config/mail.php` (templates section)
-- `tests/auth_test.php` (add reset/verify tests)
 
-**Dependencies**: Phase 1 (Remember Me), Mailer foundation (already done)
+**Dependencies**: Email verification is gated on UX priorities — users will access the kernel without verified email during initial rollout.
 
 ### Phase 3: User Registration
 
