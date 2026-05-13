@@ -39,10 +39,11 @@ Every downstream middleware and controller reads from it — without caring how 
 
 | Method | Description |
 |---|---|
-| `login(array $credentials): ?array` | Attempt login; returns safe user or null |
-| `logout(): void` | Destroy session; expire cookie |
+| `login(array $credentials, bool $remember = false): ?array` | Attempt login; returns safe user or null. Pass `true` to issue a Remember Me token. |
+| `logout(): void` | Destroy session; expire cookie; revoke all Remember Me tokens |
 | `user(): ?array` | Return current user from session; null if not logged in |
 | `check(): bool` | True if a user is logged in |
+| `restoreSession(int $userId): void` | Restore a session from a user ID (used by Remember Me flow) |
 
 Session security:
 - Session started **lazily** on first method call.
@@ -50,6 +51,26 @@ Session security:
 - `session.use_strict_mode = 1` rejects unknown IDs.
 - Cookie is `httponly`, `SameSite=Lax`. Set `secure = true` in `config/auth.php` for HTTPS.
 - User is **re-fetched from DB on every request** — deactivated accounts are denied immediately.
+
+---
+
+## Remember Me
+
+**Classes:** `App\Auth\RememberMeService`, `App\Models\RememberTokenRepository`
+
+| Method | Description |
+|---|---|
+| `issue(int $userId): array` | Create token; returns `['selector' => ..., 'validator' => ...]`. Sets cookie automatically. |
+| `attempt(): ?array` | Validate remember me cookie; returns `['user' => ..., 'token_id' => int]` or null. Rotates token on success. |
+| `revokeAll(int $userId): void` | Revoke all tokens for a user (called on logout / password change) |
+
+**Security model:**
+- Cookie format: `selector:validator` (colon-separated). Only the selector is stored in the cookie; the validator is hashed (SHA-256) and stored in the database.
+- On each successful use, the token is **rotated**: old token revoked, new selector/validator generated.
+- `hash_equals()` prevents timing attacks during validator comparison.
+- Database indexes: unique on `selector`, unique on `token_hash`, index on `user_id`, index on `expires_at`.
+- Cookie attributes: `HttpOnly`, `Secure` (configurable), `SameSite=Lax`.
+- Migration: `database/migrations/0030_create_auth_remember_tokens_table.php`
 
 ---
 
@@ -171,7 +192,9 @@ success. No server-side form processing — the same JSON API used by other clie
 
 ### `POST /auth/login` — public
 
-**Body:** `{ "identity": "username or email", "password": "plaintext" }`
+**Body (JSON or form-encoded):** `{ "identity": "username or email", "password": "plaintext", "remember": "1" }`
+
+`remember` is optional — when present and truthy, issues a long-lived Remember Me cookie.
 
 **200:**
 ```json
@@ -280,6 +303,11 @@ return [
         'lifetime' => 7200,
         'secure'   => false,   // true in production (HTTPS)
     ],
+    'remember_me' => [
+        'enabled'  => true,
+        'lifetime' => 2592000, // 30 days
+        'cookie'   => 'kernel_remember',
+    ],
 ];
 ```
 
@@ -319,5 +347,4 @@ All token API endpoints use `SessionAuth`. The `/api/tokens/*` routes are not ac
 | Password reset | No reset token flow or email delivery implemented. |
 | `session.secure` | Must be `true` when serving over HTTPS. Currently `false` in `config/auth.php` for local development. |
 | Rate limiting on `/auth/login` | No brute-force protection. |
-| Token rotation | Tokens are static after creation. Generating a replacement and revoking the old one is a manual process. |
 | Polished login UI | The current `login.php` is intentionally minimal. The dark-themed reference at `docs/reference/signin-signup/` can be adapted into a proper design pass later. |

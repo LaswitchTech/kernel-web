@@ -12,6 +12,7 @@ use App\Core\AuthProviderInterface;
  *   - Delegate credential verification to the configured provider
  *   - Store and retrieve the authenticated user ID from the session
  *   - Provide a clean logout (session destruction)
+ *   - Issue and revoke Remember Me tokens
  *
  * Not responsible for:
  *   - How credentials are verified (that is the provider's job)
@@ -27,8 +28,11 @@ class AuthService
     /** @var array|null In-request cache — avoid re-querying DB on every call */
     private ?array $cachedUser = null;
 
-    public function __construct(AuthProviderInterface $provider, array $config)
-    {
+    public function __construct(
+        AuthProviderInterface $provider,
+        array $config,
+        private ?RememberMeService $rememberMe = null,
+    ) {
         $this->provider = $provider;
         $this->config   = $config;
     }
@@ -40,8 +44,10 @@ class AuthService
     /**
      * Attempt to log in with the given credentials.
      * Returns the safe user array on success, null on failure.
+     *
+     * @param bool $remember Whether to issue a Remember Me cookie.
      */
-    public function login(array $credentials): ?array
+    public function login(array $credentials, bool $remember = false): ?array
     {
         $user = $this->provider->attempt($credentials);
 
@@ -52,11 +58,17 @@ class AuthService
         $this->startSession();
 
         // Regenerate session ID to prevent session fixation attacks
-        session_regenerate_id(true);
+        @session_regenerate_id(true);
 
         $_SESSION['user_id'] = $user['id'];
 
         $this->cachedUser = $user;
+
+        if ($remember && $this->rememberMe !== null) {
+            // Revoke any existing tokens first (one-at-a-time)
+            $this->rememberMe->revokeAll($user['id']);
+            $this->rememberMe->issue($user['id']);
+        }
 
         return $user;
     }
@@ -71,20 +83,26 @@ class AuthService
         $_SESSION = [];
 
         // Expire the session cookie immediately
-        if (ini_get('session.use_cookies')) {
-            $params = session_get_cookie_params();
-            setcookie(
-                session_name(),
+        if (@ini_get('session.use_cookies')) {
+            $params = @session_get_cookie_params();
+            @setcookie(
+                @session_name(),
                 '',
                 time() - 42000,
-                $params['path'],
-                $params['domain'],
-                $params['secure'],
-                $params['httponly']
+                $params['path'] ?? '/',
+                $params['domain'] ?? '',
+                $params['secure'] ?? false,
+                $params['httponly'] ?? true
             );
         }
 
-        session_destroy();
+        @session_destroy();
+
+        // Revoke all remember tokens before clearing session state.
+        $logoutUserId = $_SESSION['user_id'] ?? null;
+        if ($logoutUserId !== null && $this->rememberMe !== null) {
+            $this->rememberMe->revokeAll((int) $logoutUserId);
+        }
 
         $this->sessionStarted = false;
         $this->cachedUser     = null;
@@ -131,6 +149,18 @@ class AuthService
     // Session management
     // -------------------------------------------------------------------------
 
+    /**
+     * Restore a session from a user ID (used by Remember Me flow).
+     */
+    public function restoreSession(int $userId): void
+    {
+        $this->startSession();
+
+        $_SESSION['user_id'] = $userId;
+
+        $this->cachedUser = $this->provider->getUserById($userId);
+    }
+
     private function startSession(): void
     {
         if ($this->sessionStarted || session_status() === PHP_SESSION_ACTIVE) {
@@ -151,9 +181,9 @@ class AuthService
         ]);
 
         // Reject unrecognised session IDs (helps prevent session fixation)
-        ini_set('session.use_strict_mode', '1');
+        @ini_set('session.use_strict_mode', '1');
 
-        session_start();
+        @session_start();
 
         $this->sessionStarted = true;
     }

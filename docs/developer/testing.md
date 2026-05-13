@@ -33,6 +33,7 @@ tests/
   plugin_test.php      — Plugin manifest, validation, registry buckets
   migration_test.php   — Migration runner with in-memory SQLite
   auth_test.php        — CRUD tests for Users, Groups, Permissions, Tokens
+  remember_me_test.php — Remember Me token repo, service, and AuthService integration
 ```
 
 ### Test runner
@@ -111,6 +112,10 @@ Tests CRUD operations for core auth entities using an in-memory SQLite database 
 ### Mailer tests (`mailer_test.php`) — 63 assertions
 
 Tests zero-dependency mailer infrastructure using a `FakeTransport` for capture-based assertions. Covers `MailMessage` construction and validation (from/to/subject/body/clear/bcc/headers), clone pattern for cc/bcc/headers/reply-to (original immutability), `Attachment` value object with `file()` factory and MIME auto-detection, `TemplateRegistry` (addCore, addPath, find core-first, render with context, clear), `MailTransport` (rejects attachments, rejects BCC, rejects header injection in CC, mail() delegation), `Mailer` facade (send, withTemplate, setTransport, transportIdentifier), template rendering via TemplateRegistry, and `MailerException` properties (message, code, transportName, type hierarchy).
+
+### Remember Me tests (`remember_me_test.php`) — 54 assertions
+
+Tests `RememberTokenRepository` and `RememberMeService` with in-memory SQLite. Covers token creation, selector lookup, revoke, revokeAllForUser, token rotation, cookie parsing (null, no-colon, empty, normal, multi-colon), valid token attempt with rotation verification, expired token rejection, revoked token rejection, inactive user rejection, wrong validator rejection, and AuthService integration (login with/without remember, restoreSession).
 
 ## Dependencies
 

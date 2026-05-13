@@ -10,6 +10,7 @@ class AuthController extends Controller
     // -------------------------------------------------------------------------
     // GET /signin — render the login page
     // --------------------------------
+
     public function loginRedirect(array $params = []): void
     {
         header('Location: /signin', true, 301);
@@ -43,13 +44,14 @@ class AuthController extends Controller
 
     // -------------------------------------------------------------------------
     // POST /auth/login
-    // Body: { "identity": "username or email", "password": "..." }
-    // -------------------------------------------------------------------------
+    // Body: { "identity": "username or email", "password": "..", "remember": "1" }
+    // -------------------------------------------------------------------
 
     public function login(array $params = []): void
     {
         $identity = trim((string) $this->input('identity', ''));
         $password = (string) $this->input('password', '');
+        $remember = (bool) $this->input('remember', '0');
 
         if ($identity === '' || $password === '') {
             $this->json(['error' => 'Identity and password are required'], 400);
@@ -62,7 +64,7 @@ class AuthController extends Controller
         $user = $auth->login([
             'identity' => $identity,
             'password' => $password,
-        ]);
+        ], $remember);
 
         if ($user === null) {
             // Deliberately vague — do not reveal whether the identity exists
@@ -73,9 +75,9 @@ class AuthController extends Controller
         $this->json(['user' => $user]);
     }
 
-    // -------------------------------------------------------------------------
+    // -------------------------------------------------------------------
     // POST /auth/logout
-    // -------------------------------------------------------------------------
+    // --------------------------------------------------------------
 
     public function logout(array $params = []): void
     {
@@ -86,9 +88,9 @@ class AuthController extends Controller
         $this->json(['success' => true]);
     }
 
-    // -------------------------------------------------------------------------
+    // -------------------------------------------------------------------
     // GET /auth/me
-    // -------------------------------------------------------------------------
+    // ------------------------------------
 
     public function me(array $params = []): void
     {
@@ -104,9 +106,9 @@ class AuthController extends Controller
         $this->json(['user' => $user]);
     }
 
-    // -------------------------------------------------------------------------
+    // -------------------------------------------------------------------
     // GET /api/profile
-    // -------------------------------------------------------------------------
+    // -------------------------------------
 
     public function profile(array $params = []): void
     {

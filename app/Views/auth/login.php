@@ -42,7 +42,7 @@
                     required
                 >
             </div>
-            <div class="mb-4">
+            <div class="mb-3">
                 <label for="password" class="form-label">Password</label>
                 <input
                     type="password"
@@ -52,6 +52,18 @@
                     autocomplete="current-password"
                     required
                 >
+            </div>
+            <div class="mb-4">
+                <div class="form-check">
+                    <input
+                        type="checkbox"
+                        class="form-check-input"
+                        id="remember"
+                        name="remember"
+                        value="1"
+                    >
+                    <label class="form-check-label" for="remember">Remember me</label>
+                </div>
             </div>
             <button type="submit" class="btn btn-primary w-100" id="submit-btn">
                 <span id="submit-label">Sign In</span>

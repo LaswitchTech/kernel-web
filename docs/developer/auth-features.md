@@ -1,6 +1,6 @@
 # Auth Features Design
 
-> **Status:** Designed (not implemented)
+> **Status:** Partially implemented (Remember Me done; forgot password, email verification, 2FA pending)
 > **Roadmap:** Phase 2
 > **Related:** MAILER-1 (Mailer), SETTINGS-1 (SettingsRegistry), PHASE2-1
 
