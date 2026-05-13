@@ -471,9 +471,9 @@ The following auth features are designed in `docs/developer/auth-features.md`:
 
 | Feature | Status | Phase |
 |------|-----|---|-----|
-| **Remember Me** | Designed | Phase 2 (first slice) |
-| **Forgot Password / Reset** | Designed | Phase 2 |
-| **Email Verification** | Designed | Phase 2 |
+| **Remember Me** | Implemented | Phase 2 (first slice) |
+| **Forgot Password / Reset** | Implemented | Phase 2 |
+| **Email Verification** | Implemented | Phase 2 |
 | **User Registration** | Designed | Phase 3 |
 | **Two-Factor Authentication (2FA)** | Designed | Phase 4 |
 

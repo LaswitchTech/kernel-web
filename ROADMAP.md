@@ -126,7 +126,7 @@ These are planned or requested but are out of scope for the current development 
 | Layout system | Implemented | `app.php` (app), `panel.php` (admin), `blank.php` (auth, local assets, hooks) |
 | Theme system | Partially implemented | Bootstrap 5, LESS, dark/light mode |
 | Auth system | Partially implemented | Users, groups, permissions, tokens, sessions |
-| Auth features | Partially implemented | Remember Me (selector/validator tokens, rotation, auto-login, 54 assertions). Forgot Password (selector/validator tokens, single-use, 60-minute expiry, email delivery, 27 assertions). Email Verification (selector/validator tokens, single-use, 24-hour expiry, soft gate, email delivery, 38 assertions). 2FA pending. Design at docs/developer/auth-features.md. |
+| Auth features | Partially implemented | Remember Me (selector/validator tokens, rotation, auto-login, 40 assertions). Forgot Password (selector/validator tokens, single-use, 60-minute expiry, email delivery, 29 assertions). Email Verification (selector/validator tokens, single-use, 24-hour expiry, soft gate, email delivery, 38 assertions). 2FA pending. Design at docs/developer/auth-features.md. |
 | Organizations | Planned | Design phase — optional, plugin-based scoping |
 | Theme preview | Implemented | GET /admin/themes/preview, all Bootstrap components, panel layout with breadcrumbs |
 | Plugin migrations | Implemented | Migration runner, catalog integration |
@@ -143,9 +143,9 @@ These are planned or requested but are out of scope for the current development 
 | Contributing docs | Implemented | Documented in /docs/contributing.md |
 | Runtime DB safety | Hardened | DB files excluded from public/, .gitignore updated |
 | Phase 1 stabilization | Closed | 15/15 tasks done |
-| Testing | Partially implemented | Zero-dependency test framework with 6 suites (308 assertions) — router, plugin, migration, auth, mailer, remember_me. CRUD coverage for users/groups/permissions/tokens complete. Mailer foundation implemented. See docs/developer/testing.md |
+| Testing | Partially implemented | Zero-dependency test framework with 8 suites (361 assertions) — router, plugin, migration, auth, mailer, remember_me, forgot_password, email_verification. CRUD coverage for users/groups/permissions/tokens complete. Mailer foundation implemented. See docs/developer/testing.md |
 | Profile Modal | Implemented, full plugin architecture | API Tokens section with create/list/revoke UI. Section registry (ProfileModal class), /api/profile + /api/profile/sections endpoints, plugin tab rendering via JS, permission-gated sections. |
-| Mailer | Implemented | Core infrastructure: MailMessage, Attachment, TemplateRegistry, TransportInterface, MailTransport (mail()), Mailer facade, MailerException. Config at config/mail.php. 61 assertions. Design at docs/developer/mailer.md. |
+| Mailer | Implemented | Core infrastructure: MailMessage, Attachment, TemplateRegistry, TransportInterface, MailTransport (mail()), Mailer facade, MailerException. Config at config/mail.php. 63 assertions. Design at docs/developer/mailer.md. |
 | OAuth | Deferred | See Deferred section |
 | Licensing | Deferred | See Deferred section |
 | Registration | Planned | Config toggle (disabled by default) — Phase 3 |

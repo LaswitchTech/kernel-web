@@ -34,6 +34,8 @@ tests/
   migration_test.php   — Migration runner with in-memory SQLite
   auth_test.php        — CRUD tests for Users, Groups, Permissions, Tokens
   remember_me_test.php — Remember Me token repo, service, and AuthService integration
+  forgot_password_test.php — Password reset token repo, service, and mailer integration
+  email_verification_test.php — Email verification token repo, service, and mailer integration
   email_verification_test.php — Email Verification token repo, service, and mailer integration
 ```
 
@@ -114,9 +116,13 @@ Tests CRUD operations for core auth entities using an in-memory SQLite database 
 
 Tests zero-dependency mailer infrastructure using a `FakeTransport` for capture-based assertions. Covers `MailMessage` construction and validation (from/to/subject/body/clear/bcc/headers), clone pattern for cc/bcc/headers/reply-to (original immutability), `Attachment` value object with `file()` factory and MIME auto-detection, `TemplateRegistry` (addCore, addPath, find core-first, render with context, clear), `MailTransport` (rejects attachments, rejects BCC, rejects header injection in CC, mail() delegation), `Mailer` facade (send, withTemplate, setTransport, transportIdentifier), template rendering via TemplateRegistry, and `MailerException` properties (message, code, transportName, type hierarchy).
 
-### Remember Me tests (`remember_me_test.php`) — 54 assertions
+### Remember Me tests (`remember_me_test.php`) — 40 assertions
 
 Tests `RememberTokenRepository` and `RememberMeService` with in-memory SQLite. Covers token creation, selector lookup, revoke, revokeAllForUser, token rotation, cookie parsing (null, no-colon, empty, normal, multi-colon), valid token attempt with rotation verification, expired token rejection, revoked token rejection, inactive user rejection, wrong validator rejection, and AuthService integration (login with/without remember, restoreSession).
+
+### Forgot Password tests (`forgot_password_test.php`) — 29 assertions
+
+Tests `PasswordResetRepository` and `PasswordResetService` with in-memory SQLite. Covers token generation (64-char hex, SHA-256 hash storage), active user initiation, nonexistent email rejection (enumeration-safe), inactive user rejection, valid token verification, expired token rejection, used token rejection, inactive user with valid token rejection, nonexistent token rejection, password update with full token revocation, email template rendering, email sending with mailer (FakeTransport), null mailer handling, and revokeAllForUser.
 
 ### Email Verification tests (`email_verification_test.php`) — 38 assertions
 

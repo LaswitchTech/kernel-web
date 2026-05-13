@@ -65,9 +65,6 @@
 
 ### What is missing (the gap)
 
-- **No Remember Me** — session expires after `lifetime` (7200s). No long-lived option.
-- **No Forgot Password** — no recovery mechanism. Admins must reset via `/admin/users`.
-- **No Email Verification** — registration does not verify email (registration not yet implemented).
 - **No User Registration** — `config/auth.php` has no `registration` key; no registration route exists.
 - **No 2FA** — single-factor auth only.
 

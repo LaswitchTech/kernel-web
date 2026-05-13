@@ -52,7 +52,7 @@
 - Email verification (send link during registration)
 - User registration form
 - Two-factor authentication (second auth factor)
-**Status:** **DESIGNED** — see `docs/developer/auth-features.md`. All five features designed: Remember Me, Forgot Password, Email Verification, Registration, 2FA. Implementation order: remember me → forgot password + verification → registration → 2FA.
+**Status:** **3/5 implemented** — Remember Me, Forgot Password, Email Verification done (see commit 516c628 + audit fixes). Registration (Phase 3), 2FA (Phase 4) pending. Implementation order: remember me → forgot password + verification → registration → 2FA.
 **Dependencies:** Mailer foundation (done) for forgot password and email verification.
 
 ### PHASE2-2: Mailer foundation
@@ -63,7 +63,7 @@
 - Email templates for different types (password reset, verification, notifications)
 - Plugin extensibility for custom email types
 - Error handling (logging, user feedback)
-**Status:** **DESIGNED** — see `docs/developer/mailer.md`. Full design including Mailer service, Transport interface (default mail()), TemplateRegistry, Attachment, MailerException, SMTP plugin integration via SettingsRegistry, and implementation priorities.
+**Status:** **Implemented** — Mailer facade, TransportInterface, MailTransport (mail()), TemplateRegistry, Attachment, MailerException. Config at config/mail.php. 63 assertions (mailer_test.php). Design at docs/developer/mailer.md. SMTP via plugin (via SettingsRegistry) still pending.
 
 ### PHASE2-3: Settings hooks for plugins
 **Location:** BUG-3 + NOTES.md, Settings section
@@ -185,15 +185,15 @@ None. All items have been mapped above.
 - [x] BUG-1: Remove NetMon leftovers from SystemSettingsController — Monitoring card removed, Notification section replaced with informational note. Controller only manages app.name and app.url.
 - [ ] BUG-2: Fix scaffold page topbar margin — requires live browser inspection
 - [x] ARCH-3: Settings hooks design complete — see `docs/developer/settings-hooks.md`
-- [x] ARCH-1: Mailer design complete — see `docs/developer/mailer.md`
+- [x] ARCH-1: Mailer implemented — see docs/developer/mailer.md
 
 ### Next sprint
 - [ ] PHASE2-3: Implement settings hook registry
-- [ ] PHASE2-2: Implement mailer foundation
+- [x] PHASE2-2: Mailer foundation implemented
 - [ ] TEST-1: Add CRUD test coverage
 
 ### Later
 - [x] ARCH-4: Draft auth token design in DESIGN.md + docs/developer/auth-features.md
-- [ ] PHASE2-1: Implement auth features (order: remember me → forgot password → verification → registration → 2FA)
+- [x] PHASE2-1 (3/5): Remember Me, Forgot Password, Email Verification implemented. Pending: User Registration (Phase 3), 2FA (Phase 4).
 - [ ] ARCH-2: Draft multi-database design
 - [ ] PHASE3-1: Messenger foundation
