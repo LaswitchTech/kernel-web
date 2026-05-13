@@ -17,7 +17,7 @@ class CreateAuthRememberTokensTable extends Migration
                 user_agent_hash VARCHAR(64),
                 ip_hash       VARCHAR(64),
                 revoked_at    VARCHAR(32),
-                created_at    VARCHAR(32)  NOT NULL,
+                created_at    TEXT         NOT NULL,
                 PRIMARY KEY (id),
                 FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
             )'

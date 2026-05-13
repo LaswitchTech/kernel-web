@@ -97,7 +97,7 @@ CREATE INDEX auth_remember_tokens_user_id ON auth_remember_tokens (user_id);
 
 | Service | Purpose |
 |---------|---------|
-| `RememberTokenService` (NEW) | Generate, verify, rotate, revoke remember tokens. Lives in `app/Auth/`. |
+| `RememberMeService` (NEW) | Generate, verify, rotate, revoke remember tokens. Lives in `app/Auth/`. |
 | `RememberTokenRepository` (NEW) | CRUD for `auth_remember_tokens`. Lives in `app/Models/`. |
 
 ### Controller changes
@@ -517,7 +517,7 @@ Each migration is a separate file (e.g., `0030_add_email_verified_to_users.php`)
 
 | File | Purpose |
 |------|---------|
-| `app/Auth/RememberTokenService.php` | Remember me token lifecycle |
+| `app/Auth/RememberMeService.php` | Remember me token lifecycle |
 | `app/Auth/PasswordResetService.php` | Password reset token lifecycle |
 | `app/Auth/EmailVerificationService.php` | Email verification token lifecycle |
 | `app/Auth/TwoFactorService.php` | TOTP secret + code management |
@@ -693,8 +693,8 @@ All auth tokens follow the same pattern:
 **Why first**: Unlocks long-lived sessions with zero mailer dependency. Pure database + cookie work.
 
 **Files**:
-- Migration: `0030_add_remember_me_support.php` (new table + config toggle)
-- `app/Auth/RememberTokenService.php`
+- Migration: `0030_create_auth_remember_tokens_table.php` (new table + config toggle)
+- `app/Auth/RememberMeService.php`
 - `app/Models/RememberTokenRepository.php`
 - `app/Middleware/RememberMeAuth.php`
 - `app/Controllers/AuthController.php` (modify `login()`)

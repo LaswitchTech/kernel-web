@@ -42,6 +42,10 @@ readonly class RememberMeService
      */
     public function issue(int $userId): array
     {
+        if (!$this->isEnabled()) {
+            throw new \RuntimeException('Remember Me is disabled in config');
+        }
+
         $selector  = bin2hex(random_bytes(16));  // 32-char hex selector
         $validator = bin2hex(random_bytes(32));   // 64-char hex validator
 
@@ -65,8 +69,13 @@ readonly class RememberMeService
      */
     public function attempt(): ?array
     {
+        if (!$this->isEnabled()) {
+            return null;
+        }
+
         $cookie = $this->getCookie();
         if ($cookie === null) {
+            $this->deleteCookie();
             return null;
         }
 
@@ -147,6 +156,14 @@ readonly class RememberMeService
     private function getLifetime(): int
     {
         return (int) ($this->config['remember_me']['lifetime'] ?? self::COOKIE_LIFETIME);
+    }
+
+    /**
+     * Check if Remember Me is enabled in config.
+     */
+    private function isEnabled(): bool
+    {
+        return (bool) ($this->config['remember_me']['enabled'] ?? true);
     }
 
     /**
