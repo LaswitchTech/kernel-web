@@ -54,7 +54,8 @@ Core infrastructure improvements that unlock future feature work.
 - [x] Plugin/theme/layout scaffold generator (design complete — see docs/developer/scaffolds.md)
 - [x] Mailer foundation (default mail(), SMTP via plugin, settings hooks, templates)
 - [x] Auth features: remember me (selector/validator tokens, rotation, auto-login) — design at docs/developer/auth-features.md
-- [ ] Auth features: forgot password, email verification, 2FA
+- [x] Auth features: forgot password (selector/validator tokens, single-use, 60-minute expiry, email delivery) — design at docs/developer/auth-features.md
+- [ ] Auth features: email verification, 2FA
 - [x] Settings plugin hooks (extend system settings via registry) — implemented: SettingsRegistry, SettingsSection, controller integration, view loop
 - [x] CRUD test coverage (users, groups, permissions, tokens)
 - [ ] Remote catalog sync (periodic fetch of extension listings from a remote server)
@@ -124,7 +125,7 @@ These are planned or requested but are out of scope for the current development 
 | Layout system | Implemented | `app.php` (app), `panel.php` (admin), `blank.php` (auth, local assets, hooks) |
 | Theme system | Partially implemented | Bootstrap 5, LESS, dark/light mode |
 | Auth system | Partially implemented | Users, groups, permissions, tokens, sessions |
-| Auth features | Partially implemented | Remember Me implemented (selector/validator tokens, rotation, auto-login, 54 assertions). Forgot Password, Email Verification, 2FA pending. Design at docs/developer/auth-features.md. |
+| Auth features | Partially implemented | Remember Me (selector/validator tokens, rotation, auto-login, 54 assertions). Forgot Password (selector/validator tokens, single-use, 60-minute expiry, email delivery, 27 assertions). Email Verification, 2FA pending. Design at docs/developer/auth-features.md. |
 | Organizations | Planned | Design phase — optional, plugin-based scoping |
 | Theme preview | Implemented | GET /admin/themes/preview, all Bootstrap components, panel layout with breadcrumbs |
 | Plugin migrations | Implemented | Migration runner, catalog integration |
