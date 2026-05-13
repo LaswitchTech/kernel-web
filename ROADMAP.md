@@ -76,7 +76,7 @@ Features that depend on Phase 2 foundations being in place.
 - [ ] Application update system (local override patches)
 - [ ] Theme/layout runtime management (switch without manual file operations)
 - [x] DataTables standardization everywhere (consistent configuration, shared init)
-- [ ] User registration (config toggle, disabled by default)
+- [x] User registration (config toggle, disabled by default)
 - [ ] Plugin marketplace foundation (extension listing, version tracking)
 - [ ] Developer mode tools implementation (scaffold generator, example templates)
 - [ ] Extension installation progress tracking (large extensions)
@@ -148,7 +148,7 @@ These are planned or requested but are out of scope for the current development 
 | Mailer | Implemented | Core infrastructure: MailMessage, Attachment, TemplateRegistry, TransportInterface, MailTransport (mail()), Mailer facade, MailerException. Config at config/mail.php. 63 assertions. Design at docs/developer/mailer.md. |
 | OAuth | Deferred | See Deferred section |
 | Licensing | Deferred | See Deferred section |
-| Registration | Planned | Config toggle (disabled by default) — Phase 3 |
+| Registration | Implemented | Config-gated (disabled by default), email verification integration, 55 assertions — see tests/registration_test.php |
 
 ---
 
