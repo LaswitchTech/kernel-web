@@ -371,11 +371,11 @@ class AuthController extends Controller
             return;
         }
 
-        $resetUrl = '/auth/verify/email?token=' . urlencode($result['selector']);
+        $verifyUrl = '/auth/verify/email?token=' . urlencode($result['selector']);
         $sent = $verifyService->sendEmail(
             $result['email'],
             $result['display_name'],
-            $resetUrl,
+            $verifyUrl,
             'noreply@localhost',
             'Kernel-Web'
         );

@@ -20,7 +20,6 @@ class EmailVerificationService
 {
     private const EXPIRY_SECONDS = 86400; // 24 hours
     private const TEMPLATE_PATH  = __DIR__ . '/../Views/emails/email_verification.php';
-    private const RATE_LIMIT_SECONDS = 60;
 
     public function __construct(
         private EmailVerificationRepository $repository,
@@ -136,21 +135,6 @@ class EmailVerificationService
         $this->repository->revokeAllForUser((int) $user['id']);
 
         return ['user' => $user, 'token_id' => (int) $tokenRecord['id']];
-    }
-
-    /**
-     * Check if a user has a recent enough verification token for rate limiting.
-     *
-     * Returns true if a token was created within the rate limit window (used for resend throttling).
-     */
-    public function hasRecentToken(int $userId): bool
-    {
-        $token = $this->repository->findByHash('rate_limit_placeholder'); // Will be replaced by caller
-        if ($token === null) {
-            return false;
-        }
-
-        return (strtotime($token['created_at']) + self::RATE_LIMIT_SECONDS) > time();
     }
 
     /**

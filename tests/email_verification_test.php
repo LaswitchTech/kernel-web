@@ -214,7 +214,8 @@ assert_true(str_contains($html, 'Verify'), 'email contains verify button text');
 
 // ============= 11. EMAIL SENT WITH MAILER ============
 
-// Use user 4 (resenduser) — still unverified at this point
+// Fresh users for mailer and resend tests
+$db->execute("INSERT INTO users (id, username, email, display_name, password_hash, is_active, email_verified_at, created_at, updated_at) VALUES (4, 'resenduser', 'resend@example.com', 'Resend User', 'hash', 1, NULL, '2024-01-01 00:00:00', '2024-01-01 00:00:00')");
 $db->execute("INSERT INTO users (id, username, email, display_name, password_hash, is_active, email_verified_at, created_at, updated_at) VALUES (5, 'emailtest', 'emailtest@example.com', 'Email Test User', 'hash', 1, NULL, '2024-01-01 00:00:00', '2024-01-01 00:00:00')");
 
 // Use generate for user 5 to test mailer send path
@@ -241,9 +242,7 @@ assert_false($sent, 'sendEmail returns false when mailer is null');
 
 // ============= 13. RESEND ============
 
-// User is still unverified (user 1 was verified in test 4, use a fresh user)
-$db->execute("INSERT INTO users (id, username, email, display_name, password_hash, is_active, email_verified_at, created_at, updated_at) VALUES (4, 'resenduser', 'resend@example.com', 'Resend User', 'hash', 1, NULL, '2024-01-01 00:00:00', '2024-01-01 00:00:00')");
-
+// User 4 is unverified (created above with user 5)
 // Generate first token
 $first = $verifyService->generate(4);
 assert_not_null($first, 'first generate returns token');

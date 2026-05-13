@@ -42,11 +42,21 @@
 <script>
 document.getElementById('resend-form').addEventListener('submit', async function (e) {
     e.preventDefault();
+    const btn = this.querySelector('button');
+    btn.disabled = true;
+    btn.textContent = 'Sending...';
     try {
         const res = await fetch('/auth/verify/resend', { method: 'POST' });
-        if (res.ok) window.location.href = '/auth/verify/sent';
+        if (res.ok) {
+            this.remove();
+            const msg = document.createElement('p');
+            msg.className = 'mt-3 text-success';
+            msg.textContent = 'A new verification link has been sent. Check your inbox.';
+            this.parentNode.insertBefore(msg, this.nextSibling);
+        }
     } catch {
-        window.location.href = '/auth/verify/sent';
+        btn.disabled = false;
+        btn.textContent = 'Request new link';
     }
 });
 </script>
