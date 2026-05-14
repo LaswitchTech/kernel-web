@@ -387,27 +387,43 @@ If/when SaaS multi-tenancy is required, it should be a **separate plugin** that 
 
 ## File Structure
 
+The plugin foundation lives in kernel core (not yet in a plugin directory):
+
+```
+app/Models/
+├── OrganizationRepository.php       — CRUD for organizations table
+├── OrganizationMemberRepository.php — organization_users pivot operations
+app/Core/
+├── OrganizationContext.php          — Session-based default org resolution
+
+database/migrations/
+└── 0052_create_organizations_tables.php  — organizations + organization_users tables
+
+tests/
+└── organization_test.php            — 44 assertions
+```
+
+When promoted to a plugin (`lib/plugins/Organizations/`), the structure would be:
+
 ```
 lib/plugins/Organizations/
 ├── plugin.json
 ├── src/
-│   ├── OrganizationRepository.php
-│   ├── OrganizationService.php
-│   ├── OrganizationUserRepository.php
-│   ├── OrganizationScoper.php
-│   ├── OrganizationContext.php
-│   └── OrganizationMigration.php
+│   ├── OrganizationService.php      — business logic (create org, invite members)
+│   └── OrgProfileSection.php        — Profile Modal section callback
 ├── migrations/
 │   └── 0001_create_organizations_tables.php
 ├── controllers/
-│   ├── OrgsController.php          — Admin listing/detail
-│   └── OrgApiService.php           — API endpoints (switch, list)
+│   ├── OrgsController.php           — Admin listing/detail
+│   └── OrgApiController.php         — API endpoints (switch, list)
 └── views/
-    ├── orgs.php                    — Admin listing
-    ├── org_detail.php              — Admin detail
+    ├── orgs.php                     — Admin listing
+    ├── org_detail.php               — Admin detail
     └── profile/
-        └── org_section.php         — Profile Modal section
+        └── org_section.php          — Profile Modal section
 ```
+
+The kernel-core placement is intentional for the first pass — it avoids plugin lifecycle complexity while validating the API design. Migration to a plugin follows the same extraction process used for Notes and Tasks plugins.
 
 ## Registry Pattern
 

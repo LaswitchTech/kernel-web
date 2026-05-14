@@ -62,7 +62,7 @@ Core infrastructure improvements that unlock future feature work.
 - [ ] Remote catalog sync (periodic fetch of extension listings from a remote server)
 - [x] Extension manifest validation improvements (semver, dependency format)
 - [x] Organizations system design (optional, plugin-based data scoping) — design at docs/developer/organizations.md
-- [ ] Organizations plugin foundation (organizations table, organization_users pivot, user membership)
+- [x] Organizations plugin foundation (organizations table, organization_users pivot, user membership)
 
 ---
 
@@ -127,7 +127,7 @@ These are planned or requested but are out of scope for the current development 
 | Theme system | Partially implemented | Bootstrap 5, LESS, dark/light mode |
 | Auth system | Partially implemented | Users, groups, permissions, tokens, sessions |
 | Auth features | Partially implemented | Remember Me (selector/validator tokens, rotation, auto-login, 40 assertions). Forgot Password (selector/validator tokens, single-use, 60-minute expiry, email delivery, 29 assertions). Email Verification (selector/validator tokens, single-use, 24-hour expiry, soft gate, email delivery, 38 assertions). User Registration (config-gated, disabled by default, requires email verification, 55 assertions). 2FA (TOTP RFC 6238, 160-bit secrets, 10 recovery codes, pending 2FA session state, Profile Modal integration, 64 assertions). Design at docs/developer/auth-features.md. |
-| Organizations | Designed | Plugin-scoped architecture designed at docs/developer/organizations.md: database model (organizations + organization_users pivot), repository-pattern scoping, session-based default org, Profile Modal integration, SQLite/MySQL compatibility, security boundaries, NOT full SaaS multi-tenancy. |
+| Organizations | Implemented | Plugin foundation: organizations + organization_users tables, OrganizationRepository, OrganizationMemberRepository, OrganizationContext (session-based default org resolution), Profile Modal integration, 44 assertions (organization_test.php). Design at docs/developer/organizations.md. |
 | Theme preview | Implemented | GET /admin/themes/preview, all Bootstrap components, panel layout with breadcrumbs |
 | Plugin migrations | Implemented | Migration runner, catalog integration |
 | Scaffold generator | Implemented | Routes at /admin/developer/scaffold (GET/POST), templates in resources/scaffolds/, staging output, validation, developer-mode gate |
@@ -143,7 +143,7 @@ These are planned or requested but are out of scope for the current development 
 | Contributing docs | Implemented | Documented in /docs/contributing.md |
 | Runtime DB safety | Hardened | DB files excluded from public/, .gitignore updated |
 | Phase 1 stabilization | Closed | 15/15 tasks done |
-| Testing | Partially implemented | Zero-dependency test framework with 10 suites (480 assertions) — router, plugin, migration, auth, mailer, remember_me, forgot_password, email_verification, registration, two_factor. CRUD coverage for users/groups/permissions/tokens complete. Mailer foundation implemented. See docs/developer/testing.md |
+| Testing | Partially implemented | Zero-dependency test framework with 11 suites (524 assertions) — router, plugin, migration, auth, mailer, remember_me, forgot_password, email_verification, registration, two_factor, organization. CRUD coverage for users/groups/permissions/tokens complete. Mailer foundation implemented. See docs/developer/testing.md |
 | Profile Modal | Implemented, full plugin architecture | API Tokens section with create/list/revoke UI. Section registry (ProfileModal class), /api/profile + /api/profile/sections endpoints, plugin tab rendering via JS, permission-gated sections. |
 | Mailer | Implemented | Core infrastructure: MailMessage, Attachment, TemplateRegistry, TransportInterface, MailTransport (mail()), Mailer facade, MailerException. Config at config/mail.php. 63 assertions. Design at docs/developer/mailer.md. |
 | OAuth | Deferred | See Deferred section |

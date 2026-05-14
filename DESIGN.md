@@ -770,7 +770,7 @@ After the NetMon cleanup pass, the kernel contains:
 - System settings management
 
 ### Future
-- Organizations (optional, plugin-based)
+- Organizations (optional, plugin-based) — **plugin foundation implemented** in kernel core. Migrated to plugin on promotion.
 
 All NetMon-specific infrastructure (devices, monitoring, alerts, discovery, topology) has been removed.
 NetMon is a future application built on Kernel-Web, not part of the kernel itself.

@@ -38,7 +38,7 @@ tests/
   email_verification_test.php — Email verification token repo, service, and mailer integration
   registration_test.php — User creation, duplicate detection, validation rules, verification email, config shape
   two_factor_test.php — TOTP code generation/verification, recovery codes, 2FA enable/disable, pending session state
-  email_verification_test.php — Email Verification token repo, service, and mailer integration
+  organization_test.php — Organization CRUD, membership management, context resolution, default org fallback, repository scoping
 ```
 
 ### Test runner
@@ -68,6 +68,22 @@ Failure propagation: each test file must exit with code 0 to pass. The runner ex
 | `assert_class_exists($class, $msg)` | Assert class or interface exists |
 
 Each assertion increments a pass/fail counter. `summary()` prints all failures with context, then the pass/fail count, then "ALL PASSED" or "FAILED".
+
+### Test Suite Summary
+
+| Suite | Assertions | What's tested |
+|-------|-----------|---------------|
+| router | 25 | Route registration, priority, parameters, middleware |
+| plugin | 47 | Manifest parsing, validation, registry, lifecycle |
+| migration | 14 | Migration runner, pending/applied, rollback |
+| auth | 105 | User/Group/Permission CRUD, TokenService, Gate |
+| mailer | 63 | MailMessage, TemplateRegistry, Transport, Mailer |
+| remember_me | 40 | Token repo, rotation, cookie parsing, AuthService |
+| forgot_password | 29 | Token repo, service, mailer, template rendering |
+| email_verification | 38 | Token repo, service, mailer, template, resend |
+| registration | 55 | User creation, hashing, validation, email verification |
+| two_factor | 64 | TOTP, recovery codes, pending session state |
+| organization | 44 | Org CRUD, membership, context resolution, scoping |
 
 ### Bootstrap
 
@@ -137,6 +153,10 @@ Tests `UserRepository::create()` (user creation with all fields), password hashi
 ### Two-Factor Authentication tests (`two_factor_test.php`) — 64 assertions
 
 Tests `TwoFactorRepository`, `TwoFactorService`, and `AuthService` 2FA flow with in-memory SQLite. Covers: secret generation (160-bit entropy, Base32), TOTP code verification (current step, ±1 window, ±2 step rejection), recovery code generation (10 codes, SHA-256 hashes, single-use), enable/disable, otpauth URI (RFC 6221 format, algorithm, digits, period params), pending 2FA session state (login → pending → completeTwoFactor → full session), expired pending state rejection, non-2FA user login without pending state, enable without prior generate, and recovery code uniqueness.
+
+### Organizations tests (`organization_test.php`) — 44 assertions
+
+Tests `OrganizationRepository` and `OrganizationMemberRepository` with in-memory SQLite. Covers: org CRUD (create, findById, findBySlug, findAll, findAllActive, updateName, setActive, delete), slug uniqueness (isSlugTaken with exclude), membership (addMember, isMember, getRole, removeMember, findMembers, removeUserFromAllOrgs), default org resolution (setDefaultOrg, findDefaultOrgForUser), deactivated org handling (not returned as default), context resolution (session cache, DB default, rollback on revoked membership), and migration idempotency (CREATE TABLE IF NOT EXISTS).
 
 Tests `UserRepository::create()` (user creation with all fields), password hashing (`PASSWORD_DEFAULT`/bcrypt, `password_verify`), duplicate username and email detection (`isUsernameTaken`/`isEmailTaken`), email verification integration (token generation, email sending via mailer, timestamp setting), already-verified user cannot generate new token, validation rule patterns (display_name, username regex, email format, password length), unique constraint enforcement on both username and email (`RuntimeException`), inactive user creation, inactive user email verification, null mailer graceful handling, `revokeAllForUser`, and registration config shape (`enabled=false`, `require_email_verification=true`, `auto_login=true`, `redirect='/'`).
 
