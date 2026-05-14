@@ -122,6 +122,16 @@
 - Or should each settings section be a standalone controller/view rendered in a frame?
 **Recommendation:** Hook point system. Each registered section gets a render callback that returns HTML. Rendered at specific positions in the settings page.
 
+### ARCH-5: Organizations plugin-scoped architecture
+**Questions:**
+- Should organizations be kernel-core or plugin-scoped?
+- Single org per user or multiple?
+- How does scoping interact with auth tokens and sessions?
+- Repository pattern or middleware-based scoping?
+**Recommendation:** Plugin-scoped (like ProfileModal, SettingsRegistry). Multiple orgs per user via pivot table. Repository pattern for scoping (explicit, testable). Session stores `org_default_{userId}`. NOT full SaaS multi-tenancy.
+**Status:** **DESIGNED** — see `docs/developer/organizations.md`. Covers database model (organizations + organization_users + deferred organization_roles), scoping strategies, auth/session integration, SQLite/MySQL compatibility, security boundaries, migration path, and SaaS evolution path.
+**Dependencies:** None for design. Implementation blocked by: Phase 2 priority order (after mailer and auth features).
+
 ### ARCH-4: Remember me / forgot password / 2FA design
 **Questions:**
 - Remember me: database-backed token vs. signed cookie?
@@ -152,6 +162,7 @@
 | Auth email verification | PHASE2-1 + ARCH-4 | Implemented — see docs/developer/auth-features.md |
 | Auth registration | PHASE2-1 | Implemented — see docs/developer/auth-features.md |
 | Auth 2FA | PHASE2-1 + ARCH-4 | Designed, not implemented — see docs/developer/auth-features.md |
+| Organizations | PHASE2 + ARCH-5 | Designed — see docs/developer/organizations.md |
 | Messenger SMS | PHASE3-1 | Deferred |
 | Messenger templates | PHASE3-1 | Part of messenger design |
 | Messenger queue | PHASE3-1 | Deferred |
@@ -176,6 +187,7 @@ None. All items have been mapped above.
 | ARCH-2 | Multi-database architecture | Low (deferred to Phase 3+) | None |
 | ARCH-3 | Settings hooks | Medium (needed for SMTP plugin) | None — DESIGNED at `docs/developer/settings-hooks.md` |
 | ARCH-4 | Auth token architecture | High (unlocks remember/forgot/2FA) | ARCH-1 |
+| ARCH-5 | Organizations architecture | Medium (plugin design complete) | None — DESIGNED at `docs/developer/organizations.md` |
 
 ---
 

@@ -426,9 +426,10 @@ Items are automatically filtered by the user's permissions at render time.
 ### Rule
 > Auth must be provider-agnostic
 
-### Organization Scoping (Future)
+### Organization Scoping (Designed — Plugin Foundation)
 
-Organizations are a future optional concept for grouping users and data.
+Organizations are a designed optional plugin for grouping users and data.
+Full design at [`docs/developer/organizations.md`](docs/developer/organizations.md).
 
 **Design Constraints:**
 - Organizations must NOT be mandatory in kernel core
@@ -438,30 +439,41 @@ Organizations are a future optional concept for grouping users and data.
 - Future multi-tenant behavior must be compatible with optional organization support
 
 **Concepts to support:**
-- Internal organizations
-- Prospects
-- Clients
-- Freight forwarders
-- Customs brokers
-- Customs offices
-- Vendors
-- Partners
-- Other business entities
+- Internal organizations, Prospects, Clients, Freight forwarders
+- Customs brokers, Customs offices, Vendors, Partners, Other business entities
 
-**Organizations plugin should define:**
-- `organizations` table (application-level)
-- `organization_users` pivot table
-- `organization_roles` table (optional, future)
-- Optional `organization_id` columns on plugin tables for ownership
+**Database model:**
+- `organizations` table (name, slug, type discriminator, active flag)
+- `organization_users` pivot table (many-to-many, `is_default` for session scoping)
+- `organization_roles` table (deferred to Phase 3)
 
-**Open Design Questions:**
-- Single organization vs. multiple organizations per user
-- Organization roles and role hierarchy
-- Organization-level permissions (can a permission be scoped to an organization?)
-- Whether organization scoping belongs in middleware or repository layer
-- Whether prospects/clients/vendors should be organization types or plugin-specific classifications
-- How organization membership affects auth tokens and sessions
-- Whether organizations should have hierarchy (parent/child relationships)
+**Scoping strategy:**
+- Repository pattern (explicit `scopeOrganization()` on repositories) as default
+- Optional middleware (`OrganizationMiddleware`) for cross-cutting scoping (opt-in)
+- Session stores `org_default_{userId}` for active org resolution
+
+**Key design decisions:**
+- Multiple organizations per user (many-to-many, not single)
+- Organization roles as a mapping layer over kernel permissions (not a replacement)
+- Prospect/clients/vendors as `type` column on organizations (simple discriminator)
+- API tokens remain organization-agnostic; scoping via request header or default org
+- NOT full SaaS multi-tenancy (application-level scoping only, no database isolation)
+
+**File structure:**
+```
+lib/plugins/Organizations/
+├── plugin.json
+├── src/
+│   ├── OrganizationRepository.php
+│   ├── OrganizationService.php
+│   ├── OrganizationUserRepository.php
+│   ├── OrganizationScoper.php
+│   ├── OrganizationContext.php
+│   └── OrganizationMigration.php
+├── migrations/0001_create_organizations_tables.php
+├── controllers/
+└── views/
+```
 
 ---
 
