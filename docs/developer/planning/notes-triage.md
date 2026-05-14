@@ -162,7 +162,7 @@
 | Auth email verification | PHASE2-1 + ARCH-4 | Implemented — see docs/developer/auth-features.md |
 | Auth registration | PHASE2-1 | Implemented — see docs/developer/auth-features.md |
 | Auth 2FA | PHASE2-1 + ARCH-4 | Designed, not implemented — see docs/developer/auth-features.md |
-| Organizations | PHASE2 + ARCH-5 | Designed — see docs/developer/organizations.md |
+| Organizations | PHASE2 + ARCH-5 | Implemented — plugin foundation (tables, repos, context, 44 assertions) — see docs/developer/organizations.md |
 | Messenger SMS | PHASE3-1 | Deferred |
 | Messenger templates | PHASE3-1 | Part of messenger design |
 | Messenger queue | PHASE3-1 | Deferred |
