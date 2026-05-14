@@ -417,6 +417,11 @@ if ($pluginsDir !== false && is_dir($pluginsDir)) {
     'source'   => 'core',
 ]);
 
+// ------ Profile Modal — Organizations Section (core) ------
+// Registers the organizations management section in the Profile Modal.
+require_once __DIR__ . '/../app/Controllers/ProfileOrganizationsController.php';
+\App\Controllers\ProfileOrganizationsController::registerSection();
+
 // ---------------------
 // Application Routes
 // ---------------------------------------------------------------------------

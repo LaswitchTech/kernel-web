@@ -39,6 +39,7 @@ tests/
   registration_test.php — User creation, duplicate detection, validation rules, verification email, config shape
   two_factor_test.php — TOTP code generation/verification, recovery codes, 2FA enable/disable, pending session state
   organization_test.php — Organization CRUD, membership management, context resolution, default org fallback, repository scoping
+  organization_runtime_test.php — ProfileModal section registration, renderSection output, org creation/switching, slug handling, context resolution
 ```
 
 ### Test runner
@@ -84,6 +85,7 @@ Each assertion increments a pass/fail counter. `summary()` prints all failures w
 | registration | 55 | User creation, hashing, validation, email verification |
 | two_factor | 64 | TOTP, recovery codes, pending session state |
 | organization | 44 | Org CRUD, membership, context resolution, scoping |
+| organization_runtime | 46 | ProfileModal section registration, renderSection output, org creation/switching, slug handling, context resolution |
 
 ### Bootstrap
 
@@ -158,7 +160,9 @@ Tests `TwoFactorRepository`, `TwoFactorService`, and `AuthService` 2FA flow with
 
 Tests `OrganizationRepository` and `OrganizationMemberRepository` with in-memory SQLite. Covers: org CRUD (create, findById, findBySlug, findAll, findAllActive, updateName, setActive, delete), slug uniqueness (isSlugTaken with exclude), membership (addMember, isMember, getRole, removeMember, findMembers, removeUserFromAllOrgs), default org resolution (setDefaultOrg, findDefaultOrgForUser), deactivated org handling (not returned as default), context resolution (session cache, DB default, rollback on revoked membership), and migration idempotency (CREATE TABLE IF NOT EXISTS).
 
-Tests `UserRepository::create()` (user creation with all fields), password hashing (`PASSWORD_DEFAULT`/bcrypt, `password_verify`), duplicate username and email detection (`isUsernameTaken`/`isEmailTaken`), email verification integration (token generation, email sending via mailer, timestamp setting), already-verified user cannot generate new token, validation rule patterns (display_name, username regex, email format, password length), unique constraint enforcement on both username and email (`RuntimeException`), inactive user creation, inactive user email verification, null mailer graceful handling, `revokeAllForUser`, and registration config shape (`enabled=false`, `require_email_verification=true`, `auto_login=true`, `redirect='/'`).
+### Organizations runtime tests (`organization_runtime_test.php`) — 46 assertions
+
+Tests `ProfileOrganizationsController` and ProfileModal integration. Covers: section registration (hasSection, getSection, metadata, isVisible, callable callback), renderSection output (HTML structure, labels, IDs, empty states, null guards), org creation via repo (name/slug/type, duplicate slug suffix), slug generation (special chars, trimming), membership + default org persistence, ProfileModalSection ID validation (valid and invalid patterns), duplicate section rejection, context resolution (session cache, DB default, null user), and findAllActive filtering.
 
 ## Dependencies
 

@@ -70,8 +70,9 @@ class ProfileModalController extends Controller
         }
 
         $context = [
-            'user'        => $user,
+            'principal'   => $principal,
             'permissions' => $permissions,
+            'db'          => $this->container->get('db'),
         ];
 
         $html = $section->render($context);

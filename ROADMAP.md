@@ -63,6 +63,7 @@ Core infrastructure improvements that unlock future feature work.
 - [x] Extension manifest validation improvements (semver, dependency format)
 - [x] Organizations system design (optional, plugin-based data scoping) — design at docs/developer/organizations.md
 - [x] Organizations plugin foundation (organizations table, organization_users pivot, user membership)
+- [x] Organizations runtime UX (Profile Modal section, AJAX switch/create/list endpoints, slug generation)
 
 ---
 
@@ -127,7 +128,7 @@ These are planned or requested but are out of scope for the current development 
 | Theme system | Partially implemented | Bootstrap 5, LESS, dark/light mode |
 | Auth system | Partially implemented | Users, groups, permissions, tokens, sessions |
 | Auth features | Partially implemented | Remember Me (selector/validator tokens, rotation, auto-login, 40 assertions). Forgot Password (selector/validator tokens, single-use, 60-minute expiry, email delivery, 29 assertions). Email Verification (selector/validator tokens, single-use, 24-hour expiry, soft gate, email delivery, 38 assertions). User Registration (config-gated, disabled by default, requires email verification, 55 assertions). 2FA (TOTP RFC 6238, 160-bit secrets, 10 recovery codes, pending 2FA session state, Profile Modal integration, 64 assertions). Design at docs/developer/auth-features.md. |
-| Organizations | Implemented | Plugin foundation: organizations + organization_users tables, OrganizationRepository, OrganizationMemberRepository, OrganizationContext (session-based default org resolution), Profile Modal integration, 44 assertions (organization_test.php). Design at docs/developer/organizations.md. |
+| Organizations | Implemented | Plugin foundation: organizations + organization_users tables, OrganizationRepository, OrganizationMemberRepository, OrganizationContext (session-based default org resolution), Profile Modal integration with AJAX switch/create/list endpoints, slug generation, 90 assertions across organization_test.php and organization_runtime_test.php. Design at docs/developer/organizations.md. |
 | Theme preview | Implemented | GET /admin/themes/preview, all Bootstrap components, panel layout with breadcrumbs |
 | Plugin migrations | Implemented | Migration runner, catalog integration |
 | Scaffold generator | Implemented | Routes at /admin/developer/scaffold (GET/POST), templates in resources/scaffolds/, staging output, validation, developer-mode gate |

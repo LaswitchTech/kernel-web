@@ -132,6 +132,11 @@ $router->post('/api/profile/2fa/enable', 'AuthController@profileTwoFactorEnable'
 $router->post('/api/profile/2fa/recovery-codes', 'AuthController@profileTwoFactorRegenerateRecoveryCodes', ['SessionAuth']);
 $router->post('/api/profile/2fa/disable', 'AuthController@profileTwoFactorDisable', ['SessionAuth']);
 
+// Profile Modal — Organizations section (registered via ProfileModal::addSection).
+$router->get('/api/profile/organizations', 'ProfileOrganizationsController@list', ['SessionAuth']);
+$router->post('/api/profile/organizations/switch', 'ProfileOrganizationsController@switchOrganization', ['SessionAuth']);
+$router->post('/api/profile/organizations/create', 'ProfileOrganizationsController@createOrganization', ['SessionAuth']);
+
 // Chat JSON API — SessionAuth for AJAX callers.
 $router->get('/api/chat/unread', 'Modules\Chat\Controllers\ChatController@unreadCount', ['SessionAuth']);
 

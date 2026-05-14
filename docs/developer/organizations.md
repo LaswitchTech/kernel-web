@@ -390,17 +390,23 @@ If/when SaaS multi-tenancy is required, it should be a **separate plugin** that 
 The plugin foundation lives in kernel core (not yet in a plugin directory):
 
 ```
+app/Controllers/
+├── ProfileOrganizationsController.php — Organization CRUD + ProfileModal section
 app/Models/
 ├── OrganizationRepository.php       — CRUD for organizations table
 ├── OrganizationMemberRepository.php — organization_users pivot operations
 app/Core/
 ├── OrganizationContext.php          — Session-based default org resolution
 
+routes/
+└── web.php                          — /api/profile/organizations routes
+
 database/migrations/
 └── 0052_create_organizations_tables.php  — organizations + organization_users tables
 
 tests/
-└── organization_test.php            — 44 assertions
+├── organization_test.php            — 44 assertions (repo layer)
+└── organization_runtime_test.php    — 46 assertions (controller + section layer)
 ```
 
 When promoted to a plugin (`lib/plugins/Organizations/`), the structure would be:
@@ -434,6 +440,40 @@ The Organizations plugin follows the existing registry pattern (ProfileModal, Se
 - **`MenuRegistry::add()`** — registers admin menu items under an "Organizations" section.
 
 No new kernel-level registry is required for Phase 1. The existing registries are sufficient.
+
+## Profile Modal Integration
+
+The Organizations system integrates with the Profile Modal via `ProfileOrganizationsController`. The section is registered in `public/index.php` via `ProfileOrganizationsController::registerSection()` and serves content through the existing `/api/profile/sections/{id}` endpoint.
+
+### API Endpoints
+
+| Method | Route | Middleware | Description |
+|------|-----|-------|-------|
+| GET | `/api/profile/organizations` | `SessionAuth` | List user's organizations |
+| POST | `/api/profile/organizations/switch` | `SessionAuth` | Set default organization |
+| POST | `/api/profile/organizations/create` | `SessionAuth` | Create organization (creator becomes admin) |
+
+### Profile Modal Section
+
+Registered via `ProfileModal::addSection()` with:
+- `id`: `organizations`
+- `order`: 30 (after API Tokens, before 2FA)
+- `permission`: `null` (visible to all authenticated users)
+- `callback`: `[ProfileOrganizationsController::class, 'renderSection']`
+
+The `renderSection` method outputs a Bootstrap-styled panel with three zones:
+1. Current organization badge
+2. Organization switch dropdown (if user belongs to multiple orgs)
+3. Create organization form with name input
+
+### AJAX Interactions
+
+- **Switch**: `fetch('/api/profile/organizations/switch', {POST, JSON body})` → validates membership → updates `is_default` + session → full page reload
+- **Create**: `fetch('/api/profile/organizations/create', {POST, JSON body})` → validates name → generates slug → creates org + membership → auto-sets as default → reload after 1s
+
+### Slug Generation
+
+Organization slugs are URL-safe: lowercase, alphanumeric + hyphens, no leading/trailing hyphens. Duplicate slugs get a numeric suffix (`acme-1`, `acme-2`, etc.).
 
 ## Testing Strategy
 
