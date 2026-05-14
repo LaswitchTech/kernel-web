@@ -37,6 +37,7 @@ tests/
   forgot_password_test.php — Password reset token repo, service, and mailer integration
   email_verification_test.php — Email verification token repo, service, and mailer integration
   registration_test.php — User creation, duplicate detection, validation rules, verification email, config shape
+  two_factor_test.php — TOTP code generation/verification, recovery codes, 2FA enable/disable, pending session state
   email_verification_test.php — Email Verification token repo, service, and mailer integration
 ```
 
@@ -130,6 +131,12 @@ Tests `PasswordResetRepository` and `PasswordResetService` with in-memory SQLite
 Tests `EmailVerificationRepository` and `EmailVerificationService` with in-memory SQLite. Covers token generation (64-char hex, SHA-256 hash storage), already-verified user rejection, nonexistent user handling, valid token verification with `email_verified_at` update, expired token rejection, used token rejection, nonexistent token rejection, inactive user email verification, token revocation after verification, email template rendering, email sending with mailer (FakeTransport), null mailer handling, resend (new token replaces old), resend for verified user, resend for nonexistent user (enumeration-safe), and revokeAllForUser.
 
 ### Registration tests (`registration_test.php`) — 55 assertions
+
+Tests `UserRepository::create()` (user creation with all fields), password hashing (`PASSWORD_DEFAULT`/bcrypt, `password_verify`), duplicate username and email detection (`isUsernameTaken`/`isEmailTaken`), email verification integration (token generation, email sending via mailer, timestamp setting), already-verified user cannot generate new token, validation rule patterns (display_name, username regex, email format, password length), unique constraint enforcement on both username and email (`RuntimeException`), inactive user creation, inactive user email verification, null mailer graceful handling, `revokeAllForUser`, and registration config shape (`enabled=false`, `require_email_verification=true`, `auto_login=true`, `redirect='/'`).
+
+### Two-Factor Authentication tests (`two_factor_test.php`) — 64 assertions
+
+Tests `TwoFactorRepository`, `TwoFactorService`, and `AuthService` 2FA flow with in-memory SQLite. Covers: secret generation (160-bit entropy, Base32), TOTP code verification (current step, ±1 window, ±2 step rejection), recovery code generation (10 codes, SHA-256 hashes, single-use), enable/disable, otpauth URI (RFC 6221 format, algorithm, digits, period params), pending 2FA session state (login → pending → completeTwoFactor → full session), expired pending state rejection, non-2FA user login without pending state, enable without prior generate, and recovery code uniqueness.
 
 Tests `UserRepository::create()` (user creation with all fields), password hashing (`PASSWORD_DEFAULT`/bcrypt, `password_verify`), duplicate username and email detection (`isUsernameTaken`/`isEmailTaken`), email verification integration (token generation, email sending via mailer, timestamp setting), already-verified user cannot generate new token, validation rule patterns (display_name, username regex, email format, password length), unique constraint enforcement on both username and email (`RuntimeException`), inactive user creation, inactive user email verification, null mailer graceful handling, `revokeAllForUser`, and registration config shape (`enabled=false`, `require_email_verification=true`, `auto_login=true`, `redirect='/'`).
 

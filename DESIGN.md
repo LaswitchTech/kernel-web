@@ -475,7 +475,7 @@ The following auth features are designed in `docs/developer/auth-features.md`:
 | **Forgot Password / Reset** | Implemented | Phase 2 |
 | **Email Verification** | Implemented | Phase 2 |
 | **User Registration** | Implemented | Phase 2 |
-| **Two-Factor Authentication (2FA)** | Designed | Phase 4 |
+| **Two-Factor Authentication (2FA)** | Implemented | Phase 2 |
 
 Design doc: [`docs/developer/auth-features.md`](docs/developer/auth-features.md)
 

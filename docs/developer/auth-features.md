@@ -1,6 +1,6 @@
 # Auth Features Design
 
-> **Status:** Partially implemented (Remember Me, Forgot Password, Email Verification, User Registration done; 2FA pending)
+> **Status:** Partially implemented (Remember Me, Forgot Password, Email Verification, User Registration, 2FA done)
 > **Roadmap:** Phase 2
 > **Related:** MAILER-1 (Mailer), SETTINGS-1 (SettingsRegistry), PHASE2-1
 
@@ -417,6 +417,10 @@ Add a second authentication factor to login. **TOTP (RFC 6238)** — compatible 
 - **Profile Modal integration** — 2FA settings in the Profile Modal (new tab or section)
 - **Admin override** — admin can reset a user's 2FA (revoke secret + recovery codes)
 
+### Migration
+
+`database/migrations/0051_add_2fa_support.php` — `Add2FASupport`
+
 ### Database schema
 
 ```sql
@@ -439,21 +443,21 @@ CREATE INDEX auth_2fa_recovery_codes_user_id ON auth_2fa_recovery_codes (user_id
 | Service | Purpose |
 |---------|---------|
 | `TwoFactorService` (NEW) | Generate secret, verify TOTP code, generate recovery codes, validate recovery code, disable 2FA. Lives in `app/Auth/`. |
-| `TwoFactorRepository` (NEW) | NOT needed — 2FA data is on the `users` table (totp_secret column) and `auth_2fa_recovery_codes`. |
+| `TwoFactorRepository` (NEW) | Recovery code CRUD and TOTP secret queries. Lives in `app/Models/`. |
 
 ### Controller changes
 
 | Controller | Change |
 |-----------|--------|
-| `AuthController` | Add `twoFactorForm()` (GET /auth/two-factor), `twoFactor()` (POST /auth/two-factor) |
-| `ProfileModalController` (or new Profile2FAController) | Add 2FA management endpoints |
+| `AuthController` | Add `twoFactorForm()` (GET /auth/2fa), `twoFactor()` (POST /auth/2fa), 5 Profile Modal 2FA endpoints (status, generate, enable, regenerate-recovery-codes, disable) |
+| `TwoFactorService` | Profile Modal 2FA logic — called via container binding `two_factor` |
 
 ### View changes
 
 | View | Change |
 |------|--------|
 | `app/Views/auth/two-factor.php` | TOTP code input during login. Blank layout. |
-| `app/Views/profile/two-factor.php` | 2FA management in Profile Modal (QR code, enable/disable, recovery codes). |
+| Profile Modal 2FA section | Registered via `ProfileModal::addSection` — manages QR code display, enable/disable, recovery codes via AJAX endpoints on `AuthController` |
 
 ### Mailer integration
 
@@ -464,9 +468,9 @@ CREATE INDEX auth_2fa_recovery_codes_user_id ON auth_2fa_recovery_codes (user_id
 
 ### Security rules
 
-- TOTP secret generated with `random_bytes(10)` → base32 (20 chars)
+- TOTP secret generated with `random_bytes(20)` → base32 (40 chars) — 160-bit entropy
 - TOTP window: ±1 step (30s × 3 = 90s total window)
-- Recovery codes: `random_bytes(10)` → hex, hashed with SHA-256
+- Recovery codes: `random_bytes(5)` → hex (10 chars), hashed with SHA-256
 - Recovery codes are one-time use — single-use flag
 - All recovery codes revoked when 2FA is disabled
 - TOTP secret never displayed after initial generation (except as QR code)
@@ -476,15 +480,15 @@ CREATE INDEX auth_2fa_recovery_codes_user_id ON auth_2fa_recovery_codes (user_id
 ### TOTP algorithm
 
 ```
-1. User enables 2FA → secret = base32(random_bytes(10))
-2. QR code generated via https://api.qrserver.com/v1/create-qr-code/?data=otpauth://totp/Kernel-Web:user@example.com?secret=XXXXX&size=200x200
+1. User enables 2FA → secret = base32(random_bytes(20)) — 160-bit entropy
+2. QR code generated via otpauth://totp URI (returned by getOtpauthUri())
 3. User scans QR code in their TOTP app
 4. On login, TOTP code is verified via:
    $step = floor(time() / 30);
    $hmac = hash_hmac('sha1', pack('N*', $step), hex2bin($hexSecret), true);
-   $offset = $hmac[19] & 0x0F;
-   $code = (($hmac[$offset] & 0x7F) << 24 | ($hmac[$offset+1] & 0xFF) << 16 | ($hmac[$offset+2] & 0xFF) << 8 | ($hmac[$offset+3] & 0xFF)) % 1000000;
-   $verified = str_pad($code, 6, '0', STR_PAD_LEFT) === $inputCode;
+   $offset = ord($hmac[19]) & 0x0F;
+   $code = ((ord($hmac[$offset]) & 0x7F) << 24 | (ord($hmac[$offset+1]) & 0xFF) << 16 | (ord($hmac[$offset+2]) & 0xFF) << 8 | (ord($hmac[$offset+3]) & 0xFF)) % 1000000;
+   $verified = hash_equals(str_pad($code, 6, '0', STR_PAD_LEFT), $inputCode);
 ```
 
 ---

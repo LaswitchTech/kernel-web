@@ -43,7 +43,7 @@ class TwoFactorService
             return null;
         }
 
-        $secret = $this->encodeSecret(random_bytes(10));
+        $secret = $this->encodeSecret(random_bytes(20));
         $this->repository->setTotpSecret($userId, $secret);
 
         return $secret;
@@ -144,7 +144,7 @@ class TwoFactorService
         $secret = $secretData['totp_secret'] ?? null;
 
         if ($secret === null) {
-            $secret = $this->encodeSecret(random_bytes(10));
+            $secret = $this->encodeSecret(random_bytes(20));
             $this->repository->setTotpSecret($userId, $secret);
         }
 
@@ -179,7 +179,7 @@ class TwoFactorService
     public function getOtpauthUri(int $userId, string $appName, string $userEmail): string
     {
         $secretData = $this->repository->getTotpSecret($userId);
-        $secret = $secretData['totp_secret'] ?? $this->encodeSecret(random_bytes(10));
+        $secret = $secretData['totp_secret'] ?? $this->encodeSecret(random_bytes(20));
         return "otpauth://totp/{$appName}:{$userEmail}?secret={$secret}&issuer={$appName}&algorithm=SHA1&digits=" . self::TOTP_DIGITS . "&period=" . self::TOTP_STEP;
     }
 
