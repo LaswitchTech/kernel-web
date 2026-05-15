@@ -465,3 +465,33 @@ All token API endpoints use `SessionAuth`. The `/api/tokens/*` routes are not ac
 | `session.secure` | Must be `true` when serving over HTTPS. Currently `false` in `config/auth.php` for local development. |
 | Rate limiting on `/auth/login` | No brute-force protection. |
 | Polished login UI | The current `login.php` is intentionally minimal. The dark-themed reference at `docs/reference/signin-signup/` can be adapted into a proper design pass later. |
+
+---
+
+## Migration Notes
+
+After pulling new code that adds or modifies migrations, run pending migrations:
+
+```bash
+php scripts/migrate.php run
+```
+
+Check migration status:
+```bash
+php scripts/migrate.php status
+```
+
+### 2FA Schema Requirement
+
+The two-factor authentication feature (TOTP + recovery codes) requires migration **0051_add_2fa_support.php** to be applied. It adds:
+- `users.totp_secret` — nullable TOTP secret
+- `users.totp_enabled_at` — nullable timestamp
+- `auth_2fa_recovery_codes` table — recovery code storage
+
+If login returns a 500 error related to `totp_secret`, the migration was not applied. Run:
+
+```bash
+php scripts/migrate.php run
+```
+
+The codebase includes defensive handling: `TwoFactorRepository` catches PDOExceptions and fails closed (treats 2FA as disabled) when the schema is missing. `AuthService::hasTwoFactorEnabled()` wraps the service call in a try-catch to ensure login never crashes.

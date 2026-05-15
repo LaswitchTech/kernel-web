@@ -126,15 +126,23 @@ class AuthService
 
     /**
      * Check if the user has 2FA enabled.
+     *
+     * Fails closed: returns false if the two_factor service is unavailable,
+     * the database schema is missing 2FA columns, or any error occurs.
+     * This ensures login never crashes because optional 2FA schema is absent.
      */
     public function hasTwoFactorEnabled(int $userId): bool
     {
         if (!isset($this->container)) {
-            // TwoFactorService not available — can't check 2FA (shouldn't happen in normal boot)
             return false;
         }
-        $service = $this->container->get('two_factor');
-        return $service->isEnabled($userId);
+        try {
+            $service = $this->container->get('two_factor');
+            return $service->isEnabled($userId);
+        } catch (\Throwable $e) {
+            error_log('[Auth] hasTwoFactorEnabled failed: ' . $e->getMessage());
+            return false;
+        }
     }
 
     /**

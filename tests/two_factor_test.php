@@ -399,5 +399,101 @@ $uniqueHashes = array_unique($hashes);
 assert_equal(count($hashes), count($uniqueHashes), 'all recovery code hashes are unique');
 
 // ============= SUMMARY ============
+
+// ============= 16. MISSING SCHEMA — 2FA GRACEFUL DEGRADATION ============
+// Regression test: TwoFactorService::isEnabled() must return false when
+// totp_secret/totp_enabled_at columns do NOT exist (migration 0051 not applied).
+
+// Create a fresh DB WITHOUT 2FA columns
+$pdoNo2fa = new PDO('sqlite::memory:');
+$pdoNo2fa->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+
+class TestDBNo2fa implements DatabaseInterface
+{
+    public function __construct(private PDO $pdo) {}
+    public function pdo(): PDO { return $this->pdo; }
+    public function fetch(string $sql, array $params = []): array {
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute($params);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+    public function fetchOne(string $sql, array $params = []): ?array {
+        $rows = $this->fetch($sql, $params);
+        return $rows[0] ?? null;
+    }
+    public function execute(string $sql, array $bindings = []): int {
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute($bindings);
+        return (int) $stmt->rowCount();
+    }
+    public function beginTransaction(): bool { return $this->pdo->beginTransaction(); }
+    public function commit(): bool { return $this->pdo->commit(); }
+    public function rollBack(): bool { return $this->pdo->rollBack(); }
+    public function lastInsertId(): string { return $this->pdo->lastInsertId(); }
+}
+
+$dbNo2fa = new TestDBNo2fa($pdoNo2fa);
+
+// Create users table WITHOUT totp_secret/totp_enabled_at columns
+$dbNo2fa->execute("CREATE TABLE users (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    username TEXT UNIQUE NOT NULL,
+    email TEXT UNIQUE NOT NULL,
+    display_name TEXT DEFAULT '',
+    password_hash TEXT NOT NULL,
+    is_active INTEGER DEFAULT 1,
+    email_verified_at VARCHAR(32),
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+)");
+
+$passwordHash = password_hash('testpass123', PASSWORD_DEFAULT);
+$dbNo2fa->execute(
+    "INSERT INTO users (id, username, email, display_name, password_hash, is_active, created_at, updated_at)
+     VALUES (1, 'userno2fa', 'n2fa@example.com', 'No2fa User', ?, 1, '2024-01-01 00:00:00', '2024-01-01 00:00:00')",
+    [$passwordHash]
+);
+
+$repoNo2fa = new TwoFactorRepository($dbNo2fa);
+$userRepoNo2fa = new App\Models\UserRepository($dbNo2fa);
+$serviceNo2fa = new TwoFactorService($repoNo2fa, $userRepoNo2fa);
+
+// isEnabled must NOT throw when columns are missing — must return false
+assert_false($serviceNo2fa->isEnabled(1), 'isEnabled returns false when 2FA columns are missing');
+
+// verifyTotp must NOT throw — must return false
+assert_false($serviceNo2fa->verifyTotp(1, '123456'), 'verifyTotp returns false when 2FA columns are missing');
+
+// generateSecret must NOT throw — must return null (user created but secret save silently fails)
+$secretNo2fa = $serviceNo2fa->generateSecret(1);
+// May return a secret string (generation succeeds) but setTotpSecret silently fails.
+// The key test is that it does NOT throw.
+assert_true($secretNo2fa === null || is_string($secretNo2fa), 'generateSecret does not throw when 2FA columns are missing');
+
+// disable must NOT throw
+$serviceNo2fa->disable(1); // should not throw
+
+// AuthService login must NOT throw when 2FA columns are missing
+$containerNo2fa = new Container();
+$containerNo2fa->set('db', $dbNo2fa);
+$containerNo2fa->set('two_factor', new TwoFactorService(new TwoFactorRepository($dbNo2fa), new App\Models\UserRepository($dbNo2fa)));
+
+$fakeProviderNo2fa = new FakeProvider([
+    ['id' => 1, 'display_name' => 'No2fa User', 'username' => 'userno2fa',
+     'email' => 'n2fa@example.com', 'is_active' => 1,
+     'password_hash' => $passwordHash,
+     'created_at' => '2024-01-01 00:00:00', 'updated_at' => '2024-01-01 00:00:00'],
+]);
+
+$authNo2fa = new AuthService($fakeProviderNo2fa, $config, null);
+$authNo2fa->setContainer($containerNo2fa);
+
+// Login must succeed for valid user even when 2FA schema is absent
+$userNo2fa = $authNo2fa->login(['identity' => 'userno2fa', 'password' => 'testpass123']);
+assert_not_null($userNo2fa, 'login succeeds when 2FA schema is missing');
+assert_false($authNo2fa->hasTwoFactorEnabled(1), 'hasTwoFactorEnabled returns false when 2FA columns are missing');
+assert_false($authNo2fa->hasPendingTwoFactor(), 'no pending 2FA when 2FA schema is missing');
+
+// ============= SUMMARY ============
 summary();
 exit($__FAIL__ > 0 ? 1 : 0);
