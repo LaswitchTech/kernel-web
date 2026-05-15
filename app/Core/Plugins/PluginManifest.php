@@ -53,7 +53,7 @@ class PluginManifest
         $this->path             = '';
         $this->description      = isset($data['description']) ? (string) $data['description'] : null;
         $this->enabled          = (bool) ($data['enabled'] ?? true);
-        $this->minKernelVersion = isset($data['requires']['kernel']) ? (string) $data['requires']['kernel'] : '';
+        $this->minKernelVersion = $this->parseAndValidateKernelRequirement($data);
         $this->dependencies     = $this->resolveDependencies($data);
         $this->permissions      = isset($data['permissions']) ? (array) $data['permissions'] : [];
         $this->routes           = isset($data['routes']) ? (array) $data['routes'] : [];
@@ -90,6 +90,40 @@ class PluginManifest
     public function setPath(string $path): void
     {
         $this->path = rtrim($path, '/\\');
+    }
+
+    /**
+     * Parse and validate the requires.kernel field from the manifest.
+     *
+     * Returns the raw constraint string on success.
+     * Throws PluginException if the constraint is present but malformed.
+     */
+    private function parseAndValidateKernelRequirement(array $data): string
+    {
+        if (!isset($data['requires']['kernel'])) {
+            return '';
+        }
+
+        $kernel = (string) $data['requires']['kernel'];
+
+        // Empty string = compatible with all
+        if ($kernel === '') {
+            return '';
+        }
+
+        // Validate constraint format (supports compound AND: space-separated)
+        $parts = preg_split('/\s+/', $kernel);
+        if ($parts === false || $parts === []) {
+            throw new PluginException('Manifest has an invalid kernel requirement: "' . $kernel . '".');
+        }
+        foreach ($parts as $part) {
+            if ($part === '') continue;
+            if (!\App\Services\Extensions\ExtensionDependencyResolver::isValidConstraint($part)) {
+                throw new PluginException('Manifest has an invalid kernel requirement: "' . $kernel . '". Supported: exact (1.2.3), >=, >, <=, <, ^ (caret), ~ (tilde).');
+            }
+        }
+
+        return $kernel;
     }
 
     /**

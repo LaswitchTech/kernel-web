@@ -82,7 +82,7 @@ $fullData = [
     'version'     => '2.0.0',
     'description' => 'Full plugin',
     'enabled'     => false,
-    'requires'    => ['kernel' => '8.2'],
+    'requires'    => ['kernel' => '>=1.0.0'],
     'dependencies'=> ['plugin:notes' => '>=0.1.0'],
     'permissions' => ['full.manage', 'full.view'],
     'routes'      => [['GET', '/full', 'FullController@index', []]],
@@ -94,7 +94,7 @@ $fullData = [
 ];
 $manifestFull = new PluginManifest($fullData);
 assert_false($manifestFull->enabled(), 'Enabled is false');
-assert_equal('8.2', $manifestFull->minKernelVersion(), 'Kernel requirement set');
+assert_equal('>=1.0.0', $manifestFull->minKernelVersion(), 'Kernel requirement set');
 assert_equal('>=0.1.0', $manifestFull->dependencies()['plugin:notes'], 'Dependency set');
 assert_array_has_length($manifestFull->permissions(), 2, 'Two permissions');
 assert_array_has_length($manifestFull->routes(), 1, 'One route');

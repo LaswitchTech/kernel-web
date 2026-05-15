@@ -458,6 +458,17 @@ class ExtensionsController extends Controller
             exit;
         }
 
+        // Check kernel compatibility from catalog requirements.
+        $requirements = json_decode($extension['requirements'] ?? '[]', true);
+        if (is_array($requirements) && isset($requirements['kernel']) && $requirements['kernel'] !== '') {
+            $kernelVersion = ($this->container->get('version_provider') ?: new \App\Core\VersionProvider(dirname(__DIR__ . '/../../../')))->getKernelVersion();
+            if (!\App\Services\Extensions\ExtensionDependencyResolver::checkKernelCompatibility($kernelVersion, $requirements['kernel'])) {
+                $this->flash('error', 'Extension "' . $extension['name'] . '" requires kernel ' . htmlspecialchars($requirements['kernel']) . '. Current kernel version is v' . $kernelVersion . '.');
+                header('Location: /admin/extensions/catalog');
+                exit;
+            }
+        }
+
         // Perform the copy
         if (!$this->copyDir($resolvedSource, $targetDir)) {
             $this->flash('error', 'Failed to copy extension files from staging to target directory.');
@@ -701,6 +712,24 @@ class ExtensionsController extends Controller
             $this->flashBlockers = $depResult['blockers'];
             header('Location: /admin/extensions/catalog');
             exit;
+        }
+
+        // Check kernel compatibility from on-disk manifest.
+        $libBase = realpath(__DIR__ . '/../../../lib');
+        if ($libBase !== false) {
+            $manifestFile = ($type === 'plugin' ? 'plugin.json' : ($type === 'theme' ? 'theme.json' : 'layout.json'));
+            $manifestPath = $libBase . '/' . $typeDirs[$type] . '/' . $slug . '/' . $manifestFile;
+            if (is_file($manifestPath)) {
+                $manifestData = json_decode(file_get_contents($manifestPath), true);
+                if (is_array($manifestData) && isset($manifestData['requires']['kernel']) && $manifestData['requires']['kernel'] !== '') {
+                    $kernelVersion = ($this->container->get('version_provider') ?: new \App\Core\VersionProvider(dirname(__DIR__ . '/../../../')))->getKernelVersion();
+                    if (!\App\Services\Extensions\ExtensionDependencyResolver::checkKernelCompatibility($kernelVersion, $manifestData['requires']['kernel'])) {
+                        $this->flash('error', 'Extension "' . $extension['name'] . '" requires kernel ' . htmlspecialchars($manifestData['requires']['kernel']) . '. Current kernel version is v' . $kernelVersion . '.');
+                        header('Location: /admin/extensions/catalog');
+                        exit;
+                    }
+                }
+            }
         }
 
         // Run enable lifecycle hook.
@@ -1039,6 +1068,7 @@ class ExtensionsController extends Controller
                 'version'     => 'Version mismatch',
                 'circular'    => 'Circular dependency',
                 'dependent'   => 'Reverse dependency',
+                'kernel'      => 'Kernel mismatch',
                 default       => $blocker['type'],
             };
             $depKey = htmlspecialchars($blocker['dependency'] ?? '');

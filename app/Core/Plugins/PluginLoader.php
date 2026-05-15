@@ -188,15 +188,18 @@ class PluginLoader
             return null;
         }
 
-        // --- Kernel version check (deferred) ---
+        // --- Kernel compatibility check (boot-time warn) ---
 
-        $minKernel = $manifest->minKernelVersion();
-        if ($minKernel !== '' && !version_compare(phpversion(), $minKernel, '>=')) {
-            $this->registry->addInvalid(
-                $manifest,
-                "Requires kernel {$minKernel}, current: " . phpversion()
-            );
-            return null;
+        $kernelConstraint = $manifest->minKernelVersion();
+        if ($kernelConstraint !== '' && $this->container !== null && $this->container->has('version_provider')) {
+            $kernelVersion = $this->container->get('version_provider')->getKernelVersion();
+            if (!ExtensionDependencyResolver::checkKernelCompatibility($kernelVersion, $kernelConstraint)) {
+                $this->logLifecycleError(
+                    $manifest->name(),
+                    'kernel-compat',
+                    "Requires kernel {$kernelConstraint}, current kernel is v{$kernelVersion}."
+                );
+            }
         }
 
         // --- Catalog enabled-state override ---

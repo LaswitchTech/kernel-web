@@ -682,6 +682,44 @@ class ExtensionDependencyResolver
         return $dependents;
     }
 
+    // ------ Kernel compatibility
+
+    /**
+     * Check if a kernel version satisfies a kernel compatibility constraint.
+     *
+     * Supports the same constraint formats as checkVersionConstraint() (exact,
+     * >=, >, <=, <, ^, ~) plus space-separated AND logic for compound ranges.
+     *
+     * Returns true for empty/missing constraints (compatible with all).
+     * Returns false for malformed kernel versions or unsatisfied constraints.
+     */
+    public static function checkKernelCompatibility(string $kernelVersion, ?string $requiredKernel = null): bool
+    {
+        $requiredKernel = trim($requiredKernel ?? '');
+        if ($requiredKernel === '') {
+            return true;
+        }
+
+        // Validate kernel version format
+        if (!preg_match('/^\d+\.\d+\.\d+$/', $kernelVersion)) {
+            return false;
+        }
+
+        // Space-separated constraints are AND logic
+        $constraints = preg_split('/\s+/', $requiredKernel);
+        if ($constraints === false || $constraints === []) {
+            return false;
+        }
+
+        foreach ($constraints as $constraint) {
+            if (!self::checkVersionConstraint($kernelVersion, $constraint)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
     // ------ Internal helpers
     // --
 

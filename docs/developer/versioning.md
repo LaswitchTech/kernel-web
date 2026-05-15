@@ -691,14 +691,15 @@ public static function checkKernelCompatibility(string $kernelVersion, string $r
 
 **Deliverable:** Admin landing page shows kernel version, app version, and update status.
 
-### Phase C: Extension Compatibility Checks
+### Phase C: Extension Compatibility Checks — Implemented
 
-**Files to modify:**
-- `app/Core/Plugins/PluginManifest.php` — accept and validate `requires.kernel`
+**Files modified:**
+- `app/Core/Plugins/PluginManifest.php` — validate `requires.kernel` format in constructor
 - `app/Services/Extensions/ExtensionDependencyResolver.php` — add `checkKernelCompatibility()`
 - `app/Controllers/Admin/ExtensionsController.php` — block install/enable on kernel mismatch
 - `app/Services/Extensions/ExtensionUpdateChecker.php` — include kernel mismatch in blockers
-- Manifest validation tests
+- `app/Core/Plugins/PluginLoader.php` — boot-time warning for kernel mismatch
+- `tests/version_test.php` — kernel compatibility and manifest validation tests
 
 **Scope:**
 - Validate `requires.kernel` in manifest

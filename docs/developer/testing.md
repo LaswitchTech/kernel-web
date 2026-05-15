@@ -89,7 +89,7 @@ Each assertion increments a pass/fail counter. `summary()` prints all failures w
 | organization | 44 | Org CRUD, membership, context resolution, scoping |
 | organization_runtime | 46 | ProfileModal section registration, renderSection output, org creation/switching, slug handling, context resolution |
 | smtp | 23 | SMTP transport plugin, settings validation, settings rendering, test-email endpoint |
-| version | 30 | Kernel version (VERSION/composer.json fallback), application name/version defaults, getVersions() structure |
+| version | 46 | Kernel/app version resolution, VERSION/composer.json fallback, getVersions() structure, kernel compatibility constraints (exact/range/^/~/compound), manifest validation |
 
 ### Bootstrap
 

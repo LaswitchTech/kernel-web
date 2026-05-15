@@ -153,7 +153,7 @@ These are planned or requested but are out of scope for the current development 
 | OAuth | Deferred | See Deferred section |
 | Licensing | Deferred | See Deferred section |
 | Registration | Implemented | Config-gated (disabled by default), email verification integration, 55 assertions — see tests/registration_test.php |
-| Versioning model | Phase A+B implemented, Phase C designed | Design at docs/developer/versioning.md. VersionProvider (Phase A): kernel/app version resolution with 30 assertions. Admin overview card (Phase B): kernel version, app name/version, "Update check not configured" badge. Config version field added. Phase C (extension kernel compatibility checks) designed — see docs/developer/versioning.md sections 8-12. Phase D (remote updates) deferred. |
+| Versioning model | Phase A+B+C implemented | Design at docs/developer/versioning.md. VersionProvider (Phase A): kernel/app version resolution with 30 assertions. Admin overview card (Phase B): kernel version, app name/version, "Update check not configured" badge. Config version field added. Phase C: extension kernel compatibility checks with checkKernelCompatibility(), manifest validation, install/enable blocks, boot-time warnings, and update blockers — see docs/developer/versioning.md sections 8-12. Phase D (remote updates) deferred. |
 
 ---
 

@@ -235,6 +235,20 @@ class ExtensionUpdateChecker
             }
         }
 
+        // --- Check C: kernel compatibility from catalog requirements ---
+        $requirements = json_decode($entry['requirements'] ?? '[]', true);
+        if (is_array($requirements) && isset($requirements['kernel']) && $requirements['kernel'] !== '') {
+            $versionProvider = new \App\Core\VersionProvider(dirname(dirname(__DIR__)));
+            $kernelVersion = $versionProvider->getKernelVersion();
+            if (!ExtensionDependencyResolver::checkKernelCompatibility($kernelVersion, $requirements['kernel'])) {
+                $blockers[] = [
+                    'type'     => 'kernel',
+                    'message'  => "Requires kernel {$requirements['kernel']}. Current kernel is v{$kernelVersion}.",
+                    'dependency' => 'kernel',
+                ];
+            }
+        }
+
         return $blockers;
     }
 }

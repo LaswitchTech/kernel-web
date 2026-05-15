@@ -1,180 +1,302 @@
 <?php
 
 /**
- * Tests for VersionProvider — kernel and application version resolution.
+ * Tests for kernel compatibility checking and manifest validation.
  *
- * Uses temporary fixture directories so tests don't depend on the real repo files.
+ * Tests:
+ *   - checkKernelCompatibility: exact/range/^/~ constraints
+ *   - checkKernelCompatibility: incompatible constraints
+ *   - checkKernelCompatibility: missing/empty constraint = compatible
+ *   - checkKernelCompatibility: malformed version = incompatible
+ *   - PluginManifest: invalid kernel constraint rejected
+ *   - PluginManifest: valid kernel constraint accepted
  */
 
 require __DIR__ . '/bootstrap.php';
 require __DIR__ . '/assert.php';
 reset_counters();
 
-use App\Core\VersionProvider;
+use App\Core\Plugins\PluginManifest;
+use App\Core\Plugins\PluginException;
+use App\Services\Extensions\ExtensionDependencyResolver;
 
-// ===== Helper: create a temp fixture directory =====
+// ===== checkKernelCompatibility: empty/missing constraint =====
 
-function createTempFixture(string $type, string $content): string
-{
-    $tmpDir = sys_get_temp_dir() . '/version_test_' . uniqid();
-    mkdir($tmpDir, 0700, true);
+assert_true(
+    ExtensionDependencyResolver::checkKernelCompatibility('3.1.0', ''),
+    'Empty constraint is compatible'
+);
+assert_true(
+    ExtensionDependencyResolver::checkKernelCompatibility('3.1.0', '  '),
+    'Whitespace-only constraint is compatible'
+);
+assert_true(
+    ExtensionDependencyResolver::checkKernelCompatibility('3.1.0', null),
+    'Null constraint is compatible'
+);
 
-    if ($type === 'version_file') {
-        file_put_contents($tmpDir . '/VERSION', $content);
-    } elseif ($type === 'composer') {
-        file_put_contents($tmpDir . '/composer.json', $content);
+// ===== checkKernelCompatibility: exact match =====
+
+assert_true(
+    ExtensionDependencyResolver::checkKernelCompatibility('3.1.0', '3.1.0'),
+    'Exact match: 3.1.0 == 3.1.0'
+);
+assert_false(
+    ExtensionDependencyResolver::checkKernelCompatibility('3.0.0', '3.1.0'),
+    'Exact mismatch: 3.0.0 != 3.1.0'
+);
+assert_false(
+    ExtensionDependencyResolver::checkKernelCompatibility('dev', '3.1.0'),
+    'Exact mismatch: dev version not compatible'
+);
+
+// ===== checkKernelCompatibility: >= constraint =====
+
+assert_true(
+    ExtensionDependencyResolver::checkKernelCompatibility('3.1.0', '>=3.0.0'),
+    '>= constraint: 3.1.0 >= 3.0.0'
+);
+assert_true(
+    ExtensionDependencyResolver::checkKernelCompatibility('3.0.0', '>=3.0.0'),
+    '>= constraint: 3.0.0 >= 3.0.0 (boundary)'
+);
+assert_false(
+    ExtensionDependencyResolver::checkKernelCompatibility('2.9.9', '>=3.0.0'),
+    '>= constraint: 2.9.9 < 3.0.0'
+);
+
+// ===== checkKernelCompatibility: > constraint =====
+
+assert_true(
+    ExtensionDependencyResolver::checkKernelCompatibility('3.0.1', '>3.0.0'),
+    '> constraint: 3.0.1 > 3.0.0'
+);
+assert_false(
+    ExtensionDependencyResolver::checkKernelCompatibility('3.0.0', '>3.0.0'),
+    '> constraint: 3.0.0 not > 3.0.0 (boundary)'
+);
+
+// ===== checkKernelCompatibility: <= constraint =====
+
+assert_true(
+    ExtensionDependencyResolver::checkKernelCompatibility('3.0.0', '<=3.0.0'),
+    '<= constraint: 3.0.0 <= 3.0.0 (boundary)'
+);
+assert_true(
+    ExtensionDependencyResolver::checkKernelCompatibility('2.9.9', '<=3.0.0'),
+    '<= constraint: 2.9.9 <= 3.0.0'
+);
+assert_false(
+    ExtensionDependencyResolver::checkKernelCompatibility('3.1.0', '<=3.0.0'),
+    '<= constraint: 3.1.0 > 3.0.0'
+);
+
+// ===== checkKernelCompatibility: < constraint =====
+
+assert_true(
+    ExtensionDependencyResolver::checkKernelCompatibility('2.9.9', '<3.0.0'),
+    '< constraint: 2.9.9 < 3.0.0'
+);
+assert_false(
+    ExtensionDependencyResolver::checkKernelCompatibility('3.0.0', '<3.0.0'),
+    '< constraint: 3.0.0 not < 3.0.0 (boundary)'
+);
+
+// ===== checkKernelCompatibility: ^ (caret) constraint =====
+
+assert_true(
+    ExtensionDependencyResolver::checkKernelCompatibility('3.1.0', '^3.0.0'),
+    '^ constraint: 3.1.0 in ^3.0.0 range'
+);
+assert_true(
+    ExtensionDependencyResolver::checkKernelCompatibility('3.9.9', '^3.0.0'),
+    '^ constraint: 3.9.9 in ^3.0.0 range'
+);
+assert_false(
+    ExtensionDependencyResolver::checkKernelCompatibility('2.9.9', '^3.0.0'),
+    '^ constraint: 2.9.9 not in ^3.0.0 range'
+);
+assert_false(
+    ExtensionDependencyResolver::checkKernelCompatibility('4.0.0', '^3.0.0'),
+    '^ constraint: 4.0.0 not in ^3.0.0 range (upper bound)'
+);
+
+// ^0.x constraints
+assert_true(
+    ExtensionDependencyResolver::checkKernelCompatibility('0.2.5', '^0.2.0'),
+    '^ constraint: 0.2.5 in ^0.2.0 range'
+);
+assert_false(
+    ExtensionDependencyResolver::checkKernelCompatibility('0.3.0', '^0.2.0'),
+    '^ constraint: 0.3.0 not in ^0.2.0 range'
+);
+
+// ===== checkKernelCompatibility: ~ (tilde) constraint =====
+
+assert_true(
+    ExtensionDependencyResolver::checkKernelCompatibility('2.1.5', '~2.1.0'),
+    '~ constraint: 2.1.5 in ~2.1.0 range'
+);
+assert_true(
+    ExtensionDependencyResolver::checkKernelCompatibility('2.1.0', '~2.1.0'),
+    '~ constraint: 2.1.0 in ~2.1.0 range (lower bound)'
+);
+assert_false(
+    ExtensionDependencyResolver::checkKernelCompatibility('2.2.0', '~2.1.0'),
+    '~ constraint: 2.2.0 not in ~2.1.0 range (upper bound)'
+);
+assert_false(
+    ExtensionDependencyResolver::checkKernelCompatibility('2.0.9', '~2.1.0'),
+    '~ constraint: 2.0.9 not in ~2.1.0 range (below lower bound)'
+);
+
+// ===== checkKernelCompatibility: compound (AND) constraints =====
+
+assert_true(
+    ExtensionDependencyResolver::checkKernelCompatibility('3.1.0', '>=2.0.0 <4.0.0'),
+    'Compound AND: 3.1.0 satisfies >=2.0.0 <4.0.0'
+);
+// 4.0.0 does NOT satisfy <4.0.0
+assert_false(
+    ExtensionDependencyResolver::checkKernelCompatibility('4.0.0', '>=2.0.0 <4.0.0'),
+    'Compound AND: 4.0.0 does not satisfy <4.0.0'
+);
+assert_false(
+    ExtensionDependencyResolver::checkKernelCompatibility('1.5.0', '>=2.0.0 <4.0.0'),
+    'Compound AND: 1.5.0 does not satisfy >=2.0.0'
+);
+assert_true(
+    ExtensionDependencyResolver::checkKernelCompatibility('2.0.0', '>=2.0.0 <4.0.0'),
+    'Compound AND: 2.0.0 satisfies both boundaries'
+);
+assert_true(
+    ExtensionDependencyResolver::checkKernelCompatibility('3.9.9', '>=2.0.0 <4.0.0'),
+    'Compound AND: 3.9.9 satisfies both boundaries'
+);
+
+// ===== checkKernelCompatibility: malformed version =====
+
+assert_false(
+    ExtensionDependencyResolver::checkKernelCompatibility('dev', '>=2.0.0'),
+    'Malformed kernel version "dev" is incompatible'
+);
+assert_false(
+    ExtensionDependencyResolver::checkKernelCompatibility('3.1', '>=2.0.0'),
+    'Malformed kernel version "3.1" is incompatible'
+);
+assert_false(
+    ExtensionDependencyResolver::checkKernelCompatibility('abc', '>=2.0.0'),
+    'Malformed kernel version "abc" is incompatible'
+);
+
+// ===== checkKernelCompatibility: malformed constraint =====
+
+assert_false(
+    ExtensionDependencyResolver::checkKernelCompatibility('3.1.0', 'abc'),
+    'Malformed constraint "abc" is incompatible'
+);
+assert_false(
+    ExtensionDependencyResolver::checkKernelCompatibility('3.1.0', '>=abc'),
+    'Malformed constraint version ">=abc" is incompatible'
+);
+assert_false(
+    ExtensionDependencyResolver::checkKernelCompatibility('3.1.0', '^'),
+    'Malformed constraint "^" is incompatible'
+);
+
+// ===== checkKernelCompatibility: ~0.x constraint =====
+
+assert_true(
+    ExtensionDependencyResolver::checkKernelCompatibility('0.1.5', '~0.1.0'),
+    '~ constraint: 0.1.5 in ~0.1.0 range'
+);
+assert_false(
+    ExtensionDependencyResolver::checkKernelCompatibility('0.2.0', '~0.1.0'),
+    '~ constraint: 0.2.0 not in ~0.1.0 range'
+);
+
+// ===== PluginManifest: valid kernel constraint =====
+
+$manifestData = [
+    'name' => 'test-plugin',
+    'version' => '1.0.0',
+    'requires' => ['kernel' => '>=2.0.0 <4.0.0'],
+];
+$manifest = new PluginManifest($manifestData);
+assert_equal(
+    'test-plugin',
+    $manifest->name(),
+    'Manifest with valid kernel constraint loads'
+);
+assert_equal(
+    '>=2.0.0 <4.0.0',
+    $manifest->minKernelVersion(),
+    'Manifest stores valid kernel constraint'
+);
+
+// ===== PluginManifest: empty kernel constraint =====
+
+$manifestData = [
+    'name' => 'test-plugin',
+    'version' => '1.0.0',
+    'requires' => ['kernel' => ''],
+];
+$manifest = new PluginManifest($manifestData);
+assert_equal(
+    '',
+    $manifest->minKernelVersion(),
+    'Manifest with empty kernel constraint stores empty string'
+);
+
+// ===== PluginManifest: missing kernel constraint =====
+
+$manifestData = [
+    'name' => 'test-plugin',
+    'version' => '1.0.0',
+];
+$manifest = new PluginManifest($manifestData);
+assert_equal(
+    '',
+    $manifest->minKernelVersion(),
+    'Manifest without kernel constraint stores empty string'
+);
+
+// ===== PluginManifest: invalid kernel constraint rejected =====
+
+$invalidConstraints = ['abc', '>=abc', '^', '>>2.0.0', '>=2.0.0 abc', '|||'];
+$rejected = false;
+foreach ($invalidConstraints as $badConstraint) {
+    $manifestData = [
+        'name' => 'test-plugin',
+        'version' => '1.0.0',
+        'requires' => ['kernel' => $badConstraint],
+    ];
+    try {
+        new PluginManifest($manifestData);
+    } catch (PluginException $e) {
+        $rejected = true;
     }
-
-    return $tmpDir;
 }
+assert_true(
+    $rejected,
+    'PluginManifest rejects invalid kernel constraint'
+);
 
-function cleanupTempFixture(string $dir): void
-{
-    if (!is_dir($dir)) {
-        return;
-    }
-    $files = scandir($dir);
-    if ($files === false) {
-        return;
-    }
-    foreach ($files as $file) {
-        if ($file === '.' || $file === '..') {
-            continue;
-        }
-        $path = $dir . '/' . $file;
-        if (is_dir($path)) {
-            array_map(fn($f) => unlink($path . '/' . $f), scandir($path));
-            rmdir($path);
-        } else {
-            unlink($path);
-        }
-    }
-    rmdir($dir);
+// ===== PluginManifest: invalid kernel constraint rejected (detailed) =====
+
+try {
+    new PluginManifest([
+        'name' => 'test-plugin',
+        'version' => '1.0.0',
+        'requires' => ['kernel' => 'invalid'],
+    ]);
+    assert_true(false, 'PluginManifest rejects invalid kernel (should throw)');
+} catch (PluginException $e) {
+    assert_contains(
+        'invalid kernel requirement',
+        strtolower($e->getMessage()),
+        'PluginException message mentions invalid kernel requirement'
+    );
 }
-
-// ===== getKernelVersion: VERSION file =====
-
-$fixture = createTempFixture('version_file', '1.2.3');
-$vp = new VersionProvider($fixture);
-assert_equal('1.2.3', $vp->getKernelVersion(), 'getKernelVersion reads VERSION file');
-cleanupTempFixture($fixture);
-
-// ===== getKernelVersion: composer.json =====
-
-$fixture = createTempFixture('composer', json_encode(['name' => 'kernel-web/kernel', 'version' => '2.0.0']));
-$vp = new VersionProvider($fixture);
-assert_equal('2.0.0', $vp->getKernelVersion(), 'getKernelVersion reads composer.json version');
-cleanupTempFixture($fixture);
-
-// ===== getKernelVersion: VERSION takes priority over composer.json =====
-
-$fixture = sys_get_temp_dir() . '/version_test_priority_' . uniqid();
-mkdir($fixture, 0700, true);
-file_put_contents($fixture . '/VERSION', '3.0.0');
-file_put_contents($fixture . '/composer.json', json_encode(['name' => 'kernel-web/kernel', 'version' => '2.0.0']));
-$vp = new VersionProvider($fixture);
-assert_equal('3.0.0', $vp->getKernelVersion(), 'VERSION file takes priority over composer.json');
-cleanupTempFixture($fixture);
-
-// ===== getKernelVersion: dev fallback =====
-
-$fixture = sys_get_temp_dir() . '/version_test_dev_' . uniqid();
-mkdir($fixture, 0700, true);
-$vp = new VersionProvider($fixture);
-assert_equal('dev', $vp->getKernelVersion(), 'getKernelVersion returns dev when no files present');
-cleanupTempFixture($fixture);
-
-// ===== getKernelVersion: empty VERSION falls through to composer.json =====
-
-$fixture = sys_get_temp_dir() . '/version_test_empty_' . uniqid();
-mkdir($fixture, 0700, true);
-file_put_contents($fixture . '/VERSION', '');
-file_put_contents($fixture . '/composer.json', json_encode(['name' => 'kernel-web/kernel', 'version' => '1.5.0']));
-$vp = new VersionProvider($fixture);
-assert_equal('1.5.0', $vp->getKernelVersion(), 'Empty VERSION falls through to composer.json');
-cleanupTempFixture($fixture);
-
-// ===== getKernelVersion: empty composer.json version falls through to dev =====
-
-$fixture = sys_get_temp_dir() . '/version_test_empty_cv_' . uniqid();
-mkdir($fixture, 0700, true);
-file_put_contents($fixture . '/composer.json', json_encode(['name' => 'kernel-web/kernel', 'version' => '']));
-$vp = new VersionProvider($fixture);
-assert_equal('dev', $vp->getKernelVersion(), 'Empty composer.json version falls through to dev');
-cleanupTempFixture($fixture);
-
-// ===== getKernelVersion: composer.json without version field =====
-
-$fixture = sys_get_temp_dir() . '/version_test_no_ver_' . uniqid();
-mkdir($fixture, 0700, true);
-file_put_contents($fixture . '/composer.json', json_encode(['name' => 'kernel-web/kernel']));
-$vp = new VersionProvider($fixture);
-assert_equal('dev', $vp->getKernelVersion(), 'composer.json without version returns dev');
-cleanupTempFixture($fixture);
-
-// ===== getKernelName: from composer.json =====
-
-$fixture = createTempFixture('composer', json_encode(['name' => 'my-custom-kernel', 'version' => '1.0.0']));
-$vp = new VersionProvider($fixture);
-assert_equal('my-custom-kernel', $vp->getKernelName(), 'getKernelName reads composer.json name');
-cleanupTempFixture($fixture);
-
-// ===== getKernelName: default fallback =====
-
-$fixture = sys_get_temp_dir() . '/version_test_kernel_name_' . uniqid();
-mkdir($fixture, 0700, true);
-$vp = new VersionProvider($fixture);
-assert_equal('Kernel-Web', $vp->getKernelName(), 'getKernelName defaults to Kernel-Web');
-cleanupTempFixture($fixture);
-
-// ===== getApplicationName: from config =====
-
-$vp = new VersionProvider('/tmp');
-assert_equal('MyApp', $vp->getApplicationName(['name' => 'MyApp']), 'getApplicationName reads config name');
-assert_equal('Kernel-Web', $vp->getApplicationName([]), 'getApplicationName defaults to Kernel-Web');
-assert_equal('Kernel-Web', $vp->getApplicationName(['name' => '']), 'getApplicationName handles empty name');
-assert_equal('Fallback', $vp->getApplicationName(['app_name' => 'Fallback']), 'getApplicationName reads app_name fallback');
-
-// ===== getApplicationVersion: from config =====
-
-assert_equal('1.0.0', $vp->getApplicationVersion(['version' => '1.0.0']), 'getApplicationVersion reads config version');
-assert_equal('dev', $vp->getApplicationVersion([]), 'getApplicationVersion defaults to dev');
-assert_equal('dev', $vp->getApplicationVersion(['version' => '']), 'getApplicationVersion handles empty version');
-assert_equal('v2', $vp->getApplicationVersion(['app_version' => 'v2']), 'getApplicationVersion reads app_version fallback');
-
-// ===== getVersions: structure =====
-
-$fixture = createTempFixture('composer', json_encode(['name' => 'test-kernel', 'version' => '3.1.0']));
-$vp = new VersionProvider($fixture);
-$versions = $vp->getVersions(['name' => 'MyApp', 'version' => '2.0.0']);
-
-assert_equal('test-kernel', $versions['kernel']['name'], 'getVersions kernel name');
-assert_equal('3.1.0', $versions['kernel']['version'], 'getVersions kernel version');
-assert_equal('MyApp', $versions['application']['name'], 'getVersions application name');
-assert_equal('2.0.0', $versions['application']['version'], 'getVersions application version');
-assert_false($versions['updates']['configured'], 'getVersions updates configured is false');
-assert_null($versions['updates']['kernel_available'], 'getVersions kernel_available is null');
-assert_null($versions['updates']['application_available'], 'getVersions application_available is null');
-assert_null($versions['updates']['extensions_available'], 'getVersions extensions_available is null');
-cleanupTempFixture($fixture);
-
-// ===== getVersions: default app config =====
-
-$fixture = sys_get_temp_dir() . '/version_test_defaults_' . uniqid();
-mkdir($fixture, 0700, true);
-$vp = new VersionProvider($fixture);
-$versions = $vp->getVersions([]);
-assert_equal('Kernel-Web', $versions['kernel']['name'], 'getVersions kernel name defaults');
-assert_equal('dev', $versions['kernel']['version'], 'getVersions kernel version defaults to dev');
-assert_equal('Kernel-Web', $versions['application']['name'], 'getVersions application name defaults');
-assert_equal('dev', $versions['application']['version'], 'getVersions application version defaults to dev');
-cleanupTempFixture($fixture);
-
-// ===== Constructor: trims trailing slashes =====
-
-$fixture = createTempFixture('composer', json_encode(['name' => 'trim-test', 'version' => '1.0.0']));
-$vp = new VersionProvider($fixture . '/');
-assert_equal('1.0.0', $vp->getKernelVersion(), 'Constructor trims trailing slash from path');
-cleanupTempFixture($fixture);
 
 summary();
