@@ -1474,6 +1474,70 @@ For full design, see `docs/developer/scaffolds.md`.
 
 ---
 
+## Kernel / Application / Extension Versioning
+
+### Version Sources
+
+| Layer | Source | Notes |
+|------|--------|------|
+| **Kernel** | `composer.json` → `version` (primary), `VERSION` file (fallback) | Canonical version for the framework |
+| **Application** | `config/app.php` (`name` / `version`) or `env()` | Independent from kernel; set by consuming app |
+| **Extension** | On-disk manifest (`plugin.json`, `theme.json`, `layout.json`) → `version` | Already established, no change |
+
+### Kernel Compatibility
+
+Extensions declare their supported kernel version range via a new `requires.kernel` field in their manifest:
+
+```json
+{
+    "requires": {
+        "php": "8.1",
+        "kernel": ">=2.0.0 <4.0.0"
+    }
+}
+```
+
+**Optional field** — if omitted, the extension is assumed compatible with all kernel versions.
+
+**Constraint format:** space-separated (AND logic), operators: `>=`, `>`, `<=`, `<`, `=`, `^`, `~`. Same semantics as Composer's version constraints.
+
+**Catalog storage:** The existing `catalog_extensions.requirements` JSON field stores the kernel constraint alongside PHP requirements.
+
+### Compatibility Enforcement
+
+| Scenario | Behavior |
+|------|-----|
+| Install with kernel mismatch | **Block** — clear error message |
+| Enable with kernel mismatch | **Block** — clear error message |
+| Boot with kernel mismatch | **Warn** — log entry, allow loading |
+| Update check shows mismatch | **Warn** — display alongside update status |
+
+### Version Provider
+
+A `VersionProvider` service resolves kernel version (composer.json → VERSION file fallback) and application version (config → defaults). It also provides kernel compatibility checking against extension constraints.
+
+Full design at [`docs/developer/versioning.md`](docs/developer/versioning.md).
+
+### Admin Overview Display
+
+The admin landing page shows:
+- Kernel version (vX.Y.Z)
+- Application name + version
+- Extension update count (available / blocked badges)
+- "Update check not configured" when no remote source
+
+### Design Rules
+
+- Kernel version from composer.json (primary) or VERSION file (fallback)
+- Application version is independent from kernel
+- Missing `requires.kernel` = compatible with all versions (backward compatible)
+- No new database columns needed (use existing `requirements` JSON)
+- Install/enable blocks on mismatch; boot-time warns
+- Reuse `ExtensionDependencyResolver` for constraint comparison
+- Admin overview works in local-only mode
+
+---
+
 ## Design Evolution Rule
 
 Whenever a structural or architectural change is made:

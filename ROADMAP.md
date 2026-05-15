@@ -66,6 +66,7 @@ Core infrastructure improvements that unlock future feature work.
 - [x] Organizations runtime UX (Profile Modal section, AJAX switch/create/list endpoints, slug generation)
 - [x] SMTP mail plugin (replace PHP mail() with SMTP for reliable delivery on macOS/MAMP; settings via SettingsRegistry; test-email button)
 - [ ] Messenger foundation (SMS transport interface, message object, template support; Telico transport plugin)
+- [x] Kernel/App/Extension versioning model — design at docs/developer/versioning.md
 
 ---
 
@@ -152,6 +153,7 @@ These are planned or requested but are out of scope for the current development 
 | OAuth | Deferred | See Deferred section |
 | Licensing | Deferred | See Deferred section |
 | Registration | Implemented | Config-gated (disabled by default), email verification integration, 55 assertions — see tests/registration_test.php |
+| Versioning model | Designed | Design doc at docs/developer/versioning.md. Defines kernel/app/extension version sources, requires.kernel constraint format, VersionProvider service, admin overview display, compatibility enforcement rules. Implementation plan: Phase A (VersionProvider) → Phase B (Admin display) → Phase C (Compatibility checks) → Phase D (Remote updates, out of scope) |
 
 ---
 

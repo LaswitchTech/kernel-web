@@ -34,3 +34,4 @@
 - [Menu Registry](../menu-registry.md) — Menu registration system
 - [Hook Registry](../layout-hook-registry.md) — Layout hook system
 - [Root .htaccess](../root-htaccess.md) — Root .htaccess configuration
+- [Kernel / App / Extension Versioning](versioning.md) — Version sources, kernel compatibility constraints, admin overview design
