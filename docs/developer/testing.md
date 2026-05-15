@@ -42,6 +42,8 @@ tests/
   organization_runtime_test.php — ProfileModal section registration, renderSection output, org creation/switching, slug handling, context resolution
   smtp_test.php — SMTP transport, settings registration, test-email endpoint, settings validation
   version_test.php — Kernel/app version resolution, VERSION/composer.json fallback, default config fallback, getVersions() structure
+  messenger_test.php — Message immutability, Messenger transport interface, fake transport behavior
+  telico_test.php — TelicoApiClient credential validation, TelicoTransport identifier, TelicoSettings class structure
 ```
 
 ### Test runner
@@ -90,6 +92,8 @@ Each assertion increments a pass/fail counter. `summary()` prints all failures w
 | organization_runtime | 46 | ProfileModal section registration, renderSection output, org creation/switching, slug handling, context resolution |
 | smtp | 23 | SMTP transport plugin, settings validation, settings rendering, test-email endpoint |
 | version | 46 | Kernel/app version resolution, VERSION/composer.json fallback, getVersions() structure, kernel compatibility constraints (exact/range/^/~/compound), manifest validation |
+| messenger | 22 | Message immutability (readonly VO, withMedia, withBody), Messenger service with fake transport, transport swapping, no-transport error |
+| telico | 12 | TelicoApiClient credential validation, TelicoTransport identifier, TelicoSettings class structure |
 
 ### Bootstrap
 
@@ -167,6 +171,14 @@ Tests `OrganizationRepository` and `OrganizationMemberRepository` with in-memory
 ### Organizations runtime tests (`organization_runtime_test.php`) — 46 assertions
 
 Tests `ProfileOrganizationsController` and ProfileModal integration. Covers: section registration (hasSection, getSection, metadata, isVisible, callable callback), renderSection output (HTML structure, labels, IDs, empty states, null guards), org creation via repo (name/slug/type, duplicate slug suffix), slug generation (special chars, trimming), membership + default org persistence, ProfileModalSection ID validation (valid and invalid patterns), duplicate section rejection, context resolution (session cache, DB default, null user), and findAllActive filtering.
+
+### Messenger tests (`messenger_test.php`) — 22 assertions
+
+Tests `Message` (immutable readonly VO), `MessengerTransportInterface`, and `Messenger` service with a `FakeTransport`. Covers: Message construction (to/from/body/template/context/media), immutability via `withMedia` (new instance, original untouched, media attachment structure), immutability via `withBody` (new instance, original untouched), Messenger with transport (send returns true, transport called, message delivered to correct recipient), transport identifier, hasTransport, no-transport send throws `MessengerException`, and setTransport swap.
+
+### Telico plugin tests (`telico_test.php`) — 12 assertions
+
+Tests TelicoApiClient and TelicoTransport structure. Covers: credential validation (missing credentials throws, missing caller ID throws), valid config constructibility, API method existence (getConversations, getMessages), transport identifier, transport method existence, and TelicoSettings class structure (register, render, validate, save methods).
 
 ## Dependencies
 

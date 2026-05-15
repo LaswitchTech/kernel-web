@@ -18,6 +18,7 @@ use App\Core\Installer\InstallLock;
 use App\Core\Logger;
 use App\Core\Mail\MailTransport;
 use App\Core\Mail\Mailer;
+use App\Core\Messenger;
 use App\Core\MenuRegistry;
 use App\Core\Router;
 use App\Core\SQLiteDriver;
@@ -207,6 +208,11 @@ $mailer  = new Mailer(
     new MailTransport($mailCfg['from_address'], $mailCfg['from_name'])
 );
 $container->set('mailer', $mailer);
+
+// Messenger (SMS) — default transport is null until a provider plugin swaps it.
+$messengerCfg = Config::load('messenger');
+$messenger    = new Messenger();
+$container->set('messenger', $messenger);
 
 // VersionProvider — resolves kernel and application version info for admin overview.
 $kernelRoot = realpath(__DIR__ . '/..');
