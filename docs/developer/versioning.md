@@ -377,7 +377,288 @@ This is stored in `catalog_extensions.requirements` as-is.
 
 ---
 
-## 8. Implementation Plan
+## 8. Manifest Format Design
+
+### 8a. `requires.kernel` — Kernel Compatibility Constraint
+
+Extensions declare their compatible kernel version range via `requires.kernel` in the manifest:
+
+```json
+{
+    "requires": {
+        "kernel": ">=2.0.0 <4.0.0"
+    }
+}
+```
+
+**Constraint format:** space-separated (AND logic), operators: `>=`, `>`, `<=`, `<`, `=`, `^`, `~`. Same semantics as Composer's version constraints.
+
+**Empty string `""` or missing field** = compatible with all kernel versions (backward compatible).
+
+**Validation:** The constraint value must match a supported version constraint pattern. Malformed constraints are rejected at manifest validation time (manifest becomes "invalid" status).
+
+### 8b. `requires.php` — PHP Version Constraint
+
+Already exists in the manifest. Extensions declare `requires.php` as `"8.1"` (exact version). This is handled independently from `requires.kernel` — both must be satisfied.
+
+### 8c. Application Version Constraint — Not Included
+
+**Decision: No application version constraint.** Extensions consume the kernel layer, not the application layer. Application versions are independent concerns.
+
+**Rationale:**
+- The kernel is the stable contract between extensions and the platform
+- Applications may run on many kernel versions during their lifecycle
+- An extension's compatibility is determined by kernel API stability, not app features
+- Apps can still gate their own extensions via app-specific config if needed (out of scope)
+
+### 8d. Catalog Storage
+
+The existing `catalog_extensions.requirements` TEXT column (JSON) stores both PHP and kernel constraints:
+
+```json
+{
+    "PHP": "8.1",
+    "kernel": ">=2.0.0 <4.0.0"
+}
+```
+
+No new columns or schema changes needed.
+
+---
+
+## 9. Compatibility Checking Design
+
+### 9a. Constraint Parsing
+
+Reuse `ExtensionDependencyResolver::isValidConstraint()` for format validation and `ExtensionDependencyResolver::checkVersionConstraint()` for range checking.
+
+A kernel constraint like `">=2.0.0 <4.0.0"` is parsed as two space-separated constraints (AND logic):
+
+1. `>=2.0.0` — version must be >= 2.0.0
+2. `<4.0.0` — version must be < 4.0.0
+
+Both must be satisfied. A single constraint like `"^3.0.0"` is treated as-is (no parsing needed).
+
+**Algorithm:**
+
+```php
+public static function checkKernelCompatibility(string $kernelVersion, string $requiredKernel): bool
+{
+    $requiredKernel = trim($requiredKernel);
+    if ($requiredKernel === '') {
+        return true; // No constraint = compatible
+    }
+
+    // Validate kernel version format
+    if (!preg_match('/^\d+\.\d+\.\d+$/', $kernelVersion)) {
+        return false; // Unknown kernel version = incompatible
+    }
+
+    // Space-separated constraints are AND logic
+    $constraints = preg_split('/\s+/', $requiredKernel);
+    foreach ($constraints as $constraint) {
+        if (!self::checkVersionConstraint($kernelVersion, $constraint)) {
+            return false;
+        }
+    }
+
+    return true;
+}
+```
+
+### 9b. Install-Time Check — **BLOCK**
+
+**Location:** `ExtensionsController::handleInstall()` — before the staged copy.
+
+**When:** When admin clicks "Install" on a catalog extension.
+
+**Behavior:** Read `requires.kernel` from the catalog entry's `requirements` JSON. If present and non-empty, compare current kernel version against the constraint. Block install with a flash message:
+
+> "Extension 'My Extension' requires kernel >=2.0.0 <4.0.0. Current kernel version is 1.5.0."
+
+**Implementation:** Call the compatibility check after existing dependency checks, before the file copy step.
+
+### 9c. Enable-Time Check — **BLOCK**
+
+**Location:** `ExtensionsController::handleEnable()` — before marking enabled.
+
+**When:** When admin clicks "Enable" on an installed extension.
+
+**Behavior:** Same as install-time check. Read `requires.kernel` from the catalog entry's `requirements` JSON. Block enable with a flash message.
+
+**Rationale:** An admin might manually modify the kernel version (e.g., pull a new kernel release) without reinstalling extensions. The enable gate catches this.
+
+### 9d. Boot-Time Check — **WARN**
+
+**Location:** `PluginLoader::load()` — during plugin discovery, for plugins that are installed/enabled.
+
+**When:** On every kernel boot, for each loaded plugin.
+
+**Behavior:** Read `requires.kernel` from the on-disk manifest. Compare against current kernel version. If mismatched, log a warning:
+
+> "[PluginLoader] Plugin 'my-extension' requires kernel >=2.0.0 <4.0.0 but running v1.5.0."
+
+Allow the plugin to load (don't block). The admin can see the warning in logs and take action.
+
+**Rationale:** Boot-time mismatch may affect running installations during a kernel upgrade. Blocking would break the site. Warning allows graceful degradation while alerting the admin.
+
+### 9e. Update Check — **WARN (displayed)**
+
+**Location:** `ExtensionUpdateChecker::check()` — when computing update status for a catalog extension.
+
+**When:** During `checkAll()` iteration.
+
+**Behavior:** If the extension has `requires.kernel` and the kernel version does not satisfy the constraint, set the update status to `"blocked"` with a `kernel` blocker:
+
+```php
+[
+    'type'     => 'kernel',
+    'message'  => 'Requires kernel >=2.0.0 <4.0.0. Current kernel is v1.5.0.',
+    'dependency' => 'kernel',
+]
+```
+
+The admin sees the extension as "Blocked" in the catalog table with a tooltip showing the kernel mismatch.
+
+---
+
+## 10. Admin UX Design
+
+### 10a. Admin Landing Page — Kernel Compatibility Warning
+
+Add a kernel compatibility row to the version info card when extensions have kernel mismatches:
+
+```html
+<div class="card mb-4">
+    <div class="card-body py-2 px-3">
+        <div class="d-flex flex-wrap align-items-center gap-3">
+            <small class="text-muted">
+                <i class="bi bi-box"></i> <?= htmlspecialchars($appName) ?> v<?= htmlspecialchars($appVersion) ?>
+            </small>
+            <small class="text-muted">
+                <i class="bi bi-cube"></i> Kernel v<?= htmlspecialchars($kernelVersion) ?>
+            </small>
+            <?php if ($kernelIncompatibleCount > 0): ?>
+                <span class="badge bg-warning text-dark"
+                      data-bs-toggle="tooltip"
+                      title="<?= $kernelIncompatibleCount ?> extension(s) may be incompatible with this kernel version">
+                    <i class="bi bi-exclamation-triangle"></i> <?= $kernelIncompatibleCount ?> incompatible
+                </span>
+            <?php endif; ?>
+            <span class="badge bg-secondary">Update check not configured</span>
+        </div>
+    </div>
+</div>
+```
+
+The warning badge only appears when `kernelIncompatibleCount > 0` — counted from all installed extensions.
+
+### 10b. Catalog Table — Kernel Compatibility Badge
+
+Add a "Kernel" column to the catalog table showing kernel compatibility status:
+
+| Status | Badge | Meaning |
+|--------|-------|---------|
+| Compatible (no constraint) | Green checkmark `✓` or no badge | Extension has no kernel constraint or is compatible |
+| Compatible (has constraint) | Green checkmark `✓` | Extension has constraint that is satisfied |
+| Incompatible | Orange/yellow exclamation `⚠` | Extension has constraint not satisfied by current kernel |
+| No manifest | Gray `—` | Installed extension has no manifest to read |
+| Invalid manifest | Red `✕` | Installed extension manifest is invalid |
+
+**Implementation:** In `ExtensionsController::catalog()`, for each catalog entry, compute kernel compatibility using the same logic as the update checker. Pass to view for rendering.
+
+### 10c. Catalog Detail Page — Kernel Compatibility Section
+
+In the extension detail page, add a "Compatibility" section showing:
+
+- PHP requirement (from `requirements.PHP`)
+- Kernel requirement (from `requirements.kernel`)
+- Current kernel version
+- Compatibility result (compatible/incompatible)
+
+For installed extensions, also show on-disk manifest kernel constraint.
+
+### 10d. Extension Update Status — Kernel Mismatch Blocker
+
+When an extension has an available update (catalog version > installed version), but the catalog version's kernel constraint is not satisfied:
+
+- Status: `"blocked"`
+- Blocker type: `"kernel"`
+- Tooltip: "Requires kernel >=X.Y.Z. Current kernel is vA.B.C."
+
+---
+
+## 11. Service/API Placement
+
+### Decision: Add to `ExtensionDependencyResolver`
+
+The compatibility check belongs in `ExtensionDependencyResolver` because:
+
+1. **It is a constraint check** — `checkVersionConstraint()` already exists and handles the exact algorithm needed
+2. **It follows the existing pattern** — `checkInstall()`, `checkEnable()` are on this class; kernel compatibility is another kind of constraint check
+3. **`VersionProvider` is for resolution only** — it knows nothing about constraints or catalogs. Adding constraint logic there would violate separation of concerns
+4. **Catalog entries store constraints in `requirements` JSON** — the resolver already reads and parses requirements/dependencies from the catalog
+
+### New method signature
+
+```php
+/**
+ * Check if a kernel version satisfies a kernel compatibility constraint.
+ *
+ * @param string $kernelVersion Current kernel version (e.g. "3.1.0")
+ * @param string $requiredKernel Constraint from requires.kernel (e.g. ">=2.0.0 <4.0.0")
+ * @return bool true if compatible
+ */
+public static function checkKernelCompatibility(string $kernelVersion, string $requiredKernel): bool
+```
+
+---
+
+## 12. Phase C Implementation Plan
+
+### Scope
+
+1. **`ExtensionDependencyResolver`** — add `checkKernelCompatibility(string, string): bool` static method
+2. **`PluginManifest`** — accept and validate `requires.kernel` in manifest validation (reject malformed constraints)
+3. **`ExtensionsController`** — kernel compatibility check in `handleInstall()` and `handleEnable()`
+4. **`PluginLoader`** — boot-time warning for loaded plugins with kernel mismatch
+5. **`ExtensionUpdateChecker`** — include kernel mismatch as a blocker in update status
+6. **Admin UI** — kernel compatibility badge in catalog table, warning badge in admin overview
+7. **Tests** — `version_test.php` additions or `kernel_compatibility_test.php`
+
+### Files to modify
+
+| File | Change |
+|------|--|
+| `app/Services/Extensions/ExtensionDependencyResolver.php` | Add `checkKernelCompatibility()` |
+| `app/Core/Plugins/PluginManifest.php` | Validate `requires.kernel` field |
+| `app/Controllers/Admin/ExtensionsController.php` | Kernel check in handleInstall/handleEnable |
+| `app/Core/Plugins/PluginLoader.php` | Boot-time warning |
+| `app/Services/Extensions/ExtensionUpdateChecker.php` | Kernel blocker in checkAll() |
+| `app/Views/admin/extensions/catalog.php` | Kernel compatibility column |
+| `app/Views/admin/index.php` | Kernel incompatibility warning badge |
+| `tests/version_test.php` | Kernel compatibility test cases |
+
+### Test cases
+
+| Test | Expected |
+|------|---------|
+| `">=2.0.0 <4.0.0"` with kernel `"3.1.0"` | Compatible |
+| `">=2.0.0 <4.0.0"` with kernel `"1.5.0"` | Incompatible |
+| `"^3.0.0"` with kernel `"3.1.0"` | Compatible |
+| `"^3.0.0"` with kernel `"2.9.9"` | Incompatible |
+| Empty string `""` | Compatible (any) |
+| Missing field | Compatible (any) |
+| `"~2.1.0"` with kernel `"2.1.5"` | Compatible |
+| `"~2.1.0"` with kernel `"2.2.0"` | Incompatible |
+| Malformed constraint `"abc"` | Manifest rejected (invalid) |
+| `">=2.0.0 <4.0.0"` with kernel `"dev"` (unknown) | Incompatible |
+| `"4.0.0"` with kernel `"4.0.0"` | Compatible (exact match) |
+| `"4.0.0"` with kernel `"3.9.9"` | Incompatible (exact mismatch) |
+
+---
+
+## 13. Implementation Plan
 
 ### Phase A: VersionProvider Service — Implemented
 
@@ -436,7 +717,7 @@ The versioning model does not block remote sync — all version data flows throu
 
 ---
 
-## 9. Design Rules
+## 14. Design Rules
 
 - Kernel version comes from `composer.json` (primary) or `VERSION` file (fallback)
 - Application version is set by the consuming application, not the kernel
@@ -451,7 +732,7 @@ The versioning model does not block remote sync — all version data flows throu
 
 ---
 
-## 10. Deferred
+## 15. Deferred
 
 - Kernel version auto-release notes (changelog display on update available)
 - Extension version history (past versions of installed extensions)

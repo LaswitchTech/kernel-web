@@ -1514,7 +1514,7 @@ Extensions declare their supported kernel version range via a new `requires.kern
 
 ### Version Provider
 
-A `VersionProvider` service resolves kernel version (composer.json → VERSION file fallback) and application version (config → defaults). It also provides kernel compatibility checking against extension constraints.
+A `VersionProvider` service resolves kernel version (VERSION file → composer.json fallback) and application version (config → defaults). It also provides kernel compatibility checking against extension constraints.
 
 Full design at [`docs/developer/versioning.md`](docs/developer/versioning.md).
 
