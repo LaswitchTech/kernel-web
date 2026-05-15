@@ -47,6 +47,10 @@ class AdminController extends Controller
         $groupCount      = count($groups);
         $permissionCount = count($permList);
 
+        // Version information for admin overview.
+        $versionProvider = $this->container->get('version_provider');
+        $versions = $versionProvider->getVersions($config);
+
         // Count installed extensions with kernel incompatibility.
         $kernelIncompatibleCount = 0;
         $kernelVersion = $versionProvider->getKernelVersion();
@@ -74,10 +78,6 @@ class AdminController extends Controller
                 // Catalog may not exist — count stays 0.
             }
         }
-
-        // Version information for admin overview.
-        $versionProvider = $this->container->get('version_provider');
-        $versions = $versionProvider->getVersions($config);
 
         $breadcrumbs = [
             ['label' => 'Administration', 'url' => '/admin'],
