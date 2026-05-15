@@ -90,6 +90,16 @@ class ExtensionsController extends Controller
             $updates = $updateChecker->checkAll();
         }
 
+        // Compute kernel compatibility status for each extension.
+        $versionProvider = new \App\Core\VersionProvider(dirname(__DIR__ . '/../../../'));
+        $kernelVersions = [];
+        foreach ($extensions as $ext) {
+            $kernelVersions[(int) $ext['id']] = $this->computeKernelStatus(
+                $ext,
+                $versionProvider->getKernelVersion()
+            );
+        }
+
         $pageTitle  = 'Extension Catalog';
         $activeSection = 'Admin Extensions';
         $appName    = $config['name'] ?? 'Kernel-Web';
@@ -103,10 +113,75 @@ class ExtensionsController extends Controller
         ];
 
         ob_start();
+        $kernelVersions = $kernelVersions ?? [];
         require $viewsPath . '/admin/extensions/catalog.php';
         $content = ob_get_clean();
 
         require $viewsPath . '/layouts/panel.php';
+    }
+
+    /**
+     * Compute kernel compatibility status for an extension.
+     *
+     * Returns structured data for rendering in the catalog table.
+     */
+    private function computeKernelStatus(array $ext, string $kernelVersion): array
+    {
+        // Check catalog requirements first
+        $requirements = json_decode($ext['requirements'] ?? '[]', true);
+        $constraint = '';
+        if (is_array($requirements) && isset($requirements['kernel']) && $requirements['kernel'] !== '') {
+            $constraint = $requirements['kernel'];
+        }
+
+        // If no catalog constraint, check on-disk manifest for installed extensions
+        if ($constraint === '' && (int) $ext['is_installed'] === 1) {
+            $libBase = realpath(__DIR__ . '/../../../lib');
+            if ($libBase !== false) {
+                $manifestFile = ($ext['type'] === 'plugin' ? 'plugin.json' : ($ext['type'] === 'theme' ? 'theme.json' : 'layout.json'));
+                $manifestPath = $libBase . '/' . ($ext['type'] === 'plugin' ? 'plugins' : ($ext['type'] === 'theme' ? 'themes' : 'layouts')) . '/' . $ext['slug'] . '/' . $manifestFile;
+                if (is_file($manifestPath)) {
+                    $manifestData = json_decode(file_get_contents($manifestPath), true);
+                    if (is_array($manifestData) && isset($manifestData['requires']['kernel']) && $manifestData['requires']['kernel'] !== '') {
+                        $constraint = $manifestData['requires']['kernel'];
+                    }
+                }
+            }
+        }
+
+        // Determine status
+        if ($constraint === '') {
+            return [
+                'status'    => 'no-constraint',
+                'label'     => '—',
+                'class'     => 'secondary',
+                'icon'      => 'bi-dash-circle',
+                'title'     => 'No kernel constraint',
+                'constraint' => '',
+            ];
+        }
+
+        $compatible = \App\Services\Extensions\ExtensionDependencyResolver::checkKernelCompatibility($kernelVersion, $constraint);
+
+        if ($compatible) {
+            return [
+                'status'    => 'compatible',
+                'label'     => 'OK',
+                'class'     => 'success',
+                'icon'      => 'bi-check-circle',
+                'title'     => "Compatible (requires {$constraint})",
+                'constraint' => $constraint,
+            ];
+        }
+
+        return [
+            'status'    => 'incompatible',
+            'label'     => '!',
+            'class'     => 'warning text-dark',
+            'icon'      => 'bi-exclamation-triangle',
+            'title'     => "Incompatible (requires {$constraint}, current {$kernelVersion})",
+            'constraint' => $constraint,
+        ];
     }
 
     /**

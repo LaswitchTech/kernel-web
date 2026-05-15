@@ -47,6 +47,34 @@ class AdminController extends Controller
         $groupCount      = count($groups);
         $permissionCount = count($permList);
 
+        // Count installed extensions with kernel incompatibility.
+        $kernelIncompatibleCount = 0;
+        $kernelVersion = $versionProvider->getKernelVersion();
+        if (isset($versions['updates']['configured']) && $versions['updates']['configured']) {
+            // If remote updates are configured, count from the update checker.
+            // For now, rely on the update checker to surface kernel blockers.
+            // The kernel incompatibility count is computed in the update checker.
+        } else {
+            // No remote source — count from catalog if available.
+            try {
+                $catalogRepo = new \App\Models\CatalogExtensionRepository($db);
+                $installedExtensions = $catalogRepo->findInstalled();
+                foreach ($installedExtensions as $ext) {
+                    $requirements = json_decode($ext['requirements'] ?? '[]', true);
+                    if (is_array($requirements) && isset($requirements['kernel']) && $requirements['kernel'] !== '') {
+                        if (!\App\Services\Extensions\ExtensionDependencyResolver::checkKernelCompatibility(
+                            $kernelVersion,
+                            $requirements['kernel']
+                        )) {
+                            $kernelIncompatibleCount++;
+                        }
+                    }
+                }
+            } catch (\Throwable) {
+                // Catalog may not exist — count stays 0.
+            }
+        }
+
         // Version information for admin overview.
         $versionProvider = $this->container->get('version_provider');
         $versions = $versionProvider->getVersions($config);
@@ -56,6 +84,11 @@ class AdminController extends Controller
         ];
 
         ob_start();
+        $kernelIncompatibleCount = $kernelIncompatibleCount ?? 0;
+        $kernelIncompatibility = $kernelIncompatibleCount > 0 ? [
+            'count' => $kernelIncompatibleCount,
+            'message' => $kernelIncompatibleCount === 1 ? '1 extension may be incompatible with this kernel version' : "{$kernelIncompatibleCount} extensions may be incompatible with this kernel version",
+        ] : null;
         require $viewsPath . '/admin/index.php';
         $content = ob_get_clean();
 

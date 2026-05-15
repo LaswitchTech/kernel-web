@@ -8,6 +8,13 @@
             <small class="text-muted">
                 <i class="bi bi-cube"></i> Kernel v<?= htmlspecialchars($versions['kernel']['version']) ?>
             </small>
+            <?php if ($kernelIncompatibility !== null): ?>
+            <span class="badge bg-warning text-dark"
+                  data-bs-toggle="tooltip"
+                  title="<?= htmlspecialchars($kernelIncompatibility['message']) ?>">
+                <i class="bi bi-exclamation-triangle"></i> <?= $kernelIncompatibility['count'] ?> incompatible
+            </span>
+            <?php endif; ?>
             <span class="badge bg-secondary">Update check not configured</span>
         </div>
     </div>

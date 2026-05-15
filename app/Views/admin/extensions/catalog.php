@@ -106,6 +106,7 @@
                         <th>Local Version</th>
                         <th>Dependencies</th>
                         <th>Status</th>
+                        <th>Kernel</th>
                         <th>Installed</th>
                         <th>Enabled</th>
                         <th>Blocked</th>
@@ -241,6 +242,18 @@
                             <?php endif; ?>
                         </td>
                         <td class="text-center">
+                            <?php
+                            $ks = $kernelVersions[(int) $ext['id']] ?? null;
+                            if ($ks !== null):
+                            ?>
+                            <span class="badge bg-<?= htmlspecialchars($ks["class"]) ?>" title="<?= htmlspecialchars($ks["title"]) ?>">
+                               <i class="bi <?= htmlspecialchars($ks["icon"]) ?> me-1"></i><?= $ks["label"] ?>
+                            </span>
+                            <?php else: ?>
+                            <span class="text-muted small">—</span>
+                            <?php endif; ?>
+                        </td>
+                        <td class="text-center">
                             <?php if ((int) $ext['is_installed'] === 1): ?>
                             <span class="badge bg-info text-dark" title="Installed">
                                 <i class="bi bi-check-circle me-1"></i>Yes
@@ -296,7 +309,15 @@
                                 elseif ($update->isBlocked()):
                                     $badgeClass = 'warning text-dark';
                                     $badgeLabel = 'Blocked';
-                                    $badgeTitle = implode("\n", $update->blockers);
+                            $blockerMessages = [];
+                            foreach ($update->blockers as $b) {
+                                if (is_array($b)) {
+                                    $blockerMessages[] = $b['message'] ?? json_encode($b);
+                                } elseif (is_string($b)) {
+                                    $blockerMessages[] = (string) $b;
+                                }
+                            }
+                            $badgeTitle = implode("\n", $blockerMessages);
                                     $badgeIcon = 'exclamation-triangle';
                                 elseif ($update->isInvalid()):
                                     $badgeClass = 'danger';
@@ -364,7 +385,7 @@
 KernelWeb.dt.init('#admin-catalog-table', {
     order: [[0, 'asc']],
     columnDefs: [
-        { orderable: false, targets: [5, 6, 7, 8, 9, 10] }
+        { orderable: false, targets: [5, 6, 7, 8, 9, 10, 11] }
     ]
 });
 </script>
