@@ -261,6 +261,9 @@ if ($pluginsDir !== false && is_dir($pluginsDir)) {
     $loader->registerHooks();
     $loader->registerMenus();
 
+    // Execute plugin bootstrap hooks (transport override, settings registration, etc.).
+    $loader->executePluginHooks('plugins.bootstrap', ['kernelRoot' => dirname(__DIR__)]);
+
     // Register core menu items (after plugins so plugin items sort correctly).
     $coreMenus = [
         ['name' => 'dashboard', 'label' => 'Dashboard', 'url' => '/', 'icon' => 'bi bi-speedometer2', 'permission' => null, 'order' => 0, 'sections' => []],

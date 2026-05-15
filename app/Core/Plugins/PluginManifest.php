@@ -7,7 +7,8 @@ namespace App\Core\Plugins;
  *
  * Required fields: name, version
  * Optional fields: description, enabled, requires, dependencies, permissions,
- *                  routes, migrations, services, hooks, menus
+ *                  routes, migrations, services, hooks, menus, lifecycle,
+ *                  plugin_hooks
  *
  * The manifest is immutable once constructed — callers cannot modify it.
  */
@@ -27,6 +28,7 @@ class PluginManifest
     private array  $hooks;
     private array  $menus;
     private array  $lifecycle;
+    private array  $pluginHooks;
 
     /**
      * @param array $data  Decoded plugin.json contents
@@ -60,6 +62,7 @@ class PluginManifest
         $this->hooks            = isset($data['hooks']) ? (array) $data['hooks'] : [];
         $this->menus            = isset($data['menus']) ? (array) $data['menus'] : [];
         $this->lifecycle        = isset($data['lifecycle']) ? (array) $data['lifecycle'] : [];
+        $this->pluginHooks      = isset($data['plugin_hooks']) ? (array) $data['plugin_hooks'] : [];
     }
 
     // ------ Properties ------
@@ -78,6 +81,7 @@ class PluginManifest
     public function hooks(): array { return $this->hooks; }
     public function menus(): array { return $this->menus; }
     public function lifecycle(): array { return $this->lifecycle; }
+    public function pluginHooks(): array { return $this->pluginHooks; }
 
     /**
      * Set the directory path where this plugin's plugin.json lives.
@@ -169,6 +173,7 @@ class PluginManifest
             'hooks'       => $this->hooks,
             'menus'       => $this->menus,
             'lifecycle'   => $this->lifecycle,
+            'plugin_hooks' => $this->pluginHooks,
         ];
     }
 }

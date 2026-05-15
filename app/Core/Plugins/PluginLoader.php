@@ -101,6 +101,20 @@ class PluginLoader
     }
 
     /**
+     * Execute a named plugin hook after loading.
+     *
+     * Plugin hooks are bootstrap/lifecycle callbacks that plugins
+     * can register during enable() to run at specific points in
+     * the boot sequence.
+     *
+     * @param array<string, mixed> $context
+     */
+    public function executePluginHooks(string $hookName, array $context = []): void
+    {
+        $this->registry->executePluginHooks($hookName, $context);
+    }
+
+    /**
      * Find all subdirectories of /lib/plugins/ that contain a plugin.json.
      *
      * @return string[]  Absolute directory paths

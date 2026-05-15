@@ -1,6 +1,6 @@
 # Mailer Foundation Design
 
-> **Status:** Core implemented (Phase 2) — SMTP plugin, queueing, and core templates deferred
+> **Status:** Core implemented (Phase 2) — SMTP plugin implemented, queueing and core templates deferred
 > **Roadmap:** Phase 2 — done
 > **Related:** ARCH-1 (notes-triage.md), PHASE2-2
 
@@ -671,7 +671,7 @@ HookRegistry::register('mailer.transport', function(Container $c): Transport {
 
 3. **Test suite (1 file)**: `tests/mailer_test.php` (61 assertions → 63 after security fixes)
 
-**Not implemented**: SMTP plugin (see smtp-plugin.md), SMTP settings, queueing, core email templates (`app/Views/emails/`), container wiring (deferred to auth features phase).
+**Not implemented**: queueing, core email templates (`app/Views/emails/`), container wiring (deferred to auth features phase). SMTP plugin implemented — see `docs/developer/smtp-plugin.md`.
 
 ---
 
@@ -726,9 +726,10 @@ PHP's `mail()` function requires a local MTA (Sendmail, Postfix, etc.) to functi
 
 ## Implementation Priorities (future)
 
-1. Core interface + default transport (6 core files)
-2. Config + container wiring
-3. TemplateRegistry + core templates
-4. SMTP plugin (separate commit)
-5. SMTP settings via SettingsRegistry (separate commit)
+1. Core interface + default transport (6 core files) — **done**
+2. Config + container wiring — **done**
+3. TemplateRegistry + core templates — deferred
+4. SMTP plugin — **done** (see smtp-plugin.md)
+5. SMTP settings via SettingsRegistry — **done**
 6. Auth feature integration (forgot password, verification) — later Phase 2
+7. Queueing — deferred

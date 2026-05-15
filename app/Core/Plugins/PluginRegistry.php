@@ -32,6 +32,9 @@ class PluginRegistry
     private array $enabled    = [];
     private array $disabled   = [];
 
+    /** @var callable[][] hook name => list of callables */
+    private array $pluginHooks = [];
+
     /**
      * Add a discovered plugin to the registry.
      */
@@ -62,6 +65,7 @@ class PluginRegistry
 
         $this->registerPermissions($plugin);
         $this->registerServices($plugin);
+        $this->registerPluginHooks($plugin);
 
         return true;
     }
@@ -179,5 +183,58 @@ class PluginRegistry
             $instance = new $class(...$resolved);
             $this->container->set($key, $instance);
         }
+    }
+
+    /**
+     * Hook for plugins to register bootstrap/lifecycle hooks.
+     * Called during enable(). Plugin hooks are collected and then
+     * executed by the loader via executePluginHooks().
+     */
+    protected function registerPluginHooks(PluginManifest $plugin): void
+    {
+        foreach ($plugin->pluginHooks() as $hookName => $callbackDef) {
+            $callback = $callbackDef['callback'] ?? null;
+            $priority = $callbackDef['priority'] ?? 0;
+
+            if ($callback === null || !is_callable($callback)) {
+                continue;
+            }
+
+            $this->pluginHooks[$hookName][$priority][] = $callback;
+        }
+    }
+
+    /**
+     * Execute all registered plugin hooks in priority order.
+     *
+     * @param array<string, mixed> $context
+     */
+    public function executePluginHooks(string $hookName, array $context = []): void
+    {
+        if (!isset($this->pluginHooks[$hookName])) {
+            return;
+        }
+
+        ksort($this->pluginHooks[$hookName]);
+
+        foreach ($this->pluginHooks[$hookName] as $priority => $callbacks) {
+            foreach ($callbacks as $callback) {
+                try {
+                    $callback($this->container, $context);
+                } catch (\Throwable $e) {
+                    error_log("Plugin hook '{$hookName}' failed: " . $e->getMessage());
+                }
+            }
+        }
+    }
+
+    /**
+     * Get all registered plugin hooks (for execution by the loader).
+     *
+     * @return callable[][]
+     */
+    public function getPluginHooks(): array
+    {
+        return $this->pluginHooks;
     }
 }
