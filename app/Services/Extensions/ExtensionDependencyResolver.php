@@ -702,7 +702,9 @@ class ExtensionDependencyResolver
 
         // Validate kernel version format
         if (!preg_match('/^\d+\.\d+\.\d+$/', $kernelVersion)) {
-            return false;
+            // Unknown kernel version (e.g. "dev") — cannot verify compatibility
+            // but don't block: treat as potentially compatible.
+            return true;
         }
 
         // Space-separated constraints are AND logic

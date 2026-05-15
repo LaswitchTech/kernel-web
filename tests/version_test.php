@@ -45,9 +45,9 @@ assert_false(
     ExtensionDependencyResolver::checkKernelCompatibility('3.0.0', '3.1.0'),
     'Exact mismatch: 3.0.0 != 3.1.0'
 );
-assert_false(
+assert_true(
     ExtensionDependencyResolver::checkKernelCompatibility('dev', '3.1.0'),
-    'Exact mismatch: dev version not compatible'
+    'dev version with exact constraint is compatible (unknown kernel)'
 );
 
 // ===== checkKernelCompatibility: >= constraint =====
@@ -176,17 +176,17 @@ assert_true(
 
 // ===== checkKernelCompatibility: malformed version =====
 
-assert_false(
+assert_true(
     ExtensionDependencyResolver::checkKernelCompatibility('dev', '>=2.0.0'),
-    'Malformed kernel version "dev" is incompatible'
+    'Malformed kernel version "dev" is compatible with >= constraint (unknown kernel)'
 );
-assert_false(
+assert_true(
     ExtensionDependencyResolver::checkKernelCompatibility('3.1', '>=2.0.0'),
-    'Malformed kernel version "3.1" is incompatible'
+    'Malformed kernel version "3.1" is compatible (unknown kernel)'
 );
-assert_false(
+assert_true(
     ExtensionDependencyResolver::checkKernelCompatibility('abc', '>=2.0.0'),
-    'Malformed kernel version "abc" is incompatible'
+    'Malformed kernel version "abc" is compatible (unknown kernel)'
 );
 
 // ===== checkKernelCompatibility: malformed constraint =====

@@ -451,7 +451,7 @@ public static function checkKernelCompatibility(string $kernelVersion, string $r
 
     // Validate kernel version format
     if (!preg_match('/^\d+\.\d+\.\d+$/', $kernelVersion)) {
-        return false; // Unknown kernel version = incompatible
+        return true; // Unknown kernel version = compatible (can't verify, don't block)
     }
 
     // Space-separated constraints are AND logic
@@ -564,6 +564,7 @@ Add a "Kernel" column to the catalog table showing kernel compatibility status:
 | Incompatible | Orange/yellow exclamation `⚠` | Extension has constraint not satisfied by current kernel |
 | No manifest | Gray `—` | Installed extension has no manifest to read |
 | Invalid manifest | Red `✕` | Installed extension manifest is invalid |
+| Unknown kernel | Green checkmark `✓` | Kernel version is unknown (e.g. "dev") — treated as compatible |
 
 **Implementation:** In `ExtensionsController::catalog()`, for each catalog entry, compute kernel compatibility using the same logic as the update checker. Pass to view for rendering.
 

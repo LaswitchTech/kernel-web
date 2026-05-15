@@ -100,7 +100,7 @@ class PluginManifest
      */
     private function parseAndValidateKernelRequirement(array $data): string
     {
-        if (!isset($data['requires']['kernel'])) {
+        if (!isset($data['requires']) || !is_array($data['requires']) || !isset($data['requires']['kernel'])) {
             return '';
         }
 
