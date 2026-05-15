@@ -2,7 +2,7 @@
     "name": "smtp",
     "version": "0.1.0",
     "description": "SMTP mail transport — replaces default mail() transport for reliable delivery on macOS/MAMP and production.",
-    "enabled": false,
+    "enabled": true,
     "requires": {
         "kernel": "8.1"
     },

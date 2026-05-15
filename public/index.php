@@ -338,6 +338,7 @@ if ($pluginsDir !== false && is_dir($pluginsDir)) {
         ['name' => 'admin-settings', 'label' => 'Settings', 'url' => '/admin/settings', 'icon' => 'bi bi-sliders', 'permission' => 'admin', 'order' => 35, 'sections' => []],
         ['name' => 'admin-audit', 'label' => 'Audit Log', 'url' => '/admin/audit', 'icon' => 'bi bi-journal-text', 'permission' => 'admin', 'order' => 40, 'sections' => []],
         ['name' => 'admin-extensions', 'label' => 'Extensions', 'url' => '/admin/extensions', 'icon' => 'bi bi-boxes', 'permission' => 'extensions.manage', 'order' => 45, 'sections' => []],
+        ['name' => 'admin-organizations', 'label' => 'Organizations', 'url' => '/admin/organizations', 'icon' => 'bi bi-people', 'permission' => 'admin', 'order' => 47, 'sections' => []],
     ];
 
     foreach ($adminMenus as $menuDef) {
@@ -432,7 +433,12 @@ if ($pluginsDir !== false && is_dir($pluginsDir)) {
     'label'    => 'Two-Factor Auth',
     'icon'     => 'bi-shield-lock',
     'order'    => 30,
-    'callback' => fn () => '<div id="pm-two-factor-content"></div>',
+    'callback' => function ($ctx = []) {
+        $viewsPath = dirname(__DIR__) . '/app/Views';
+        ob_start();
+        require $viewsPath . '/profile/2fa-section.php';
+        return ob_get_clean();
+    },
     'permission' => null,
     'source'   => 'core',
 ]);
