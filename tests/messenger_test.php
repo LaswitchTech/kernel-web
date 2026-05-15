@@ -4,7 +4,7 @@
  * Messenger core tests — zero dependencies, fake transport behavior.
  *
  * Run: php tests/messenger_test.php
- * Assertions: 24
+ * Assertions: 22
  */
 
 declare(strict_types=1);

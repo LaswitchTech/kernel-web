@@ -15,6 +15,20 @@
 $testsDir = __DIR__;
 $allTests = glob($testsDir . '/*_test.php');
 
+// Discover plugin test suites from lib/plugins/{name}/tests/
+$pluginsDir = realpath(__DIR__ . '/../lib/plugins');
+if ($pluginsDir !== false && is_dir($pluginsDir)) {
+    foreach (new \DirectoryIterator($pluginsDir) as $entry) {
+        if (!$entry->isDir() || $entry->isDot()) continue;
+        $pluginTestDir = $entry->getPathname() . '/tests';
+        if (is_dir($pluginTestDir)) {
+            foreach (glob($pluginTestDir . '/*_test.php') as $testFile) {
+                $allTests[] = $testFile;
+            }
+        }
+    }
+}
+
 if ($allTests === []) {
     echo "No test files found in {$testsDir}/\n";
     exit(1);

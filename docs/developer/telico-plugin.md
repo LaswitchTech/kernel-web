@@ -1,7 +1,7 @@
 # Telico SMS Plugin Design
 
-> **Status:** Design only — not implemented
-> **Roadmap:** Phase 2/3 candidate
+> **Status:** Implemented (TelicoTransport, TelicoApiClient, TelicoSettings, TelicoHooks, TelicoApiController, test-sms endpoint). Plugin disabled by default.
+> **Roadmap:** Phase 2 — first slice complete.
 > **Related:** messenger.md, settings-hooks.md
 > **Reference:** `/Users/louis/Projects/LaswitchTech/core/lib/plugins/telico/Helper.php`
 
@@ -72,13 +72,14 @@ Response: JSON array of messages.
 ```
 lib/plugins/telico/
 ├── plugin.json
-├── hooks.php
 ├── src/
 │   ├── TelicoTransport.php      — MessengerTransportInterface
 │   ├── TelicoApiClient.php      — Telico API client
-│   └── TelicoSettings.php       — SettingsRegistry section
-├── controllers/
-│   └── TelicoApiController.php  — Admin API endpoints
+│   ├── TelicoSettings.php       — SettingsRegistry section
+│   ├── TelicoHooks.php          — Bootstrap hooks (settings + transport swap)
+│   └── TelicoApiController.php  — test-sms endpoint
+├── tests/
+│   └── telico_test.php
 └── views/
     └── settings/
         └── telico.php           — Telico settings form
@@ -97,21 +98,20 @@ class TelicoApiClient
 {
     private string $username;
     private string $smsPass;
-    private string $voicePass;
     private string $callerId;
 
     public function __construct(array $config)
     {
-        $this->username  = $config['telico.username'];
-        $this->smsPass   = $config['telico.sms_pass'];
-        $this->voicePass = $config['telico.voip_pass'] ?? '';
-        $this->callerId  = $config['telico.callerid'] ?? '';
+        $this->username = $config['telico.username'] ?? '';
+        $this->smsPass  = $config['telico.sms_pass'] ?? '';
+        $this->callerId = $config['telico.callerid'] ?? '';
     }
 
     /**
      * Send an SMS message.
      *
      * @return array Decoded JSON response
+     * @throws MessengerException on failure or missing credentials
      */
     public function sendSms(string $destination, string $message): array
     {
@@ -123,10 +123,18 @@ class TelicoApiClient
             );
         }
 
+        if (empty($this->callerId)) {
+            throw new MessengerException(
+                'Telico caller ID not configured.',
+                code: 422,
+                transportName: 'telico',
+            );
+        }
+
         $url = 'https://sms.telico.cloud/api/send_sms?' . http_build_query([
-            'source_did'   => $this->callerId,
-            'destination'  => $destination,
-            'message'      => $message,
+            'source_did'  => $this->callerId,
+            'destination' => $destination,
+            'message'     => $message,
         ]);
 
         $ch = curl_init($url);
@@ -149,6 +157,14 @@ class TelicoApiClient
             );
         }
 
+        if ($response === false) {
+            throw new MessengerException(
+                'Telico SMS API returned empty response.',
+                code: 500,
+                transportName: 'telico',
+            );
+        }
+
         $data = json_decode($response, true);
         if (json_last_error() !== JSON_ERROR_NONE) {
             throw new MessengerException(
@@ -161,11 +177,6 @@ class TelicoApiClient
         return $data;
     }
 
-    /**
-     * Get all conversations.
-     *
-     * @return array Decoded JSON response (array of conversations)
-     */
     public function getConversations(): array
     {
         $url = 'https://sms.telico.cloud/api/conversations?' . http_build_query([
@@ -186,11 +197,6 @@ class TelicoApiClient
         return json_decode($response, true) ?? [];
     }
 
-    /**
-     * Get messages for a specific conversation.
-     *
-     * @return array Decoded JSON response (array of messages)
-     */
     public function getMessages(string $conversationId): array
     {
         $url = 'https://sms.telico.cloud/api/messages?' . http_build_query([
@@ -220,41 +226,23 @@ class TelicoApiClient
 ```php
 namespace Plugins\Telico;
 
-use App\Core\Mail\MessengerTransportInterface;
-use App\Core\Mail\Message;
-use App\Core\Mail\MessengerException;
+use App\Core\MessengerTransportInterface;
+use App\Core\Message;
 
-readonly class TelicoTransport implements MessengerTransportInterface
+class TelicoTransport implements MessengerTransportInterface
 {
-    public function __construct(
-        private TelicoApiClient $client,
-    ) {}
+    private TelicoApiClient $client;
+
+    public function __construct(array $config)
+    {
+        $this->client = new TelicoApiClient($config);
+    }
 
     public function send(Message $message): bool
     {
-        // SMS body limit enforcement
-        if (mb_strlen($message->body) > 160) {
-            throw new MessengerException(
-                "SMS body exceeds 160 character limit ({$message->bodyLength} chars). " .
-                'Consider using an MMS or template-based message.',
-                code: 413,
-                transportName: 'telico',
-            );
-        }
-
-        $result = $this->client->sendSms($message->to, $message->body);
-
-        // Check Telico API response for errors.
-        // The Telico API returns success/error indicators in the JSON body.
-        // We check for error fields to determine success.
-        if (isset($result['error']) || isset($result['status']) && $result['status'] !== 'success') {
-            throw new MessengerException(
-                $result['error'] ?? 'Unknown Telico SMS error.',
-                code: 400,
-                transportName: 'telico',
-            );
-        }
-
+        // TelicoApiClient::sendSms throws MessengerException on any failure.
+        // We let it propagate so the Messenger service can surface the error.
+        $this->client->sendSms($message->to, $message->body);
         return true;
     }
 
@@ -368,12 +356,13 @@ Controller: `TelicoApiController` with `['WebAuth', 'WebPermission:settings.teli
 
 ## Implementation Priorities
 
-1. `TelicoApiClient` (API wrapper)
-2. `TelicoTransport` (MessengerTransportInterface)
-3. Settings section via SettingsRegistry
-4. Hook transport override in hooks.php
-5. Admin API endpoints
-6. Test SMS endpoint
+1. ~~`TelicoApiClient` (API wrapper)~~ — implemented
+2. ~~`TelicoTransport` (MessengerTransportInterface)~~ — implemented
+3. ~~Settings section via SettingsRegistry~~ — implemented
+4. ~~Hook transport override in TelicoHooks.php~~ — implemented
+5. ~~Test SMS endpoint~~ — implemented
+6. Voice calls API (deferred)
+7. Conversation inbox UI (deferred)
 
 ---
 

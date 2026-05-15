@@ -1,7 +1,7 @@
 # Messenger Foundation Design
 
-> **Status:** Design only — not implemented
-> **Roadmap:** Phase 2 candidate
+> **Status:** Core implemented (Message, MessengerTransportInterface, Messenger, MessengerException). Telico plugin implemented.
+> **Roadmap:** Phase 2 — core done; Telico plugin implemented.
 > **Related:** mailer.md, telico-plugin.md
 
 ---
@@ -58,23 +58,36 @@ namespace App\Core;
 
 class Messenger
 {
+    // $transport is nullable — null means SMS disabled until a plugin swaps it.
     public function __construct(
-        private MessengerTransportInterface $transport,
+        private ?MessengerTransportInterface $transport = null,
     ) {}
 
     public function send(Message $message): bool
     {
+        if ($this->transport === null) {
+            throw new MessengerException(
+                'No SMS transport configured. Enable a transport plugin first.',
+                code: 503,
+                transportName: null,
+            );
+        }
         return $this->transport->send($message);
     }
 
-    public function transportIdentifier(): string
+    public function transportIdentifier(): ?string
     {
-        return $this->transport->identifier();
+        return $this->transport?->identifier();
     }
 
     public function setTransport(MessengerTransportInterface $transport): void
     {
         $this->transport = $transport;
+    }
+
+    public function hasTransport(): bool
+    {
+        return $this->transport !== null;
     }
 }
 ```
@@ -108,14 +121,19 @@ readonly class Message
         public string $template = '',   // template name (optional)
         public array  $context = [],    // template variables
         public array  $media = [],      // media URLs (MMS, deferred)
-        public ?string $webhookUrl = null, // delivery receipt URL (provider-specific)
     ) {}
 
     public function withMedia(string $url, ?string $mimeType = null): static
     {
-        $clone = clone $this;
-        $clone->media[] = ['url' => $url, 'mime' => $mimeType];
-        return $clone;
+        // Returns a new Message (immutability) — PHP readonly classes can't modify cloned properties.
+        $media = $this->media;
+        $media[] = ['url' => $url, 'mime_type' => $mimeType];
+        return new static(to: $this->to, from: $this->from, body: $this->body, template: $this->template, context: $this->context, media: $media);
+    }
+
+    public function withBody(string $body): static
+    {
+        return new static(to: $this->to, from: $this->from, body: $body, template: $this->template, context: $this->context, media: $this->media);
     }
 }
 ```
@@ -174,10 +192,10 @@ class MessengerException extends \RuntimeException
 {
     public function __construct(
         string $message,
-        public readonly int $code = 0,
+        int $code = 0,
         public readonly ?string $transportName = null,
     ) {
-        parent::__construct($message);
+        parent::__construct($message, $code);
     }
 }
 ```

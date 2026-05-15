@@ -79,15 +79,18 @@ class TelicoHooks
         }
 
         $username = $settings->getString('telico.username', '');
-        if ($username === '') {
-            // Telico not configured — keep no transport.
+        $smsPass  = $settings->getString('telico.sms_pass', '');
+        $callerId = $settings->getString('telico.callerid', '');
+
+        if ($username === '' || $smsPass === '' || $callerId === '') {
+            // All three credentials required before swapping transport.
             return;
         }
 
         $config = [
             'telico.username' => $username,
-            'telico.sms_pass' => $settings->getString('telico.sms_pass', ''),
-            'telico.callerid' => $settings->getString('telico.callerid', ''),
+            'telico.sms_pass' => $smsPass,
+            'telico.callerid' => $callerId,
         ];
 
         $telicoTransport = new TelicoTransport($config);

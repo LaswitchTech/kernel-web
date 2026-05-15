@@ -101,10 +101,6 @@ class TelicoSettings
             $errors['telico.username'] = 'Username is required.';
         }
 
-        if (empty($input['telico.sms_pass']) && !isset($input['_telico_sms_pass_preserved'])) {
-            $errors['telico.sms_pass'] = 'SMS API password is required.';
-        }
-
         if (!empty($input['telico.callerid'])) {
             $callerId = trim($input['telico.callerid']);
             if (!preg_match('/^\+\d{7,15}$/', $callerId)) {

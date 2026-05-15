@@ -4,7 +4,7 @@
  * Telico plugin tests — zero dependencies, fake API behavior.
  *
  * Run: php lib/plugins/telico/tests/telico_test.php
- * Assertions: 18
+ * Assertions: 12
  */
 
 declare(strict_types=1);
