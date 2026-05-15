@@ -381,32 +381,34 @@ This is stored in `catalog_extensions.requirements` as-is.
 
 ## 8. Implementation Plan
 
-### Phase A: VersionProvider Service
+### Phase A: VersionProvider Service — Implemented
 
-**Files to create:**
-- `app/Services/VersionProvider.php` — version source resolution
-- Register in container during bootstrap (`$container->set('version_provider', ...)`)
+**Files created:**
+- `app/Core/VersionProvider.php` — version source resolution
+- Registered in container during bootstrap (`$container->set('version_provider', ...)`)
 
-**Scope:**
-- Kernel version from VERSION file or composer.json
-- Application name/version from config
-- Kernel compatibility check (constraint parsing + comparison)
-- Unit tests
+**Implemented:**
+- Kernel version from VERSION file or composer.json (VERSION takes priority)
+- Application name/version from config (`name`/`version` or `app_name`/`app_version`)
+- `getVersions()` — unified structure for admin overview
+- `getKernelName()` — kernel name from composer.json or default
+- Unit tests: `tests/version_test.php` (20 assertions covering all resolution paths)
 
-**Deliverable:** A `VersionProvider` that can read kernel version, app version, and check kernel compatibility.
+**Deliverable:** `VersionProvider` service with full resolution chain and test coverage.
 
-### Phase B: Admin Overview Display
+### Phase B: Admin Overview Display — Implemented
 
-**Files to modify:**
-- `app/Controllers/Admin/ExtensionsController.php` — add version stats to index
+**Files modified:**
+- `app/Controllers/Admin/AdminController.php` — pass version data to index view
 - `app/Views/admin/index.php` — add version info card
+- `config/app.php` — add `version` field (defaults to "dev")
 - `public/index.php` — wire VersionProvider into container
 
-**Scope:**
-- Display kernel version on admin landing page
-- Display app name/version on admin landing page
-- Show update count badges (updates available / blocked)
-- Show "Update check not configured" when no remote source
+**Implemented:**
+- Version info card on admin landing page showing kernel version, app name/version
+- "Update check not configured" badge (local-only mode)
+- Bootstrap 5 compatible, dark-theme friendly
+- No remote sync dependency
 
 **Deliverable:** Admin landing page shows kernel version, app version, and update status.
 

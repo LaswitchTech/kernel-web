@@ -1,3 +1,18 @@
+<!-- Version info bar -->
+<div class="card mb-4">
+    <div class="card-body py-2 px-3">
+        <div class="d-flex flex-wrap align-items-center gap-3">
+            <small class="text-muted">
+                <i class="bi bi-box"></i> <?= $versions['application']['name'] ?> v<?= $versions['application']['version'] ?>
+            </small>
+            <small class="text-muted">
+                <i class="bi bi-cube"></i> Kernel v<?= $versions['kernel']['version'] ?>
+            </small>
+            <span class="badge bg-secondary">Update check not configured</span>
+        </div>
+    </div>
+</div>
+
 <div class="row g-4 mb-4">
     <div class="col-sm-4">
         <a href="/admin/users" class="card text-decoration-none h-100 admin-stat-card">

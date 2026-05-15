@@ -147,13 +147,13 @@ These are planned or requested but are out of scope for the current development 
 | Contributing docs | Implemented | Documented in /docs/contributing.md |
 | Runtime DB safety | Hardened | DB files excluded from public/, .gitignore updated |
 | Phase 1 stabilization | Closed | 15/15 tasks done |
-| Testing | Partially implemented | Zero-dependency test framework with 13 suites (598 assertions) — router, plugin, migration, auth, mailer, remember_me, forgot_password, email_verification, registration, two_factor, organization, organization_runtime, smtp. CRUD coverage for users/groups/permissions/tokens complete. Mailer + SMTP foundation implemented. Two-factor auth includes regression test for missing-schema degradation. See docs/developer/testing.md |
+| Testing | Partially implemented | Zero-dependency test framework with 14 suites (628 assertions) — router, plugin, migration, auth, mailer, remember_me, forgot_password, email_verification, registration, two_factor, organization, organization_runtime, smtp, version. CRUD coverage for users/groups/permissions/tokens complete. Mailer + SMTP foundation implemented. Two-factor auth includes regression test for missing-schema degradation. VersionProvider tests cover kernel/app version resolution. See docs/developer/testing.md |
 | Profile Modal | Implemented, full plugin architecture | API Tokens section with create/list/revoke UI. Section registry (ProfileModal class), /api/profile + /api/profile/sections endpoints, plugin tab rendering via JS, permission-gated sections. |
 | Mailer | Implemented | Core infrastructure: MailMessage, Attachment, TemplateRegistry, TransportInterface, MailTransport (mail()), Mailer facade, MailerException. SMTP transport plugin with settings, test-email endpoint, bootstrap hook transport swap. Config at config/mail.php. 86 assertions (63 mailer + 23 smtp). Design at docs/developer/mailer.md. SMTP docs at docs/developer/smtp-plugin.md. |
 | OAuth | Deferred | See Deferred section |
 | Licensing | Deferred | See Deferred section |
 | Registration | Implemented | Config-gated (disabled by default), email verification integration, 55 assertions — see tests/registration_test.php |
-| Versioning model | Designed | Design doc at docs/developer/versioning.md. Defines kernel/app/extension version sources, requires.kernel constraint format, VersionProvider service, admin overview display, compatibility enforcement rules. Implementation plan: Phase A (VersionProvider) → Phase B (Admin display) → Phase C (Compatibility checks) → Phase D (Remote updates, out of scope) |
+| Versioning model | Phase A+B implemented | Design at docs/developer/versioning.md. VersionProvider (Phase A): kernel/app version resolution with 30 assertions. Admin overview card (Phase B): kernel version, app name/version, "Update check not configured" badge. Config version field added. Compatibility checks (Phase C) and remote updates (Phase D) deferred. |
 
 ---
 

@@ -208,6 +208,13 @@ $mailer  = new Mailer(
 );
 $container->set('mailer', $mailer);
 
+// VersionProvider — resolves kernel and application version info for admin overview.
+$kernelRoot = realpath(__DIR__ . '/..');
+if ($kernelRoot === false) {
+    $kernelRoot = __DIR__ . '/..';
+}
+$container->set('version_provider', new \App\Core\VersionProvider($kernelRoot));
+
 // Password reset service — wired so AuthController can resolve it from container.
 $resetRepo      = new \App\Models\PasswordResetRepository($container->get('db'));
 $resetService   = new \App\Auth\PasswordResetService($resetRepo, $userRepo, $mailer);

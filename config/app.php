@@ -13,6 +13,7 @@
  */
 return [
     'name'      => (getenv('APP_NAME')      ?: 'Kernel-Web'),
+    'version'   => (getenv('APP_VERSION')   ?: 'dev'),
     'env'       => (getenv('APP_ENV')        ?: 'development'),
     'debug'     => (bool) filter_var(getenv('APP_DEBUG')      ?: 'true',  FILTER_VALIDATE_BOOLEAN),
     'url'       => (getenv('APP_URL')        ?: 'http://localhost'),

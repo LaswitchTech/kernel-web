@@ -40,6 +40,8 @@ tests/
   two_factor_test.php — TOTP code generation/verification, recovery codes, 2FA enable/disable, pending session state
   organization_test.php — Organization CRUD, membership management, context resolution, default org fallback, repository scoping
   organization_runtime_test.php — ProfileModal section registration, renderSection output, org creation/switching, slug handling, context resolution
+  smtp_test.php — SMTP transport, settings registration, test-email endpoint, settings validation
+  version_test.php — Kernel/app version resolution, VERSION/composer.json fallback, default config fallback, getVersions() structure
 ```
 
 ### Test runner
@@ -86,6 +88,8 @@ Each assertion increments a pass/fail counter. `summary()` prints all failures w
 | two_factor | 64 | TOTP, recovery codes, pending session state |
 | organization | 44 | Org CRUD, membership, context resolution, scoping |
 | organization_runtime | 46 | ProfileModal section registration, renderSection output, org creation/switching, slug handling, context resolution |
+| smtp | 23 | SMTP transport plugin, settings validation, settings rendering, test-email endpoint |
+| version | 30 | Kernel version (VERSION/composer.json fallback), application name/version defaults, getVersions() structure |
 
 ### Bootstrap
 

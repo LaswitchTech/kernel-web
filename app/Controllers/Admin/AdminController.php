@@ -47,6 +47,14 @@ class AdminController extends Controller
         $groupCount      = count($groups);
         $permissionCount = count($permList);
 
+        // Version information for admin overview.
+        $kernelRoot = realpath(__DIR__ . '/../../../..');
+        if ($kernelRoot === false) {
+            $kernelRoot = __DIR__ . '/../../../..';
+        }
+        $versionProvider = new \App\Core\VersionProvider($kernelRoot);
+        $versions = $versionProvider->getVersions($config);
+
         $breadcrumbs = [
             ['label' => 'Administration', 'url' => '/admin'],
         ];
