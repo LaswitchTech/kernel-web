@@ -64,6 +64,8 @@ Core infrastructure improvements that unlock future feature work.
 - [x] Organizations system design (optional, plugin-based data scoping) — design at docs/developer/organizations.md
 - [x] Organizations plugin foundation (organizations table, organization_users pivot, user membership)
 - [x] Organizations runtime UX (Profile Modal section, AJAX switch/create/list endpoints, slug generation)
+- [ ] SMTP mail plugin (replace PHP mail() with SMTP for reliable delivery on macOS/MAMP; settings via SettingsRegistry; test-email button)
+- [ ] Messenger foundation (SMS transport interface, message object, template support; Telico transport plugin)
 
 ---
 
@@ -144,9 +146,9 @@ These are planned or requested but are out of scope for the current development 
 | Contributing docs | Implemented | Documented in /docs/contributing.md |
 | Runtime DB safety | Hardened | DB files excluded from public/, .gitignore updated |
 | Phase 1 stabilization | Closed | 15/15 tasks done |
-| Testing | Partially implemented | Zero-dependency test framework with 11 suites (524 assertions) — router, plugin, migration, auth, mailer, remember_me, forgot_password, email_verification, registration, two_factor, organization. CRUD coverage for users/groups/permissions/tokens complete. Mailer foundation implemented. See docs/developer/testing.md |
+| Testing | Partially implemented | Zero-dependency test framework with 12 suites (570 assertions) — router, plugin, migration, auth, mailer, remember_me, forgot_password, email_verification, registration, two_factor, organization, organization_runtime. CRUD coverage for users/groups/permissions/tokens complete. Mailer foundation implemented. See docs/developer/testing.md |
 | Profile Modal | Implemented, full plugin architecture | API Tokens section with create/list/revoke UI. Section registry (ProfileModal class), /api/profile + /api/profile/sections endpoints, plugin tab rendering via JS, permission-gated sections. |
-| Mailer | Implemented | Core infrastructure: MailMessage, Attachment, TemplateRegistry, TransportInterface, MailTransport (mail()), Mailer facade, MailerException. Config at config/mail.php. 63 assertions. Design at docs/developer/mailer.md. |
+| Mailer | Implemented | Core infrastructure: MailMessage, Attachment, TemplateRegistry, TransportInterface, MailTransport (mail()), Mailer facade, MailerException. Config at config/mail.php. 63 assertions. Design at docs/developer/mailer.md. SMTP plugin required for macOS/MAMP testing — see docs/developer/smtp-plugin.md. |
 | OAuth | Deferred | See Deferred section |
 | Licensing | Deferred | See Deferred section |
 | Registration | Implemented | Config-gated (disabled by default), email verification integration, 55 assertions — see tests/registration_test.php |

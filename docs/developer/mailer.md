@@ -671,7 +671,25 @@ HookRegistry::register('mailer.transport', function(Container $c): Transport {
 
 3. **Test suite (1 file)**: `tests/mailer_test.php` (61 assertions → 63 after security fixes)
 
-**Not implemented**: SMTP plugin, SMTP settings, queueing, core email templates (`app/Views/emails/`), container wiring (deferred to auth features phase).
+**Not implemented**: SMTP plugin (see smtp-plugin.md), SMTP settings, queueing, core email templates (`app/Views/emails/`), container wiring (deferred to auth features phase).
+
+---
+
+## macOS / MAMP Considerations
+
+PHP's `mail()` function requires a local MTA (Sendmail, Postfix, etc.) to function. macOS and MAMP **do not ship with a configured MTA**, so `mail()` will always fail or silently drop messages.
+
+**For local development on macOS/MAMP:**
+
+1. Install an SMTP plugin (see `docs/developer/smtp-plugin.md`)
+2. Configure it to use a local mail catcher (MailHog, Mailtrap, etc.)
+3. Enable the plugin — it replaces `MailTransport` at boot
+
+**For production:**
+
+1. Use SMTP with a real mail service (Amazon SES, SendGrid, Mailgun, etc.)
+2. The SMTP plugin supports SSL/TLS with peer verification
+3. Never disable `smtp.verify_peer` in production
 
 ---
 
