@@ -1480,7 +1480,7 @@ For full design, see `docs/developer/scaffolds.md`.
 
 | Layer | Source | Notes |
 |------|--------|------|
-| **Kernel** | `composer.json` → `version` (primary), `VERSION` file (fallback) | Canonical version for the framework |
+| **Kernel** | `VERSION` file (primary), `composer.json` → `version` (fallback) | Canonical version for the framework |
 | **Application** | `config/app.php` (`name` / `version`) or `env()` | Independent from kernel; set by consuming app |
 | **Extension** | On-disk manifest (`plugin.json`, `theme.json`, `layout.json`) → `version` | Already established, no change |
 

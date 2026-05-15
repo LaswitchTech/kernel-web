@@ -25,8 +25,8 @@ class VersionProvider
      * Resolve the kernel version string.
      *
      * Priority:
-     *   1. VERSION file at repository root
-     *   2. composer.json → version field
+     *   1. VERSION file at repository root (if non-empty)
+     *   2. composer.json → version field (if present)
      *   3. "dev" (unknown/unversioned)
      */
     public function getKernelVersion(): string

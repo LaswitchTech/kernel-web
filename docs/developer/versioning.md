@@ -21,11 +21,9 @@ This design ensures:
 
 ### 1a. Kernel Version
 
-**Source of truth:** `composer.json` → `name` + `version` fields.
+**Source of truth:** `VERSION` file at repository root (if present), then `composer.json` → `version` field (fallback).
 
-The kernel's `composer.json` is the canonical source. The kernel package name (e.g. `kernel-web/kernel`) identifies the layer; its `version` field (semantic versioning) identifies the release.
-
-**Fallback:** A dedicated `VERSION` file at the repository root. If present, its contents are used instead of `composer.json`. This allows the version to be read without Composer being available (e.g., during early bootstrap or offline installs).
+The `VERSION` file is the quickest source — it's a plain text file with no parsing overhead. If absent or empty, the kernel falls back to `composer.json`. This allows the version to be read without parsing JSON (e.g., during early bootstrap or offline installs).
 
 **Why composer.json:** The kernel is consumed via Composer in production. The composer.json version is the source of truth for package managers. A fallback VERSION file handles edge cases where Composer autoloader is unavailable.
 
