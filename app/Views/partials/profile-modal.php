@@ -23,6 +23,13 @@
                             API Tokens
                         </button>
                     </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="tab-two-factor" data-bs-toggle="tab"
+                                data-bs-target="#panel-two-factor" type="button" role="tab"
+                                aria-controls="panel-two-factor" aria-selected="false">
+                            Two-Factor Auth
+                        </button>
+                    </li>
                 </ul>
 
                 <!-- Tab content -->
@@ -97,6 +104,11 @@
                             No API tokens yet. Create one above.
                         </div>
                         <div id="pm-token-list" class="list-group list-group-flush" style="max-height:300px;overflow-y:auto;"></div>
+                    </div>
+
+                    <!-- Two-Factor Auth tab -->
+                    <div class="tab-pane fade" id="panel-two-factor" role="tabpanel" aria-labelledby="tab-two-factor">
+                        <div id="pm-two-factor-content"></div>
                     </div>
                 </div>
             </div>
@@ -266,6 +278,23 @@
             });
         });
     }
+
+    // ── Lazy-load Two-Factor tab content on first activation ──
+    (function () {
+        var loaded = false;
+        var tab2fa = document.getElementById('tab-two-factor');
+        if (!tab2fa) return;
+        tab2fa.addEventListener('shown.bs.tab', function () {
+            if (loaded) return;
+            loaded = true;
+            fetch('/api/profile/sections/two-factor', { credentials: 'same-origin' })
+                .then(function (r) { if (!r.ok) throw new Error('Failed'); return r.json(); })
+                .then(function (data) {
+                    var pane = document.getElementById('panel-two-factor');
+                    if (pane && data.html) pane.innerHTML = data.html;
+                });
+        });
+    })();
 
     // Load API Tokens tab content on first tab click (lazy).
     (function () {

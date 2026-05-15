@@ -114,7 +114,9 @@ class ProfileOrganizationsController extends Controller
             return;
         }
 
-        $name = trim($_POST['name'] ?? '');
+        $raw = file_get_contents('php://input');
+        $body = $raw !== false ? json_decode($raw, true) : [];
+        $name = trim($body['name'] ?? '');
         if ($name === '') {
             $this->json(['error' => 'Organization name is required'], 400);
             return;
@@ -125,7 +127,7 @@ class ProfileOrganizationsController extends Controller
             return;
         }
 
-        $type = $_POST['type'] ?? 'organization';
+        $type = $body['type'] ?? 'organization';
         $validTypes = ['organization', 'prospect', 'client', 'freight_forwarder', 'customs_broker', 'customs_office', 'vendor', 'partner'];
         if (!in_array($type, $validTypes, true)) {
             $type = 'organization';

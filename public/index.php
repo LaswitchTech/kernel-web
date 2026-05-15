@@ -50,8 +50,18 @@ spl_autoload_register(function (string $class): void {
 });
 
 // Plugin autoloader — scans /lib/plugins/{name}/src/ for classes.
+// Handles both App\Plugins\ (kernel core) and Plugins\ (external plugins) namespaces.
 spl_autoload_register(function (string $class): void {
-    if (strncmp($class, 'App\\Plugins\\', strlen('App\\Plugins\\')) !== 0) {
+    if (strncmp($class, 'App\\Plugins\\', strlen('App\\Plugins\\')) === 0) {
+        // App\Plugins\Core\ProfileModal → app/Core/ProfileModal.php
+        $relative = substr($class, strlen('App\\Plugins\\'));
+        $file     = __DIR__ . '/Core/' . str_replace('\\', '/', $relative) . '.php';
+        if (file_exists($file)) {
+            require $file;
+        }
+        return;
+    }
+    if (strncmp($class, 'Plugins\\', strlen('Plugins\\')) !== 0) {
         return;
     }
 
@@ -60,24 +70,23 @@ spl_autoload_register(function (string $class): void {
         return;
     }
 
-    $iterator = new \DirectoryIterator($pluginsDir);
-    foreach ($iterator as $entry) {
-        if (!$entry->isDir() || $entry->isDot()) {
-            continue;
-        }
+    $relative = substr($class, strlen('Plugins\\'));
+    $parts = explode('\\', $relative);
+    if (count($parts) < 2) {
+        return; // Not a valid plugin class
+    }
 
-        $srcDir = $entry->getPathname() . '/src';
-        if (!is_dir($srcDir)) {
-            continue;
-        }
+    $pluginName = strtolower($parts[0]);
+    $classPath  = implode('/', array_slice($parts, 1));
 
-        $relative = substr($class, strlen('App\\Plugins\\'));
-        $file     = $srcDir . '/' . str_replace('\\', '/', $relative) . '.php';
+    $srcDir = $pluginsDir . '/' . $pluginName . '/src';
+    if (!is_dir($srcDir)) {
+        return;
+    }
 
-        if (file_exists($file)) {
-            require $file;
-            return;
-        }
+    $file = $srcDir . '/' . $classPath . '.php';
+    if (file_exists($file)) {
+        require $file;
     }
 });
 
@@ -331,6 +340,7 @@ if ($pluginsDir !== false && is_dir($pluginsDir)) {
         ['name' => 'admin-users', 'label' => 'Users', 'url' => '/admin/users', 'icon' => 'bi bi-people', 'permission' => 'admin', 'order' => 15, 'sections' => []],
         ['name' => 'admin-groups', 'label' => 'Groups', 'url' => '/admin/groups', 'icon' => 'bi bi-collection', 'permission' => 'admin', 'order' => 20, 'sections' => []],
         ['name' => 'admin-permissions', 'label' => 'Permissions', 'url' => '/admin/permissions', 'icon' => 'bi bi-shield-check', 'permission' => 'admin', 'order' => 25, 'sections' => []],
+        ['name' => 'admin-organizations', 'label' => 'Organizations', 'url' => '/admin/organizations', 'icon' => 'bi bi-building', 'permission' => 'admin', 'order' => 28, 'sections' => []],
 
         // System section.
         ['name' => '__section__system', 'label' => 'System', 'url' => null, 'icon' => null, 'permission' => null, 'order' => 30,
@@ -338,7 +348,6 @@ if ($pluginsDir !== false && is_dir($pluginsDir)) {
         ['name' => 'admin-settings', 'label' => 'Settings', 'url' => '/admin/settings', 'icon' => 'bi bi-sliders', 'permission' => 'admin', 'order' => 35, 'sections' => []],
         ['name' => 'admin-audit', 'label' => 'Audit Log', 'url' => '/admin/audit', 'icon' => 'bi bi-journal-text', 'permission' => 'admin', 'order' => 40, 'sections' => []],
         ['name' => 'admin-extensions', 'label' => 'Extensions', 'url' => '/admin/extensions', 'icon' => 'bi bi-boxes', 'permission' => 'extensions.manage', 'order' => 45, 'sections' => []],
-        ['name' => 'admin-organizations', 'label' => 'Organizations', 'url' => '/admin/organizations', 'icon' => 'bi bi-people', 'permission' => 'admin', 'order' => 47, 'sections' => []],
     ];
 
     foreach ($adminMenus as $menuDef) {
