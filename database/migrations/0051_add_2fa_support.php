@@ -2,7 +2,7 @@
 
 use App\Core\Migration;
 
-class Add2FASupport extends Migration
+class Add2faSupport extends Migration
 {
     public function up(): void
     {

@@ -138,8 +138,10 @@ assert_throws(MessengerException::class, fn() => $noTransport->send(new Message(
 $messenger->setTransport(new FakeTransport());
 assert_true($messenger->hasTransport(), 'hasTransport after setTransport');
 
-echo "\n=== Messenger Tests ===\n";
-echo "Passed: $passed / $total\n";
-echo "Failed: $failed / $total\n";
+if ($failed > 0) {
+    echo "FAILED\n";
+} else {
+    echo "ALL PASSED\n";
+}
 
 exit($failed > 0 ? 1 : 0);

@@ -129,9 +129,37 @@ assert_raises(
  '  Rollback missing file throws RuntimeException'
 );
 
+// --- Test 11: Migration class name derivation handles underscores and digits ---
+// Regression test for the classFromName convention:
+//   0001_add_password_reset_support → AddPasswordResetSupport
+//   0002_add_2fa_support → Add2faSupport
+$testDir = sys_get_temp_dir() . '/kernel-test-migrations-classname';
+@mkdir($testDir, 0755, true);
+
+$mk = function(string $class, string $body): string {
+    return "<?php class {$class} extends \\App\\Core\\Migration { {$body} }";
+};
+
+// File: 0001_add_password_reset_support → expected class: AddPasswordResetSupport
+file_put_contents($testDir . '/0001_add_password_reset_support.php',
+    $mk('AddPasswordResetSupport', 'public function __construct($db) {} public function up(): void {} public function down(): void {}'));
+
+// File: 0002_add_2fa_support → expected class: Add2faSupport
+file_put_contents($testDir . '/0002_add_2fa_support.php',
+    $mk('Add2faSupport', 'public function __construct($db) {} public function up(): void {} public function down(): void {}'));
+
+// Both should apply without class-not-found errors.
+$runner11 = new MigrationRunner(new TestDB(new PDO('sqlite::memory:')), $testDir);
+$applied11 = $runner11->run();
+assert_array_has_length($applied11, 2, 'Both underscore/digit migrations apply without class errors');
+assert_contains('0001_add_password_reset_support', $applied11, 'add_password_reset_support resolves correctly');
+assert_contains('0002_add_2fa_support', $applied11, 'add_2fa_support resolves correctly');
+
 // --- Cleanup ---
 array_map('unlink', glob($migrationsDir . '/*.php'));
 rmdir($migrationsDir);
+array_map('unlink', glob($testDir . '/*.php'));
+rmdir($testDir);
 
 // --- Summary ===
 summary();

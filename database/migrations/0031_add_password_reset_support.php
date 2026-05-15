@@ -2,7 +2,7 @@
 
 use App\Core\Migration;
 
-class CreatePasswordResetsTable extends Migration
+class AddPasswordResetSupport extends Migration
 {
     public function up(): void
     {

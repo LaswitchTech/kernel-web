@@ -26,7 +26,7 @@ php tests/run.php migration    # migration runner tests
 
 ```text
 tests/
-  run.php              — Test runner (discovers *_test.php)
+  run.php              — Test runner (discovers *_test.php in tests/ and lib/plugins/*/tests/)
   assert.php           — Assertion helpers (zero dependencies)
   bootstrap.php        — Kernel autoloader for tests
   router_test.php      — Route registration, priority ordering, parameter extraction
@@ -80,7 +80,7 @@ Each assertion increments a pass/fail counter. `summary()` prints all failures w
 |-------|-----------|---------------|
 | router | 25 | Route registration, priority, parameters, middleware |
 | plugin | 47 | Manifest parsing, validation, registry, lifecycle |
-| migration | 14 | Migration runner, pending/applied, rollback |
+| migration | 17 | Migration runner, pending/applied, rollback, class name derivation (underscores, digits) |
 | auth | 105 | User/Group/Permission CRUD, TokenService, Gate |
 | mailer | 63 | MailMessage, TemplateRegistry, Transport, Mailer |
 | remember_me | 40 | Token repo, rotation, cookie parsing, AuthService |
@@ -132,9 +132,9 @@ Tests route registration via `Router::get()`, `post()`, `put()`, `delete()`, `re
 
 Tests `PluginManifest` parsing, validation, and field accessors. Covers required/optional fields, scalar dependency rejection, `PluginRegistry` bucket management (discovered, enabled, disabled, invalid), enable/disable transitions, `toArray()`, and count across all buckets.
 
-### Migration tests (`migration_test.php`) — 14 assertions
+### Migration tests (`migration_test.php`) — 17 assertions
 
-Tests `MigrationRunner` with an in-memory SQLite database via a `TestDB` wrapper implementing `DatabaseInterface`. Covers pending detection, file discovery, `run()`, `applied()`, idempotent `run()` on already-applied migrations, invalid class detection, rollback with missing files, and migration name derivation.
+Tests `MigrationRunner` with an in-memory SQLite database via a `TestDB` wrapper implementing `DatabaseInterface`. Covers pending detection, file discovery, `run()`, `applied()`, idempotent `run()` on already-applied migrations, invalid class detection, rollback with missing files, and migration class name derivation including underscore handling (add_password_reset_support → AddPasswordResetSupport) and digit prefix handling (add_2fa_support → Add2faSupport).
 
 ### Auth tests (`auth_test.php`) — 105 assertions
 

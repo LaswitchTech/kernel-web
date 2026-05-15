@@ -54,6 +54,14 @@ class TelicoApiClient
         ]);
 
         $ch = curl_init($url);
+        if ($ch === false) {
+            throw new MessengerException(
+                'cURL initialization failed.',
+                code: 500,
+                transportName: 'telico',
+            );
+        }
+
         curl_setopt_array($ch, [
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_HTTPAUTH       => CURLAUTH_BASIC,
@@ -106,6 +114,14 @@ class TelicoApiClient
         ]);
 
         $ch = curl_init($url);
+        if ($ch === false) {
+            throw new MessengerException(
+                'cURL initialization failed.',
+                code: 500,
+                transportName: 'telico',
+            );
+        }
+
         curl_setopt_array($ch, [
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_HTTPAUTH       => CURLAUTH_BASIC,
@@ -115,6 +131,14 @@ class TelicoApiClient
 
         $response = curl_exec($ch);
         curl_close($ch);
+
+        if ($response === false) {
+            throw new MessengerException(
+                'Telico API returned empty response.',
+                code: 500,
+                transportName: 'telico',
+            );
+        }
 
         return json_decode($response, true) ?? [];
     }
@@ -132,6 +156,14 @@ class TelicoApiClient
         ]);
 
         $ch = curl_init($url);
+        if ($ch === false) {
+            throw new MessengerException(
+                'cURL initialization failed.',
+                code: 500,
+                transportName: 'telico',
+            );
+        }
+
         curl_setopt_array($ch, [
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_HTTPAUTH       => CURLAUTH_BASIC,
@@ -141,6 +173,14 @@ class TelicoApiClient
 
         $response = curl_exec($ch);
         curl_close($ch);
+
+        if ($response === false) {
+            throw new MessengerException(
+                'Telico API returned empty response.',
+                code: 500,
+                transportName: 'telico',
+            );
+        }
 
         return json_decode($response, true) ?? [];
     }

@@ -117,8 +117,10 @@ if (file_exists($settingsFile)) {
     assert_true(str_contains($content, 'public static function save'), 'TelicoSettings has save method');
 }
 
-echo "\n=== Telico Plugin Tests ===\n";
-echo "Passed: $passed / $total\n";
-echo "Failed: $failed / $total\n";
+if ($failed > 0) {
+    echo "FAILED\n";
+} else {
+    echo "ALL PASSED\n";
+}
 
 exit($failed > 0 ? 1 : 0);

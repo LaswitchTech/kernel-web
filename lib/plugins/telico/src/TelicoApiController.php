@@ -42,7 +42,8 @@ class TelicoApiController extends Controller
             return;
         }
 
-        $fromNumber = ($this->container->get('config')['messenger']['from_number'] ?? '');
+        $messengerCfg = ($this->container->get('config')['messenger'] ?? []);
+        $fromNumber   = $messengerCfg['from_number'] ?? '';
 
         $message = new Message(
             to: $to,

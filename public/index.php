@@ -211,8 +211,12 @@ $container->set('mailer', $mailer);
 
 // Messenger (SMS) — default transport is null until a provider plugin swaps it.
 $messengerCfg = Config::load('messenger');
-$messenger    = new Messenger();
-$container->set('messenger', $messenger);
+$container->set('messenger', new Messenger());
+
+// Merge messenger config into app config so controllers can access it.
+$config = $appCfg;
+$config['messenger'] = $messengerCfg;
+$container->set('config', $config);
 
 // VersionProvider — resolves kernel and application version info for admin overview.
 $kernelRoot = realpath(__DIR__ . '/..');
