@@ -45,7 +45,7 @@ tests/
   messenger_test.php — Message immutability, Messenger transport interface, fake transport behavior
   telico_test.php — TelicoApiClient credential validation, TelicoTransport identifier, TelicoSettings class structure
   profile_organizations_test.php — JSON body parsing, org creation, slug uniqueness, 2FA section content, autoloader path resolution
-  smtp_settings_test.php — SMTP settings visibility flow (manifest, hooks, registry, section, rendering)
+  smtp_settings_test.php — SMTP settings visibility flow: manifest loads, semver valid, hooks parsed, SmtpHooks loads via autoloader, bootstrap() executes, section registered via plugin loader, section visible (permission=null), renderBody produces fields
   telico_settings_test.php — Telico settings visibility flow (manifest, hooks, registry, section, rendering)
 ```
 
@@ -94,7 +94,7 @@ Each assertion increments a pass/fail counter. `summary()` prints all failures w
 | organization | 44 | Org CRUD, membership, context resolution, scoping |
 | organization_runtime | 46 | ProfileModal section registration, renderSection output, org creation/switching, slug handling, context resolution |
 | smtp | 23 | SMTP transport plugin, settings validation, settings rendering, test-email endpoint |
-| smtp_settings | 43 | SMTP settings visibility flow: manifest loads, semver constraint valid, hooks parsed, SmtpHooks loads, settings registered, section visible, renderBody produces fields |
+| smtp_settings | 42 | SMTP settings visibility flow: manifest loads, semver constraint valid, hooks parsed, SmtpHooks loads via autoloader, bootstrap() executes, section registered via plugin loader, section visible (permission=null), renderBody produces fields |
 | version | 46 | Kernel/app version resolution, VERSION/composer.json fallback, getVersions() structure, kernel compatibility constraints (exact/range/^/~/compound), manifest validation |
 | messenger | 22 | Message immutability (readonly VO, withMedia, withBody), Messenger service with fake transport, transport swapping, no-transport error |
 | telico | 12 | TelicoApiClient credential validation, TelicoTransport identifier, TelicoSettings class structure |
