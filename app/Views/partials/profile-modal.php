@@ -262,6 +262,7 @@
                         }
                     })
                     .catch(function () {
+                        console.error('[ProfileModal] Failed to load section: ' + s.id);
                         pane.innerHTML = '<div class="text-center py-4 text-danger small">Could not load this section.</div>';
                     });
             });
