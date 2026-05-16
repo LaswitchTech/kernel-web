@@ -46,6 +46,7 @@ tests/
   telico_test.php — TelicoApiClient credential validation, TelicoTransport identifier, TelicoSettings class structure
   profile_organizations_test.php — JSON body parsing, org creation, slug uniqueness, 2FA section content, autoloader path resolution
   smtp_settings_test.php — SMTP settings visibility flow (manifest, hooks, registry, section, rendering)
+  telico_settings_test.php — Telico settings visibility flow (manifest, hooks, registry, section, rendering)
 ```
 
 ### Test runner
@@ -97,6 +98,7 @@ Each assertion increments a pass/fail counter. `summary()` prints all failures w
 | version | 46 | Kernel/app version resolution, VERSION/composer.json fallback, getVersions() structure, kernel compatibility constraints (exact/range/^/~/compound), manifest validation |
 | messenger | 22 | Message immutability (readonly VO, withMedia, withBody), Messenger service with fake transport, transport swapping, no-transport error |
 | telico | 12 | TelicoApiClient credential validation, TelicoTransport identifier, TelicoSettings class structure |
+| telico_settings | 28 | Telico settings visibility flow: manifest loads, hooks parsed, TelicoHooks loads, settings registered, section visible (permission=null), renderBody produces fields |
 | profile_organizations | 27 | JSON body parsing, org creation, slug uniqueness, 2FA section content, autoloader path resolution |
 
 ### Bootstrap
