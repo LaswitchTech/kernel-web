@@ -7,123 +7,98 @@
 
 <form method="POST" action="/admin/settings" novalidate>
 
-<div class="row g-4">
+<div class="g-4">
 
-    <!-- ── Left column ───────────────────────────────────────────────── -->
-    <div class="col-lg-6">
+    <!-- Application -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <span class="fw-semibold small">Application</span>
+        </div>
+        <div class="card-body">
 
-        <!-- Application -->
+            <div class="mb-3">
+                <label for="app-name" class="form-label">
+                    Application Name <span class="text-danger">*</span>
+                </label>
+                <input type="text"
+                       id="app-name"
+                       name="app_name"
+                       class="form-control <?= isset($errors['app_name']) ? 'is-invalid' : '' ?>"
+                       value="<?= htmlspecialchars($settings['app_name'] ?? '') ?>"
+                       maxlength="100"
+                       required>
+                <?php if (isset($errors['app_name'])): ?>
+                    <div class="invalid-feedback"><?= htmlspecialchars($errors['app_name']) ?></div>
+                <?php else: ?>
+                    <div class="form-text">Displayed in the browser title bar and sidebar header.</div>
+                <?php endif; ?>
+            </div>
+
+            <div class="mb-0">
+                <label for="app-url" class="form-label">
+                    Application URL <span class="text-danger">*</span>
+                </label>
+                <input type="url"
+                       id="app-url"
+                       name="app_url"
+                       class="form-control <?= isset($errors['app_url']) ? 'is-invalid' : '' ?>"
+                       value="<?= htmlspecialchars($settings['app_url'] ?? '') ?>"
+                       maxlength="255"
+                       placeholder="https://kernel-web.example.com"
+                       required>
+                <?php if (isset($errors['app_url'])): ?>
+                    <div class="invalid-feedback"><?= htmlspecialchars($errors['app_url']) ?></div>
+                <?php else: ?>
+                    <div class="form-text">
+                        Public-facing URL. Used in email links and external references.
+                        No trailing slash.
+                    </div>
+                <?php endif; ?>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Plugin sections -->
+    <?php foreach ($sections as $section): ?>
         <div class="card mb-4">
             <div class="card-header">
-                <span class="fw-semibold small">Application</span>
+                <span class="fw-semibold small"><?= htmlspecialchars($section->label) ?></span>
             </div>
             <div class="card-body">
-
-                <div class="mb-3">
-                    <label for="app-name" class="form-label">
-                        Application Name <span class="text-danger">*</span>
-                    </label>
-                    <input type="text"
-                           id="app-name"
-                           name="app_name"
-                           class="form-control <?= isset($errors['app_name']) ? 'is-invalid' : '' ?>"
-                           value="<?= htmlspecialchars($settings['app_name'] ?? '') ?>"
-                           maxlength="100"
-                           required>
-                    <?php if (isset($errors['app_name'])): ?>
-                        <div class="invalid-feedback"><?= htmlspecialchars($errors['app_name']) ?></div>
-                    <?php else: ?>
-                        <div class="form-text">Displayed in the browser title bar and sidebar header.</div>
-                    <?php endif; ?>
-                </div>
-
-                <div class="mb-0">
-                    <label for="app-url" class="form-label">
-                        Application URL <span class="text-danger">*</span>
-                    </label>
-                    <input type="url"
-                           id="app-url"
-                           name="app_url"
-                           class="form-control <?= isset($errors['app_url']) ? 'is-invalid' : '' ?>"
-                           value="<?= htmlspecialchars($settings['app_url'] ?? '') ?>"
-                           maxlength="255"
-                           placeholder="https://kernel-web.example.com"
-                           required>
-                    <?php if (isset($errors['app_url'])): ?>
-                        <div class="invalid-feedback"><?= htmlspecialchars($errors['app_url']) ?></div>
-                    <?php else: ?>
-                        <div class="form-text">
-                            Public-facing URL. Used in email links and external references.
-                            No trailing slash.
-                        </div>
-                    <?php endif; ?>
-                </div>
-
+                <?= $section->renderBody(['errors' => $errors, 'settings' => $settings]) ?>
             </div>
         </div>
+    <?php endforeach; ?>
 
-        <!-- Plugin sections (left column) -->
-        <?php foreach ($sections as $section): ?>
-            <?php if ($section->column !== 'left'): continue; endif; ?>
-
-            <div class="card mb-4">
-                <div class="card-header">
-                    <span class="fw-semibold small"><?= htmlspecialchars($section->label) ?></span>
-                </div>
-                <div class="card-body">
-                    <?= $section->renderBody(['errors' => $errors, 'settings' => $settings]) ?>
-                </div>
-            </div>
-        <?php endforeach; ?>
-
-    </div>
-
-    <!-- ── Right column ──────────────────────────────────────────────── -->
-    <div class="col-lg-6">
-
-        <!-- Mailer (default: PHP mail()) -->
-        <div class="card">
-            <div class="card-header">
-                <span class="fw-semibold small">Mailer</span>
-            </div>
-            <div class="card-body">
-                <p class="text-muted mb-0 small">
-                    Mail delivery uses PHP's <code>mail()</code> function by default.
-                    Install an SMTP plugin to configure alternative delivery.
-                    Plugin settings appear here once installed.
-                </p>
-            </div>
+    <!-- Mailer (default: PHP mail()) -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <span class="fw-semibold small">Mailer</span>
         </div>
-
-        <!-- Plugin sections (right column) -->
-        <?php foreach ($sections as $section): ?>
-            <?php if ($section->column !== 'right'): continue; endif; ?>
-
-            <div class="card mb-4">
-                <div class="card-header">
-                    <span class="fw-semibold small"><?= htmlspecialchars($section->label) ?></span>
-                </div>
-                <div class="card-body">
-                    <?= $section->renderBody(['errors' => $errors, 'settings' => $settings]) ?>
-                </div>
-            </div>
-        <?php endforeach; ?>
-
-        <!-- Notifications -->
-        <div class="card mt-4">
-            <div class="card-header">
-                <span class="fw-semibold small">Notifications</span>
-            </div>
-            <div class="card-body">
-                <p class="text-muted mb-0 small">
-                    The notification system is not yet implemented.
-                    This section will be populated by notification plugins.
-                </p>
-            </div>
+        <div class="card-body">
+            <p class="text-muted mb-0 small">
+                Mail delivery uses PHP's <code>mail()</code> function by default.
+                Install an SMTP plugin to configure alternative delivery.
+                Plugin settings appear above once installed.
+            </p>
         </div>
     </div>
 
-</div><!-- /.row -->
+    <!-- Notifications -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <span class="fw-semibold small">Notifications</span>
+        </div>
+        <div class="card-body">
+            <p class="text-muted mb-0 small">
+                The notification system is not yet implemented.
+                This section will be populated by notification plugins.
+            </p>
+        </div>
+    </div>
+
+</div><!-- /.g-4 -->
 
 <div class="mt-4">
     <button type="submit" class="btn btn-primary">

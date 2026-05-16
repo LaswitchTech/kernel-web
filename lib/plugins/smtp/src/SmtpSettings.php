@@ -54,9 +54,6 @@ class SmtpSettings
 
         ob_start();
         ?>
-        <div class="card">
-            <div class="card-header fw-semibold">SMTP Settings</div>
-            <div class="card-body">
                 <div class="mb-3">
                     <label for="smtp_host" class="form-label small">Host</label>
                     <input type="text" class="form-control form-control-sm"
@@ -141,8 +138,6 @@ class SmtpSettings
                     </button>
                     <span id="smtp-test-status" class="small ms-2" style="display:none;"></span>
                 </div>
-            </div>
-        </div>
 
         <script>
         (function () {

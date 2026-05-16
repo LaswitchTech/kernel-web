@@ -46,9 +46,6 @@ class TelicoSettings
 
         ob_start();
         ?>
-        <div class="card">
-            <div class="card-header fw-semibold">Telico SMS Settings</div>
-            <div class="card-body">
                 <div class="mb-3">
                     <label for="telico_username" class="form-label small">Username</label>
                     <input type="text" class="form-control form-control-sm"
@@ -82,8 +79,6 @@ class TelicoSettings
                         <div class="invalid-feedback d-block"><?= htmlspecialchars($errors['telico.callerid']) ?></div>
                     <?php endif; ?>
                 </div>
-            </div>
-        </div>
         <?php
         return ob_get_clean();
     }
