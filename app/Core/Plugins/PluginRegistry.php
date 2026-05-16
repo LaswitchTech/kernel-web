@@ -196,7 +196,21 @@ class PluginRegistry
             $callback = $callbackDef['callback'] ?? null;
             $priority = $callbackDef['priority'] ?? 0;
 
-            if ($callback === null || !is_callable($callback)) {
+            if ($callback === null) {
+                continue;
+            }
+
+            // Trigger autoloading for class-based callbacks before is_callable check.
+            // is_callable() does NOT trigger autoloading (uses class_exists with autoload=false),
+            // so we must explicitly load the class if it hasn't been loaded yet.
+            if (str_contains($callback, '::')) {
+                $classPart = explode('::', $callback)[0];
+                if (!class_exists($classPart, false)) {
+                    class_exists($classPart, true);
+                }
+            }
+
+            if (!is_callable($callback)) {
                 continue;
             }
 

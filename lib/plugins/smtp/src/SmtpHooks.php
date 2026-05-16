@@ -49,7 +49,7 @@ class SmtpHooks
                 'smtp.from_address',
                 'smtp.from_name',
             ],
-            'permission' => 'settings.smtp',
+            'permission' => null,
             'render'   => [SmtpSettings::class, 'render'],
             'validate' => [SmtpSettings::class, 'validate'],
             'save'     => [SmtpSettings::class, 'save'],
