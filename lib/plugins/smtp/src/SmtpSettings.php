@@ -34,7 +34,7 @@ class SmtpSettings
                 'smtp.from_address',
                 'smtp.from_name',
             ],
-            'permission' => 'settings.smtp',
+            'permission' => null,
             'render'   => [self::class, 'render'],
             'validate' => [self::class, 'validate'],
             'save'     => [self::class, 'save'],

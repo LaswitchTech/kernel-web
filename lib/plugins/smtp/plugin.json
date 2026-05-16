@@ -1,17 +1,19 @@
 {
     "name": "smtp",
     "version": "0.1.0",
-    "description": "SMTP mail transport — replaces default mail() transport for reliable delivery on macOS/MAMP and production.",
+    "description": "SMTP mail transport \u2014 replaces default mail() transport for reliable delivery on macOS/MAMP and production.",
     "enabled": true,
     "requires": {
-        "kernel": "8.1"
+        "kernel": ">=8.1.0"
     },
-    "dependencies": {},
-    "permissions": [
-        "settings.smtp"
-    ],
+    "dependencies": [],
+    "permissions": [],
     "routes": [
-        ["POST", "/api/smtp/test-email", "Plugins\\Smtp\\SmtpMailerController@testEmail"]
+        [
+            "POST",
+            "/api/smtp/test-email",
+            "Plugins\\Smtp\\SmtpMailerController@testEmail"
+        ]
     ],
     "plugin_hooks": {
         "plugins.bootstrap": {
