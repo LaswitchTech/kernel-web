@@ -26,7 +26,7 @@ class TelicoSettings
                 'telico.sms_pass',
                 'telico.callerid',
             ],
-            'permission' => 'settings.telico',
+            'permission' => null,
             'render'   => [self::class, 'render'],
             'validate' => [self::class, 'validate'],
             'save'     => [self::class, 'save'],

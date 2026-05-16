@@ -43,7 +43,7 @@ class TelicoHooks
                 'telico.sms_pass',
                 'telico.callerid',
             ],
-            'permission' => 'settings.telico',
+            'permission' => null,
             'render'   => [TelicoSettings::class, 'render'],
             'validate' => [TelicoSettings::class, 'validate'],
             'save'     => [TelicoSettings::class, 'save'],

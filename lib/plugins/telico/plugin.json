@@ -3,7 +3,7 @@
     "version": "0.1.0",
     "description": "Telico SMS transport — wraps the Telico SMS API for sending SMS messages.",
     "enabled": true,
-    "permissions": ["settings.telico"],
+    "permissions": [],
     "plugin_hooks": {
         "plugins.bootstrap": {
             "priority": 50,
