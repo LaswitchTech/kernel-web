@@ -23,6 +23,23 @@
                             API Tokens
                         </button>
                     </li>
+
+                    <!-- Dynamic tab buttons (plugin/core sections) -->
+                    <?php
+                    $sections = \App\Core\ProfileModal::getSections();
+                    foreach ($sections as $section):
+                        if ($section->id === 'overview' || $section->id === 'tokens') continue;
+                    ?>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="tab-<?= htmlspecialchars($section->id) ?>"
+                                data-bs-toggle="tab" data-bs-target="#panel-<?= htmlspecialchars($section->id) ?>"
+                                type="button" role="tab" aria-controls="panel-<?= htmlspecialchars($section->id) ?>"
+                                aria-selected="false" data-profile-tab="<?= htmlspecialchars($section->id) ?>">
+                            <?= $section->icon ? '<i class="' . htmlspecialchars($section->icon) . ' me-1"></i>' : '' ?>
+                            <?= htmlspecialchars($section->label) ?>
+                        </button>
+                    </li>
+                    <?php endforeach; ?>
                 </ul>
 
                 <!-- Tab content -->
@@ -98,6 +115,21 @@
                         </div>
                         <div id="pm-token-list" class="list-group list-group-flush" style="max-height:300px;overflow-y:auto;"></div>
                     </div>
+
+                    <!-- Dynamic tab panes (plugin/core sections) -->
+                    <?php
+                    foreach ($sections as $section):
+                        if ($section->id === 'overview' || $section->id === 'tokens') continue;
+                    ?>
+                    <div class="tab-pane fade" id="panel-<?= htmlspecialchars($section->id) ?>"
+                         role="tabpanel" aria-labelledby="tab-<?= htmlspecialchars($section->id) ?>"
+                         data-profile-pane="<?= htmlspecialchars($section->id) ?>">
+                        <div class="text-center py-4 text-muted small">
+                            <span class="spinner-border spinner-border-sm me-2"></span>
+                            Loading…
+                        </div>
+                    </div>
+                    <?php endforeach; ?>
 
                 </div>
             </div>
@@ -192,99 +224,61 @@
             })
             .then(function (data) { renderOverview(data.user || {}); })
             .catch(function () { showError('Could not load profile data.'); });
-
-        // Load plugin-provided sections and append dynamic tabs.
-        fetch('/api/profile/sections', { credentials: 'same-origin' })
-            .then(function (r) {
-                if (!r.ok) return [];
-                return r.json();
-            })
-            .then(function (data) { return (data.sections || []); })
-            .then(function (sections) { renderPluginTabs(sections); });
     });
 
-    // ── Render plugin-provided tabs and panes ──
-    function renderPluginTabs(sections) {
-        var tabList      = document.getElementById('profile-modal-tabs');
-        var tabContent   = document.getElementById('profile-modal-panes');
-        var coreSectionIds = ['overview', 'tokens'];
+    // Restore active tab on modal open (stored in localStorage by Bootstrap).
+    profileModal.addEventListener('shown.bs.modal', function () {
+        var tabId = localStorage.getItem('bs.tab.profile-modal');
+        if (tabId) {
+            var target = tabId.replace(/.*#/, '#');
+            var btn = document.querySelector('button[data-bs-target="' + target + '"]');
+            if (btn) {
+                var bsTab = new bootstrap.Tab(btn);
+                bsTab.show();
+                return;
+            }
+        }
+        // Fallback: ensure overview is active.
+        var overviewBtn = document.getElementById('tab-overview');
+        if (overviewBtn) {
+            var bsTab = new bootstrap.Tab(overviewBtn);
+            bsTab.show();
+        }
+    });
 
-        // Remove any previously injected dynamic tabs/panes (idempotent).
-        tabList.querySelectorAll('[data-dynamic-profile-tab="1"]').forEach(function (el) { el.remove(); });
-        tabContent.querySelectorAll('[data-dynamic-profile-pane="1"]').forEach(function (el) { el.remove(); });
+    // Lazy-load dynamic tab content on first activation.
+    document.querySelectorAll('[data-profile-tab]').forEach(function (btn) {
+        var sectionId = btn.getAttribute('data-profile-tab');
+        var paneEl = document.getElementById('panel-' + sectionId);
+        if (!paneEl) return;
+        var loaded = false;
+        btn.addEventListener('shown.bs.tab', function () {
+            if (loaded) return;
+            loaded = true;
+            fetch('/api/profile/sections/' + sectionId, { credentials: 'same-origin' })
+                .then(function (r) {
+                    if (!r.ok) throw new Error('Failed to load section');
+                    return r.json();
+                })
+                .then(function (data) {
+                    if (!data || !data.html) return;
+                    paneEl.innerHTML = data.html;
 
-        sections.forEach(function (s) {
-            if (coreSectionIds.indexOf(s.id) !== -1) return;
-
-            // Only render sections with a callback (renderable content).
-            // Sections without callbacks are filtered server-side in the registry.
-            var tabId      = 'tab-' + s.id;
-            var paneId     = 'panel-' + s.id;
-            var iconHtml   = s.icon ? '<i class="' + s.icon + ' me-1"></i>' : '';
-            var labelHtml  = iconHtml + s.label;
-
-            // Tab button — uses Bootstrap 5 tab attributes
-            var li = document.createElement('li');
-            li.className = 'nav-item';
-            li.setAttribute('role', 'presentation');
-            var btn = document.createElement('button');
-            btn.className = 'nav-link';
-            btn.id       = tabId;
-            btn.setAttribute('data-bs-toggle', 'tab');
-            btn.setAttribute('data-bs-target', '#' + paneId);
-            btn.setAttribute('type', 'button');
-            btn.setAttribute('role', 'tab');
-            btn.setAttribute('aria-controls', paneId);
-            btn.setAttribute('aria-selected', 'false');
-            btn.tabIndex = -1;
-            btn.setAttribute('data-dynamic-profile-tab', '1');
-            btn.innerHTML = labelHtml;
-            li.appendChild(btn);
-            tabList.appendChild(li);
-
-            // Tab pane
-            var pane = document.createElement('div');
-            pane.className   = 'tab-pane fade';
-            pane.id          = paneId;
-            pane.setAttribute('role', 'tabpanel');
-            pane.setAttribute('aria-labelledby', tabId);
-            pane.setAttribute('data-dynamic-profile-pane', '1');
-            pane.innerHTML = '<div class="text-center py-4 text-muted small"><span class="spinner-border spinner-border-sm me-2"></span>Loading…</div>';
-            tabContent.appendChild(pane);
-
-            // Lazy-load content on first activation
-            var loaded = false;
-            btn.addEventListener('shown.bs.tab', function () {
-                if (loaded) return;
-                loaded = true;
-                fetch('/api/profile/sections/' + s.id, { credentials: 'same-origin' })
-                    .then(function (r) {
-                        if (!r.ok) throw new Error('Failed to load section');
-                        return r.json();
-                    })
-                    .then(function (data) {
-                        if (!data || !data.html) return;
-                        pane.innerHTML = data.html;
-
-                        // innerHTML does not execute <script> tags — re-execute for sections with embedded scripts.
-                        if (s.id === 'two-factor') {
-                            var scripts = pane.querySelectorAll('script');
-                            scripts.forEach(function (script) {
-                                var newScript = document.createElement('script');
-                                if (script.text) newScript.text = script.text;
-                                else if (script.textContent) newScript.textContent = script.textContent;
-                                document.body.appendChild(newScript);
-                            });
-                            scripts.forEach(function (script) { script.remove(); });
-                        }
-                    })
-                    .catch(function () {
-                        console.error('[ProfileModal] Failed to load section: ' + s.id);
-                        pane.innerHTML = '<div class="text-center py-4 text-danger small">Could not load this section.</div>';
+                    // Re-execute <script> tags — innerHTML doesn't run them.
+                    var scripts = paneEl.querySelectorAll('script');
+                    scripts.forEach(function (script) {
+                        var newScript = document.createElement('script');
+                        if (script.textContent) newScript.textContent = script.textContent;
+                        document.body.appendChild(newScript);
                     });
-            });
+                    scripts.forEach(function (script) { script.remove(); });
+                })
+                .catch(function () {
+                    console.error('[ProfileModal] Failed to load section: ' + sectionId);
+                    paneEl.innerHTML = '<div class="text-center py-4 text-danger small">Could not load this section.</div>';
+                });
         });
-    }
+    });
 
     // Load API Tokens tab content on first tab click (lazy).
     (function () {
