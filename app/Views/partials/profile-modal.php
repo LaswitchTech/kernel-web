@@ -257,8 +257,19 @@
                         return r.json();
                     })
                     .then(function (data) {
-                        if (data && data.html) {
-                            pane.innerHTML = data.html;
+                        if (!data || !data.html) return;
+                        pane.innerHTML = data.html;
+
+                        // innerHTML does not execute <script> tags — re-execute for sections with embedded scripts.
+                        if (s.id === 'two-factor') {
+                            var scripts = pane.querySelectorAll('script');
+                            scripts.forEach(function (script) {
+                                var newScript = document.createElement('script');
+                                if (script.text) newScript.text = script.text;
+                                else if (script.textContent) newScript.textContent = script.textContent;
+                                document.body.appendChild(newScript);
+                            });
+                            scripts.forEach(function (script) { script.remove(); });
                         }
                     })
                     .catch(function () {
@@ -268,27 +279,6 @@
             });
         });
     }
-
-    // ── Two-Factor tab: execute scripts that innerHTML does not run ──
-    (function () {
-        var loaded = false;
-        var tab2fa = document.getElementById('tab-two-factor');
-        if (!tab2fa) return;
-        tab2fa.addEventListener('shown.bs.tab', function () {
-            if (loaded) return;
-            loaded = true;
-            var pane = document.getElementById('panel-two-factor');
-            if (!pane) return;
-            var scripts = pane.querySelectorAll('script');
-            scripts.forEach(function (script) {
-                var newScript = document.createElement('script');
-                if (script.text) newScript.text = script.text;
-                else if (script.textContent) newScript.textContent = script.textContent;
-                document.body.appendChild(newScript);
-            });
-            scripts.forEach(function (script) { script.remove(); });
-        });
-    })();
 
     // Load API Tokens tab content on first tab click (lazy).
     (function () {
