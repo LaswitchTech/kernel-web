@@ -209,6 +209,10 @@
         var tabContent   = document.getElementById('profile-modal-panes');
         var coreSectionIds = ['overview', 'tokens'];
 
+        // Remove any previously injected dynamic tabs/panes (idempotent).
+        tabList.querySelectorAll('[data-dynamic-profile-tab="1"]').forEach(function (el) { el.remove(); });
+        tabContent.querySelectorAll('[data-dynamic-profile-pane="1"]').forEach(function (el) { el.remove(); });
+
         sections.forEach(function (s) {
             if (coreSectionIds.indexOf(s.id) !== -1) return;
 
@@ -233,6 +237,7 @@
             btn.setAttribute('aria-controls', paneId);
             btn.setAttribute('aria-selected', 'false');
             btn.tabIndex = -1;
+            btn.setAttribute('data-dynamic-profile-tab', '1');
             btn.innerHTML = labelHtml;
             li.appendChild(btn);
             tabList.appendChild(li);
@@ -243,6 +248,7 @@
             pane.id          = paneId;
             pane.setAttribute('role', 'tabpanel');
             pane.setAttribute('aria-labelledby', tabId);
+            pane.setAttribute('data-dynamic-profile-pane', '1');
             pane.innerHTML = '<div class="text-center py-4 text-muted small"><span class="spinner-border spinner-border-sm me-2"></span>Loading…</div>';
             tabContent.appendChild(pane);
 
