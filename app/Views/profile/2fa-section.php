@@ -147,7 +147,7 @@ $ctx = $ctx ?? [];
             .then(function (r) { return r.json(); })
             .then(function (data) {
                 if (data.uri) {
-                    qrEl.innerHTML = '<img src="' + data.uri + '" alt="QR Code">';
+                    qrEl.innerHTML = '<code class="small text-break">' + data.uri + '</code>';
                 }
             })
             .catch(function () { showEl(disabledEl); });
