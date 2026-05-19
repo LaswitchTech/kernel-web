@@ -158,7 +158,26 @@ $ctx = $ctx ?? [];
             .then(function (r) { return r.json(); })
             .then(function (data) {
                 if (data.uri) {
-                    qrEl.innerHTML = '<code class="small text-break">' + data.uri + '</code>';
+                    var svg = '';
+                    if (typeof QR !== 'undefined' && QR.generate) {
+                        svg = QR.generate(data.uri, 180);
+                    }
+                    qrEl.innerHTML = svg || '<code class="small text-break">' + data.uri + '</code>';
+                    // Add secret text fallback below QR
+                    var secretWrap = document.createElement('div');
+                    secretWrap.className = 'mt-2';
+                    var secretLabel = document.createElement('div');
+                    secretLabel.className = 'small text-muted mb-1';
+                    secretLabel.textContent = 'Manual entry secret:';
+                    var secretCode = document.createElement('code');
+                    secretCode.className = 'small bg-body-secondary px-2 py-1 rounded';
+                    secretCode.style.userSelect = 'all';
+                    // Extract secret from otpauth URI
+                    var match = data.uri.match(/secret=([^&]+)/);
+                    secretCode.textContent = match ? match[1] : data.uri;
+                    secretWrap.appendChild(secretLabel);
+                    secretWrap.appendChild(secretCode);
+                    qrEl.appendChild(secretWrap);
                 }
             })
             .catch(function () { showEl(disabledEl); });

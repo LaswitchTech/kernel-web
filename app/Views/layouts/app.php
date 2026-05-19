@@ -67,6 +67,7 @@
     <script src="/assets/vendor/datatables-columncontrol/1.2.1/js/dataTables.columnControl.min.js"></script>
     <!-- App shared JS -->
     <script src="/assets/js/datatables-init.js"></script>
+    <script src="/assets/js/qr.js"></script>
 
     <?php
     // Hook: layout.head — plugins can inject meta tags, CSS links, etc.
