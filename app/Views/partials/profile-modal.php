@@ -227,12 +227,47 @@
     });
 
     // Restore active tab on modal open (stored in localStorage by Bootstrap).
+    // Also refresh content for the active tab if it hasn't been loaded yet.
     profileModal.addEventListener('shown.bs.modal', function () {
         var tabId = localStorage.getItem('bs.tab.profile-modal');
         if (tabId) {
             var target = tabId.replace(/.*#/, '#');
             var btn = document.querySelector('button[data-bs-target="' + target + '"]');
             if (btn) {
+                // If this is a dynamic tab that hasn't been loaded yet, trigger its lazy load.
+                var sectionId = btn.getAttribute('data-profile-tab');
+                if (sectionId) {
+                    var paneEl = document.getElementById('panel-' + sectionId);
+                    if (paneEl) {
+                        var loading = paneEl.querySelector('.spinner-border');
+                        if (loading) {
+                            // Still showing loading spinner — trigger lazy load.
+                            var loaded = false;
+                            fetch('/api/profile/sections/' + sectionId, { credentials: 'same-origin' })
+                                .then(function (r) {
+                                    if (!r.ok) throw new Error('Failed to load section');
+                                    return r.json();
+                                })
+                                .then(function (data) {
+                                    if (!data || !data.html) return;
+                                    paneEl.innerHTML = data.html;
+
+                                    // Re-execute <script> tags.
+                                    var scripts = paneEl.querySelectorAll('script');
+                                    scripts.forEach(function (script) {
+                                        var newScript = document.createElement('script');
+                                        if (script.textContent) newScript.textContent = script.textContent;
+                                        document.body.appendChild(newScript);
+                                    });
+                                    scripts.forEach(function (script) { script.remove(); });
+                                })
+                                .catch(function () {
+                                    console.error('[ProfileModal] Failed to refresh active tab content');
+                                });
+                        }
+                    }
+                }
+                // Show the tab (if already active, Bootstrap will just re-show it).
                 var bsTab = new bootstrap.Tab(btn);
                 bsTab.show();
                 return;

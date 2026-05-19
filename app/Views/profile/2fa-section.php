@@ -117,11 +117,22 @@ $ctx = $ctx ?? [];
             .then(function (r) { if (!r.ok) throw new Error('Failed'); return r.json(); })
             .then(function (data) {
                 if (data.enabled) {
+                    // 2FA is fully enabled — show the enabled card.
                     showEl(enabledEl);
                     renderRecoveryCodes([]);
-                } else {
+                    // Mark as pending-disable so the disable form knows what to show.
+                    statusEl.dataset.disableHint = 'totp';
+                } else if (data.pending) {
+                    // 2FA setup is pending (secret generated but not confirmed).
+                    // Re-show the setup card with the existing secret.
                     showEl(setupEl);
                     generateSecret();
+                    statusEl.dataset.disableHint = 'pending';
+                } else {
+                    // No 2FA at all.
+                    showEl(setupEl);
+                    generateSecret();
+                    statusEl.dataset.disableHint = 'pending';
                 }
             })
             .catch(function () { showEl(disabledEl); });
@@ -192,11 +203,48 @@ $ctx = $ctx ?? [];
     if (disableBtn) disableBtn.addEventListener('click', function () {
         disableEl.classList.toggle('d-none');
         disableCode.value = '';
+        disableErr.style.display = 'none';
+        disableErr.textContent = '';
+        var hint = statusEl.dataset?.disableHint || 'pending';
+        disableEl.setAttribute('data-disable-hint', hint);
     });
 
     var confirmDisable = document.getElementById('pm-2fa-disable-confirm-btn');
     if (confirmDisable) confirmDisable.addEventListener('click', function () {
         var code = disableCode.value.trim();
+        var disableHint = disableEl.getAttribute('data-disable-hint') || 'pending';
+
+        // If the user has no 2FA at all (disabledEl), no code needed.
+        if (disableHint === 'none') {
+            disableEl.classList.add('d-none');
+            return;
+        }
+
+        if (disableHint === 'pending' && code === '') {
+            // No code needed for pending setup — just disable.
+            confirmDisable.disabled = true;
+            disableErr.style.display = 'none';
+            fetch('/api/profile/2fa/disable', {
+                method: 'POST', credentials: 'same-origin',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ code: '' }),
+            })
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+                if (data.enabled === false || data.success) {
+                    enabledEl.classList.add('d-none');
+                    disabledEl.classList.remove('d-none');
+                    disableEl.classList.add('d-none');
+                } else {
+                    disableErr.style.display = ''; disableErr.textContent = data.error || 'Failed.';
+                }
+            })
+            .catch(function () { disableErr.style.display = ''; disableErr.textContent = 'Request failed.'; })
+            .finally(function () { confirmDisable.disabled = false; });
+            return;
+        }
+
+        // Requires a TOTP code or recovery code.
         if (code.length !== 6) { disableErr.style.display = ''; disableErr.textContent = 'Enter a 6-digit code.'; return; }
         confirmDisable.disabled = true;
         disableErr.style.display = 'none';

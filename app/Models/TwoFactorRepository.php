@@ -16,10 +16,10 @@ class TwoFactorRepository
     public function __construct(private DatabaseInterface $db) {}
 
     /**
-     * Get a user's TOTP secret (includes the secret column).
+     * Get a user's TOTP secret data (includes totp_secret, totp_enabled_at, totp_pending_at).
      *
-     * Returns null if the user has no secret, the user doesn't exist,
-     * or the totp_secret/totp_enabled_at columns are missing from the
+     * Returns null if the user has no data, the user doesn't exist,
+     * or the totp_secret/totp_enabled_at/totp_pending_at columns are missing from the
      * users table (migration not yet applied). In the missing-schema
      * case, treat 2FA as disabled rather than crashing.
      */
@@ -27,11 +27,11 @@ class TwoFactorRepository
     {
         try {
             return $this->db->fetchOne(
-                'SELECT totp_secret, totp_enabled_at FROM users WHERE id = ? LIMIT 1',
+                'SELECT totp_secret, totp_enabled_at, totp_pending_at FROM users WHERE id = ? LIMIT 1',
                 [$userId]
             );
         } catch (\PDOException $e) {
-            // Column may not exist (migration 0051 not applied).
+            // Column may not exist (migration 0053 not applied).
             // Fail closed: treat as if 2FA is disabled.
             error_log('[TwoFactor] Failed to query TOTP columns: ' . $e->getMessage());
             return null;
@@ -41,23 +41,32 @@ class TwoFactorRepository
     /**
      * Set a user's TOTP secret.
      *
-     * Silently no-ops if the totp_secret/totp_enabled_at columns are
-     * missing (migration not applied).
+     * When $pending is true, stores totp_secret and totp_pending_at (unconfirmed setup).
+     * When $pending is false (default), stores totp_secret and totp_enabled_at (confirmed).
      *
      * @param string|null $secret NULL to clear.
+     * @param bool $pending Whether this is an unconfirmed pending secret.
      */
-    public function setTotpSecret(int $userId, ?string $secret): void
+    public function setTotpSecret(int $userId, ?string $secret, bool $pending = false): void
     {
         try {
             $now = date('Y-m-d H:i:s');
             if ($secret === null) {
+                // Clear all 2FA state
                 $this->db->execute(
-                    'UPDATE users SET totp_secret = ?, totp_enabled_at = ?, updated_at = ? WHERE id = ?',
-                    [null, null, $now, $userId]
+                    'UPDATE users SET totp_secret = ?, totp_enabled_at = ?, totp_pending_at = ?, updated_at = ? WHERE id = ?',
+                    [null, null, null, $now, $userId]
+                );
+            } elseif ($pending) {
+                // Pending: store secret but mark as unconfirmed
+                $this->db->execute(
+                    'UPDATE users SET totp_secret = ?, totp_pending_at = ?, updated_at = ? WHERE id = ?',
+                    [$secret, $now, $now, $userId]
                 );
             } else {
+                // Confirmed: store secret and mark as enabled
                 $this->db->execute(
-                    'UPDATE users SET totp_secret = ?, totp_enabled_at = ?, updated_at = ? WHERE id = ?',
+                    'UPDATE users SET totp_secret = ?, totp_enabled_at = ?, totp_pending_at = NULL, updated_at = ? WHERE id = ?',
                     [$secret, $now, $now, $userId]
                 );
             }

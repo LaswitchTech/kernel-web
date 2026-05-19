@@ -30,11 +30,14 @@ class TwoFactorService
     /**
      * Generate a TOTP secret for the given user.
      *
+     * Stores the secret in a PENDING state (totp_secret + totp_pending_at).
+     * 2FA is NOT enabled until enable() is called with a valid OTP confirmation.
+     *
      * Returns the Base32-encoded secret. The caller should:
      *   1. Generate a QR code (otpauth:// URI)
      *   2. Show it to the user
      *   3. Ask the user to enter a code from their TOTP app to confirm
-     *  4. Call enable() when confirmed.
+     *   4. Call enable() when confirmed.
      */
     public function generateSecret(int $userId): ?string
     {
@@ -44,7 +47,7 @@ class TwoFactorService
         }
 
         $secret = $this->encodeSecret(random_bytes(20));
-        $this->repository->setTotpSecret($userId, $secret);
+        $this->repository->setTotpSecret($userId, $secret, pending: true);
 
         return $secret;
     }
@@ -136,6 +139,9 @@ class TwoFactorService
     /**
      * Enable 2FA for a user (final step after secret generation and confirmation).
      *
+     * If a pending secret exists, promotes it to enabled (sets totp_enabled_at, clears totp_pending_at).
+     * If no secret exists, generates a new one and enables immediately.
+     *
      * @return array{secret: string, recoveryCodes: array} The secret and generated recovery codes.
      */
     public function enable(int $userId): array
@@ -145,7 +151,11 @@ class TwoFactorService
 
         if ($secret === null) {
             $secret = $this->encodeSecret(random_bytes(20));
-            $this->repository->setTotpSecret($userId, $secret);
+            $this->repository->setTotpSecret($userId, $secret, pending: false);
+        } else {
+            // Promote pending to enabled (set totp_enabled_at, clear totp_pending_at).
+            // The existing secret is reused; only the state flags change.
+            $this->repository->setTotpSecret($userId, $secret, pending: false);
         }
 
         $recoveryCodes = $this->generateRecoveryCodes($userId);
@@ -156,7 +166,7 @@ class TwoFactorService
     /**
      * Disable 2FA for a user.
      *
-     * Clears the TOTP secret and revokes all recovery codes.
+     * Clears the TOTP secret, totp_enabled_at, totp_pending_at, and revokes all recovery codes.
      */
     public function disable(int $userId): void
     {
@@ -166,11 +176,30 @@ class TwoFactorService
 
     /**
      * Check if a user has 2FA enabled.
+     *
+     * Requires both a secret AND totp_enabled_at to be non-empty.
+     * Pending (unconfirmed) secrets do NOT count as enabled.
      */
     public function isEnabled(int $userId): bool
     {
         $secretData = $this->repository->getTotpSecret($userId);
-        return $secretData !== null && !empty($secretData['totp_secret']);
+        return $secretData !== null
+            && !empty($secretData['totp_secret'])
+            && !empty($secretData['totp_enabled_at']);
+    }
+
+    /**
+     * Check if a user has a pending (unconfirmed) 2FA setup.
+     *
+     * Returns true when totp_secret is set but totp_enabled_at is NULL.
+     * This indicates the user started setup but never confirmed with OTP.
+     */
+    public function hasPendingSetup(int $userId): bool
+    {
+        $secretData = $this->repository->getTotpSecret($userId);
+        return $secretData !== null
+            && !empty($secretData['totp_secret'])
+            && empty($secretData['totp_enabled_at']);
     }
 
     /**

@@ -691,8 +691,12 @@ class AuthController extends Controller
         /** @var TwoFactorService $twoFactor */
         $twoFactor = $this->container->get('two_factor');
         $enabled   = $twoFactor->isEnabled($user['id']);
+        $pending   = $enabled ? false : $twoFactor->hasPendingSetup($user['id']);
 
-        $this->json(['enabled' => $enabled]);
+        $this->json([
+            'enabled' => $enabled,
+            'pending' => $pending,
+        ]);
     }
 
     /**
@@ -721,7 +725,11 @@ class AuthController extends Controller
         $appName = ($this->container->get('config')['name'] ?? 'Kernel-Web');
         $uri = $twoFactor->getOtpauthUri($user['id'], $appName, $user['email']);
 
-        $this->json(['secret' => $secret, 'uri' => $uri]);
+        $this->json([
+            'secret' => $secret,
+            'uri'    => $uri,
+            'pending' => true,
+        ]);
     }
 
     /**
@@ -799,15 +807,31 @@ class AuthController extends Controller
 
         $code = (string) $this->input('code', '');
 
-        // Require current TOTP code to disable (prevent unauthorized disabling)
-        if (!$twoFactor->verifyTotp($user['id'], $code)) {
-            $this->json(['error' => 'Invalid code. Please verify with your authenticator app.'], 400);
+        // Allow disabling via:
+        // 1. Valid TOTP code (enabled 2FA)
+        // 2. Valid recovery code
+        // 3. Pending secret (unconfirmed setup — no code required)
+        if ($code !== '' && $twoFactor->verifyTotp($user['id'], $code)) {
+            $twoFactor->disable($user['id']);
+            $this->json(['enabled' => false]);
             return;
         }
 
-        $twoFactor->disable($user['id']);
+        if ($code !== '' && $twoFactor->validateRecoveryCode($user['id'], $code)) {
+            $twoFactor->disable($user['id']);
+            $this->json(['enabled' => false]);
+            return;
+        }
 
-        $this->json(['enabled' => false]);
+        // If no code provided or neither TOTP nor recovery matched,
+        // allow disabling if the user has a pending setup (no OTP needed).
+        if ($twoFactor->hasPendingSetup($user['id'])) {
+            $twoFactor->disable($user['id']);
+            $this->json(['enabled' => false]);
+            return;
+        }
+
+        $this->json(['error' => 'Invalid code. Please verify with your authenticator app, recovery code, or start setup fresh.'], 400);
     }
 
     // --------

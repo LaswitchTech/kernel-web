@@ -60,6 +60,7 @@ $db->execute("CREATE TABLE users (
     email_verified_at VARCHAR(32),
     totp_secret VARCHAR(255),
     totp_enabled_at VARCHAR(32),
+    totp_pending_at VARCHAR(32),
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL
 )");
@@ -397,6 +398,158 @@ assert_equal(10, count($recoveryResult), 'generateRecoveryCodes generates 10 cod
 $hashes = array_column($recoveryResult, 'codeHash');
 $uniqueHashes = array_unique($hashes);
 assert_equal(count($hashes), count($uniqueHashes), 'all recovery code hashes are unique');
+
+// ============= 16. PENDING SECRET — ENABLE IS FALSE (2FA SAFETY) ============
+// Critical safety test: generating a TOTP secret must NOT enable 2FA.
+// This prevents users from getting locked out just by viewing the 2FA setup tab.
+
+// Reset user 1 — no 2FA
+$service->disable(1);
+assert_false($service->isEnabled(1), 'user 1 has no 2FA before test');
+assert_false($service->hasPendingSetup(1), 'user 1 has no pending setup');
+
+// Generate a secret (simulates opening the 2FA tab)
+$pendingSecret = $service->generateSecret(1);
+assert_not_null($pendingSecret, 'generateSecret returns secret');
+
+// isEnabled must be false — the secret is pending, not enabled
+assert_false($service->isEnabled(1), 'isEnabled returns false for pending secret');
+assert_true($service->hasPendingSetup(1), 'hasPendingSetup returns true for pending secret');
+
+// Verify the secret is stored in DB (so it can be used for OTP verification)
+$pendingData = $tokenRepo->getTotpSecret(1);
+assert_not_null($pendingData['totp_secret'], 'pending secret is stored in DB');
+assert_true(!empty($pendingData['totp_pending_at']), 'pending timestamp is stored in DB');
+assert_true(empty($pendingData['totp_enabled_at']), 'totp_enabled_at is NOT set for pending secret');
+
+// Verify TOTP code for pending secret works (user can still scan QR and get a code)
+$pendingHexSecret = hex2bin($decodeMethod->invoke($service, $pendingSecret));
+assert_not_null($pendingHexSecret, 'pending hex secret decoded');
+$pendingStep = (int) floor(time() / 30);
+$pendingPack = pack('N*', $pendingStep);
+$pendingHmac = hash_hmac('sha1', $pendingPack, $pendingHexSecret, true);
+$pendingOffset = ord($pendingHmac[19]) & 0x0F;
+$pendingCodeNum = ((ord($pendingHmac[$pendingOffset]) & 0x7F) << 24)
+              | ((ord($pendingHmac[$pendingOffset + 1]) & 0xFF) << 16)
+              | ((ord($pendingHmac[$pendingOffset + 2]) & 0xFF) << 8)
+              | (ord($pendingHmac[$pendingOffset + 3]) & 0xFF);
+$pendingCode = str_pad((string) ($pendingCodeNum % 1000000), 6, '0', STR_PAD_LEFT);
+
+// The code verifies against the pending secret (but doesn't enable 2FA)
+assert_true($service->verifyTotp(1, $pendingCode), 'TOTP code verifies for pending secret');
+assert_false($service->isEnabled(1), 'verifyTotp does NOT enable 2FA for pending secret');
+
+// Disable while pending — must work (no OTP code needed)
+$service->disable(1);
+assert_false($service->isEnabled(1), '2FA not enabled after disable (pending state)');
+assert_false($service->hasPendingSetup(1), 'pending setup cleared after disable');
+$clearedData = $tokenRepo->getTotpSecret(1);
+assert_null($clearedData['totp_secret'], 'totp_secret cleared on disable');
+assert_null($clearedData['totp_pending_at'], 'totp_pending_at cleared on disable');
+assert_null($clearedData['totp_enabled_at'], 'totp_enabled_at cleared on disable');
+
+// ============= 17. SECRET ONLY ENABLED AFTER VALID OTP CONFIRMATION ============
+// The full 2FA enable flow: generate → confirm → enabled.
+
+$service->disable(1);
+assert_false($service->isEnabled(1), 'user reset before enable flow test');
+
+// Generate pending secret
+$setupSecret = $service->generateSecret(1);
+assert_not_null($setupSecret, 'setup secret generated');
+assert_false($service->isEnabled(1), 'still not enabled after generate');
+assert_true($service->hasPendingSetup(1), 'has pending setup');
+
+// Try to enable with WRONG code — should fail
+$wrongCode = '000000';
+assert_false($service->verifyTotp(1, $wrongCode), 'wrong code does not match TOTP');
+assert_false($service->isEnabled(1), 'still not enabled after wrong code');
+
+// Generate a valid code and call enable()
+$setupHexSecret = hex2bin($decodeMethod->invoke($service, $setupSecret));
+assert_not_null($setupHexSecret, 'setup hex secret decoded');
+$setupStep = (int) floor(time() / 30);
+$setupPack = pack('N*', $setupStep);
+$setupHmac = hash_hmac('sha1', $setupPack, $setupHexSecret, true);
+$setupOffset = ord($setupHmac[19]) & 0x0F;
+$setupCodeNum = ((ord($setupHmac[$setupOffset]) & 0x7F) << 24)
+           | ((ord($setupHmac[$setupOffset + 1]) & 0xFF) << 16)
+           | ((ord($setupHmac[$setupOffset + 2]) & 0xFF) << 8)
+           | (ord($setupHmac[$setupOffset + 3]) & 0xFF);
+$validEnableCode = str_pad((string) ($setupCodeNum % 1000000), 6, '0', STR_PAD_LEFT);
+
+// Simulate enable(): verify code THEN enable
+assert_true($service->verifyTotp(1, $validEnableCode), 'valid TOTP code for pending setup');
+$enableResult = $service->enable(1);
+assert_true($service->isEnabled(1), '2FA IS enabled after valid OTP confirmation');
+assert_false($service->hasPendingSetup(1), 'pending setup cleared after enable');
+assert_true(count($enableResult['recoveryCodes']) > 0, 'enable() generates recovery codes');
+
+// totp_enabled_at must be set
+$enabledData = $tokenRepo->getTotpSecret(1);
+assert_true(!empty($enabledData['totp_enabled_at']), 'totp_enabled_at is set after enable');
+assert_true(empty($enabledData['totp_pending_at']), 'totp_pending_at is cleared after enable');
+
+// ============= 18. DISABLE VIA RECOVERY CODE ============
+// User can disable 2FA via recovery code (alternative to TOTP).
+// validateRecoveryCode() only consumes the code; disable() is needed to actually disable.
+
+$service->disable(1);
+assert_false($service->isEnabled(1), 'clean state for recovery disable test');
+
+// Generate and enable 2FA
+$service->generateSecret(1);
+$testSec = $service->generateSecret(1);
+$testHex = hex2bin($decodeMethod->invoke($service, $testSec));
+$testStep = (int) floor(time() / 30);
+$testPack = pack('N*', $testStep);
+$testHmac = hash_hmac('sha1', $testPack, $testHex, true);
+$testOffset = ord($testHmac[19]) & 0x0F;
+$testCodeNum = ((ord($testHmac[$testOffset]) & 0x7F) << 24)
+           | ((ord($testHmac[$testOffset + 1]) & 0xFF) << 16)
+           | ((ord($testHmac[$testOffset + 2]) & 0xFF) << 8)
+           | (ord($testHmac[$testOffset + 3]) & 0xFF);
+$testCode = str_pad((string) ($testCodeNum % 1000000), 6, '0', STR_PAD_LEFT);
+assert_true($service->verifyTotp(1, $testCode), 'valid code for test setup');
+$enableResult = $service->enable(1);
+assert_true($service->isEnabled(1), '2FA enabled for recovery disable test');
+
+// getRecoveryCodes was called by enable() — use one of them
+$recoveryCodeValue = $enableResult['recoveryCodes'][0]['code'];
+assert_not_null($recoveryCodeValue, 'recovery code available');
+
+// validateRecoveryCode consumes the code (used for login, not disable)
+$success = $service->validateRecoveryCode(1, $recoveryCodeValue);
+assert_true($success, 'recovery code consumed');
+assert_true($service->isEnabled(1), '2FA still enabled after recovery code validation (only consumes code)');
+
+// disable() is needed to actually disable 2FA
+$service->disable(1);
+assert_false($service->isEnabled(1), '2FA disabled after disable() call');
+
+// ============= 19. OPENING RENDERING 2FA TAB HAS NO DB ENABLE EFFECT ============
+// Simulating the profile modal 2FA tab flow: loadStatus → check enabled → generate secret.
+
+$service->disable(1);
+assert_false($service->isEnabled(1), 'user clean before tab simulation');
+
+// Simulate loadStatus: first check enabled
+$enabled = $service->isEnabled(1);
+assert_false($enabled, 'not enabled before tab interaction');
+assert_false($service->hasPendingSetup(1), 'not pending before tab interaction');
+
+// User opens tab → generateSecret (simulating /api/profile/2fa/generate)
+$tabSecret = $service->generateSecret(1);
+assert_not_null($tabSecret, 'secret generated for tab');
+
+// Critical: enabled must still be false
+assert_false($service->isEnabled(1), 'tab open does NOT enable 2FA');
+assert_true($service->hasPendingSetup(1), 'tab open sets pending state');
+
+// User skips setup → disable (simulating /api/profile/2fa/disable with no code)
+$service->disable(1);
+assert_false($service->isEnabled(1), 'not enabled after skip');
+assert_false($service->hasPendingSetup(1), 'pending cleared after skip');
 
 // ============= SUMMARY ============
 
