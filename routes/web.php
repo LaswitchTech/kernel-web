@@ -179,3 +179,6 @@ $router->post('/auth/2fa', 'AuthController@twoFactor');
 $router->get('/api/tokens', 'TokenController@index', ['SessionAuth']);
 $router->post('/api/tokens', 'TokenController@create', ['SessionAuth']);
 $router->delete('/api/tokens/{id}', 'TokenController@revoke', ['SessionAuth']);
+
+// -------------------------------- Barcode/QR Generation (public) ------
+$router->get('/barcode/{type}/{format}/{value}', 'BarcodeController@svg', [], 0);
