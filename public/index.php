@@ -90,6 +90,11 @@ spl_autoload_register(function (string $class): void {
     }
 });
 
+// Composer vendor autoloader — required for any Composer package usage.
+if (file_exists(__DIR__ . '/../vendor/autoload.php')) {
+    require __DIR__ . '/../vendor/autoload.php';
+}
+
 // ---------------------------------------------------------------------------
 // Environment — must run before Config or InstallLock
 // ---------------------------------------------------------------------------

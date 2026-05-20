@@ -6,7 +6,6 @@ use App\Core\Controller;
 use chillerlan\QRCode\QRCode;
 use chillerlan\QRCode\QROptions;
 use Picqer\Barcode\BarcodeGeneratorSVG;
-use Picqer\Barcode\BarcodeGenerator;
 
 /**
  * Server-side barcode/QR generation API.
@@ -22,35 +21,36 @@ use Picqer\Barcode\BarcodeGenerator;
  */
 class BarcodeController extends Controller
 {
-    // Whitelisted barcode types mapped to picqer constants.
+    // Whitelisted barcode type names (user-facing) mapped to picqer string type codes.
+    // Values are plain strings to avoid requiring Composer autoload at class-parse time.
     private const BARCODE_TYPES = [
-        'CODE128'  => BarcodeGenerator::TYPE_CODE_128,
-        'CODE128A' => BarcodeGenerator::TYPE_CODE_128_A,
-        'CODE128B' => BarcodeGenerator::TYPE_CODE_128_B,
-        'CODE128C' => BarcodeGenerator::TYPE_CODE_128_C,
-        'CODE39'   => BarcodeGenerator::TYPE_CODE_39,
-        'CODE39+'  => BarcodeGenerator::TYPE_CODE_39_CHECKSUM,
-        'CODE39E'  => BarcodeGenerator::TYPE_CODE_39E,
-        'CODE39E+' => BarcodeGenerator::TYPE_CODE_39E_CHECKSUM,
-        'CODE93'   => BarcodeGenerator::TYPE_CODE_93,
-        'EAN13'    => BarcodeGenerator::TYPE_EAN_13,
-        'EAN8'     => BarcodeGenerator::TYPE_EAN_8,
-        'EAN2'     => BarcodeGenerator::TYPE_EAN_2,
-        'EAN5'     => BarcodeGenerator::TYPE_EAN_5,
-        'UPCA'     => BarcodeGenerator::TYPE_UPC_A,
-        'UPCE'     => BarcodeGenerator::TYPE_UPC_E,
-        'ITF14'    => BarcodeGenerator::TYPE_ITF_14,
-        'MSI'      => BarcodeGenerator::TYPE_MSI,
-        'MSI+'     => BarcodeGenerator::TYPE_MSI_CHECKSUM,
-        'POSTNET'  => BarcodeGenerator::TYPE_POSTNET,
-        'PLANET'   => BarcodeGenerator::TYPE_PLANET,
-        'RMS4CC'   => BarcodeGenerator::TYPE_RMS4CC,
-        'KIX'      => BarcodeGenerator::TYPE_KIX,
-        'IMB'      => BarcodeGenerator::TYPE_IMB,
-        'CODABAR'  => BarcodeGenerator::TYPE_CODABAR,
-        'CODE11'   => BarcodeGenerator::TYPE_CODE_11,
-        'PHARMA'   => BarcodeGenerator::TYPE_PHARMA_CODE,
-        'PHARMA2T' => BarcodeGenerator::TYPE_PHARMA_CODE_TWO_TRACKS,
+        'CODE128'  => 'C128',
+        'CODE128A' => 'C128A',
+        'CODE128B' => 'C128B',
+        'CODE128C' => 'C128C',
+        'CODE39'   => 'C39',
+        'CODE39+'  => 'C39+',
+        'CODE39E'  => 'C39E',
+        'CODE39E+' => 'C39E+',
+        'CODE93'   => 'C93',
+        'EAN13'    => 'EAN13',
+        'EAN8'     => 'EAN8',
+        'EAN2'     => 'EAN2',
+        'EAN5'     => 'EAN5',
+        'UPCA'     => 'UPCA',
+        'UPCE'     => 'UPCE',
+        'ITF14'    => 'ITF14',
+        'MSI'      => 'MSI',
+        'MSI+'     => 'MSI+',
+        'POSTNET'  => 'POSTNET',
+        'PLANET'   => 'PLANET',
+        'RMS4CC'   => 'RMS4CC',
+        'KIX'      => 'KIX',
+        'IMB'      => 'IMB',
+        'CODABAR'  => 'CODABAR',
+        'CODE11'   => 'CODE11',
+        'PHARMA'   => 'PHARMA',
+        'PHARMA2T' => 'PHARMA2T',
     ];
 
     // Whitelisted QR types.
@@ -67,7 +67,7 @@ class BarcodeController extends Controller
 
         // Validate type
         if ($type === '') {
-            $this->json(['error' => 'Missing barcode type. Use /barcode/QR/SVG/{value}.'], 400);
+            $this->json(['error' => 'Missing barcode type. Use /api/barcode/QR/SVG/{value}.'], 400);
             return;
         }
 

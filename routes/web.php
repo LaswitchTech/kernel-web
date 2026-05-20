@@ -181,4 +181,5 @@ $router->post('/api/tokens', 'TokenController@create', ['SessionAuth']);
 $router->delete('/api/tokens/{id}', 'TokenController@revoke', ['SessionAuth']);
 
 // -------------------------------- Barcode/QR Generation (public) ------
+$router->get('/api/barcode/{type}/{format}/{value}', 'BarcodeController@svg', [], 0);
 $router->get('/barcode/{type}/{format}/{value}', 'BarcodeController@svg', [], 0);

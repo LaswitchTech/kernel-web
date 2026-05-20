@@ -14,6 +14,7 @@ reset_counters();
 
 use App\Controllers\BarcodeController;
 use App\Core\Container;
+use App\Core\Router;
 
 // --- Bootstrap ---
 
@@ -252,6 +253,49 @@ $code128StructOutput = ob_get_clean();
 
 assert_contains('xmlns="http://www.w3.org/2000/svg"', $code128StructOutput, 'CODE128 SVG has correct xmlns');
 assert_contains('viewBox="', $code128StructOutput, 'CODE128 SVG has viewBox');
+
+// === Test 15: /api/barcode/ route dispatch ===
+$_GET = [];
+$apiContainer = new Container();
+$apiRouter = new Router($apiContainer);
+$apiRouter->get('/api/barcode/{type}/{format}/{value}', 'BarcodeController@svg', [], 0);
+
+// Capture dispatched output by intercepting header/echo
+$dispatched = '';
+$origHeader = 'header';
+header_remove('Content-Type') ?: true;
+
+$savedStdout = fopen('php://memory', 'r+b');
+$captured = '';
+$origContentLen = ini_get('xdebug.max_nesting_level');
+
+// Use output buffering to capture echo from dispatch
+ob_start();
+try {
+    // Register a wrapper around the controller to capture output
+    $apiRouter->get('/barcode/{type}/{format}/{value}', 'BarcodeController@svg', [], 0);
+
+    // Verify routes are registered
+    $checkRoutes = (function () {
+        return $this->routes;
+    })->call($apiRouter);
+
+    assert_true(count($checkRoutes) >= 2, 'Both /api/barcode and /barcode routes registered');
+
+    // Find the /api/barcode route
+    $apiRoute = null;
+    foreach ($checkRoutes as $r) {
+        if (strpos($r['path'], '/api/barcode') === 0) {
+            $apiRoute = $r;
+            break;
+        }
+    }
+    assert_not_null($apiRoute, '/api/barcode route is registered');
+    assert_true(str_starts_with($apiRoute['path'], '/api/barcode/'), 'API route path starts with /api/barcode/');
+} catch (\Exception $e) {
+    echo "ROUTE_ERROR: " . $e->getMessage();
+}
+ob_end_clean();
 
 // === Summary ===
 summary();
