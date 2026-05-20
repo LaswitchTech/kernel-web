@@ -158,11 +158,17 @@ $ctx = $ctx ?? [];
             .then(function (r) { return r.json(); })
             .then(function (data) {
                 if (data.uri) {
-                    var svg = '';
-                    if (typeof QR !== 'undefined' && QR.generate) {
-                        svg = QR.generate(data.uri, 180);
-                    }
-                    qrEl.innerHTML = svg || '<code class="small text-break">' + data.uri + '</code>';
+                    // Render QR via the server-side barcode API (query-string form
+                    // avoids %2F routing issues with complex otpauth URIs).
+                    var encoded = encodeURIComponent(data.uri);
+                    var img = document.createElement('img');
+                    img.src = '/api/barcode/QR/SVG?value=' + encoded + '&size=180&margin=2';
+                    img.className = 'd-block';
+                    img.style.maxWidth = '100%';
+                    img.alt = '2FA setup QR code';
+                    qrEl.innerHTML = '';
+                    qrEl.appendChild(img);
+
                     // Add secret text fallback below QR
                     var secretWrap = document.createElement('div');
                     secretWrap.className = 'mt-2';
