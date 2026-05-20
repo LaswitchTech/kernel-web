@@ -871,10 +871,10 @@ class AuthController extends Controller
 
         $result = $twoFactor->enable($user['id']);
 
-        $this->json(array_merge([
+        $this->json([
             'enabled'       => true,
             'recoveryCodes' => $result['recoveryCodes'],
-        ], $debugInfo !== null ? ['_debug' => $debugInfo] : []));
+        ]);
     }
 
     /**
