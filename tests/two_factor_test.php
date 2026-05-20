@@ -551,6 +551,45 @@ $service->disable(1);
 assert_false($service->isEnabled(1), 'not enabled after skip');
 assert_false($service->hasPendingSetup(1), 'pending cleared after skip');
 
+// ============= 20. GENERATESECRET IS IDEMPOTENT ============
+// Critical: calling generateSecret multiple times must return the SAME secret.
+// If it generates a new secret, previously shown QR codes become invalid.
+
+$service->disable(1);
+assert_false($service->isEnabled(1), 'clean state for idempotent test');
+
+$first = $service->generateSecret(1);
+assert_not_null($first, 'first generateSecret returns secret');
+assert_true($service->hasPendingSetup(1), 'pending after first generate');
+
+$second = $service->generateSecret(1);
+assert_not_null($second, 'second generateSecret returns secret');
+assert_equal($first, $second, 'generateSecret is idempotent — same secret returned');
+
+// URI must also match the same secret
+$uri = $service->getOtpauthUri(1, 'TestApp', 'test@example.com');
+assert_true(str_contains($uri, 'secret=' . $first), 'URI contains same secret as generateSecret');
+
+// Valid TOTP code from the pending secret must work
+$pendingHex = hex2bin($decodeMethod->invoke($service, $first));
+$pendingStep = (int) floor(time() / 30);
+$pendingHmac = hash_hmac('sha1', pack('N*', $pendingStep), $pendingHex, true);
+$pendingOffset = ord($pendingHmac[19]) & 0x0F;
+$pendingCodeNum = ((ord($pendingHmac[$pendingOffset]) & 0x7F) << 24)
+              | ((ord($pendingHmac[$pendingOffset + 1]) & 0xFF) << 16)
+              | ((ord($pendingHmac[$pendingOffset + 2]) & 0xFF) << 8)
+              | (ord($pendingHmac[$pendingOffset + 3]) & 0xFF);
+$pendingCode = str_pad((string) ($pendingCodeNum % 1000000), 6, '0', STR_PAD_LEFT);
+assert_true($service->verifyTotp(1, $pendingCode), 'valid TOTP code verifies against pending secret');
+
+// Re-call generateSecret again — secret must still be the same
+$third = $service->generateSecret(1);
+assert_equal($first, $third, 'third generateSecret also returns same secret');
+
+// enable() must work with the valid code
+$service->enable(1);
+assert_true($service->isEnabled(1), '2FA enabled after valid code + enable');
+
 // ============= SUMMARY ============
 
 // ============= 16. MISSING SCHEMA — 2FA GRACEFUL DEGRADATION ============

@@ -46,6 +46,14 @@ class TwoFactorService
             return null;
         }
 
+        // Return existing pending secret if one is already set (idempotent).
+        // Prevents QR codes from becoming stale when the endpoint is called
+        // multiple times (page reload, retry, etc.).
+        $existing = $this->repository->getTotpSecret($userId);
+        if ($existing !== null && !empty($existing['totp_secret']) && empty($existing['totp_enabled_at'])) {
+            return $existing['totp_secret'];
+        }
+
         $secret = $this->encodeSecret(random_bytes(20));
         $this->repository->setTotpSecret($userId, $secret, pending: true);
 
