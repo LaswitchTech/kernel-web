@@ -181,4 +181,9 @@ $router->post('/api/tokens', 'TokenController@create', ['SessionAuth']);
 $router->delete('/api/tokens/{id}', 'TokenController@revoke', ['SessionAuth']);
 
 // -------------------------------- Barcode/QR Generation (public) ------
+// Path-based value (simple strings only):
+//   GET /api/barcode/QR/SVG/FI2I72O7Q5KULICABPJD7QDGHNB3JFNA
+// Query-string value (URLs/complex values — avoids %2F routing issues):
+//   GET /api/barcode/QR/SVG?value=https%3A%2F%2Flaswitchtech.com%2F
 $router->get('/api/barcode/{type}/{format}/{value}', 'BarcodeController@svg', [], 0);
+$router->get('/api/barcode/{type}/{format}', 'BarcodeController@svg', [], 0);

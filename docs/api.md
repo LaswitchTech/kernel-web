@@ -123,6 +123,51 @@ Destroy the current session and expire the session cookie.
 
 ---
 
+#### `GET /api/barcode/{TYPE}/{FORMAT}` or `/api/barcode/{TYPE}/{FORMAT}/{VALUE}`
+
+Generate a barcode or QR code as an SVG image.
+
+**URL pattern — simple values (path segment):**
+```
+GET /api/barcode/QR/SVG/FI2I72O7Q5KULICABPJD7QDGHNB3JFNA
+```
+
+**URL pattern — complex values (query string; use for URLs, slashes, special chars):**
+```
+GET /api/barcode/QR/SVG?value=https%3A%2F%2Flaswitchtech.com%2F
+```
+
+**Type — QR codes:**
+| Value | Description |
+|---|---|
+| `QR` | Standard QR code |
+| `MICRO_QR` | Micro QR code (smaller capacity) |
+
+**Type — standard barcodes:**
+`CODE128`, `CODE128A`, `CODE128B`, `CODE128C`, `CODE39`, `CODE39+`, `CODE39E`, `CODE39E+`, `CODE93`, `EAN13`, `EAN8`, `EAN2`, `EAN5`, `UPCA`, `UPCE`, `ITF14`, `MSI`, `MSI+`, `POSTNET`, `PLANET`, `RMS4CC`, `KIX`, `IMB`, `CODABAR`, `CODE11`, `PHARMA`, `PHARMA2T`
+
+**Format:** `SVG` (only format supported at this time)
+
+**Query params:**
+| Param | Type | Default | Description |
+|---|---|---|---|
+| `size` | int | `150` | Barcode size in pixels |
+| `margin` | int | `2` | Quiet zone margin |
+
+**Response `200`:**
+```
+Content-Type: image/svg+xml
+```
+Inline SVG barcode image.
+
+**Response `400`:** missing or invalid type/format, or empty value. Returns JSON error envelope.
+
+**Notes:**
+- The path segment `{VALUE}` is decoded via `urldecode()`.
+- **URL-encoded slashes (`%2F`) in the path segment are unreliable** because Apache/nginx/PHP may decode them before routing, causing the path to split into multiple segments. Use the query-string form for any value containing slashes or other reserved characters.
+
+---
+
 ### Session-protected (`SessionAuth` middleware)
 
 These endpoints require an active session (i.e., the client must have called `POST /auth/login` first).  
@@ -246,6 +291,8 @@ $router->get('/api/some/resource', 'SomeController@method', ['TokenAuth', 'Requi
 | GET | `/` | — | `HomeController@index` |
 | POST | `/auth/login` | — | `AuthController@login` |
 | POST | `/auth/logout` | — | `AuthController@logout` |
+| GET | `/api/barcode/{TYPE}/{FORMAT}` | — | `BarcodeController@svg` |
+| GET | `/api/barcode/{TYPE}/{FORMAT}/{VALUE}` | — | `BarcodeController@svg` |
 | GET | `/auth/me` | `SessionAuth` | `AuthController@me` |
 | GET | `/api/tokens` | `SessionAuth` | `TokenController@index` |
 | POST | `/api/tokens` | `SessionAuth` | `TokenController@create` |

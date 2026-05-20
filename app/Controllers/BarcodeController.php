@@ -10,10 +10,14 @@ use Picqer\Barcode\BarcodeGeneratorSVG;
 /**
  * Server-side barcode/QR generation API.
  *
- * GET /barcode/{TYPE}/{FORMAT}/{VALUE}
- *   TYPE     — QR, CODE128, CODE39, EAN13, EAN8, UPCA, UPCE, etc.
- *   FORMAT   — SVG
- *   VALUE    — URL-decoded barcode content
+ * Simple values via path:
+ *   GET /api/barcode/QR/SVG/FI2I72O7Q5KULICABPJD7QDGHNB3JFNA
+ *
+ * Complex values (URLs, slashes, special chars) via query string:
+ *   GET /api/barcode/QR/SVG?value=https%3A%2F%2Flaswitchtech.com%2F
+ *
+ * TYPE     — QR, CODE128, CODE39, EAN13, EAN8, UPCA, UPCE, etc.
+ * FORMAT   — SVG
  *
  * Query params:
  *   size   — barcode size in pixels (default: 150)
@@ -73,7 +77,7 @@ class BarcodeController extends Controller
 
         // Validate type
         if ($type === '') {
-            $this->json(['error' => 'Missing barcode type. Use /api/barcode/QR/SVG/{value}.'], 400);
+            $this->json(['error' => 'Missing barcode type. Use /api/barcode/QR/SVG/{value} or /api/barcode/QR/SVG?value={encoded}.'], 400);
             return;
         }
 

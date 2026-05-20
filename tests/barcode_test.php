@@ -224,7 +224,7 @@ $code128StructOutput = ob_get_clean();
 assert_contains('xmlns="http://www.w3.org/2000/svg"', $code128StructOutput, 'CODE128 SVG has correct xmlns');
 assert_contains('viewBox="', $code128StructOutput, 'CODE128 SVG has viewBox');
 
-// === Test 14: Query-param value works ===
+// === Test 14: Query-param value works (no path segment) ===
 $_GET = ['value' => 'QUERY-PARAM-VALUE'];
 $_SERVER['REQUEST_URI'] = '/api/barcode/QR/SVG?value=QUERY-PARAM-VALUE';
 $queryParamOutput = null;
@@ -240,41 +240,34 @@ assert_not_null($queryParamOutput, 'Query-param QR output is not null');
 assert_true(strlen($queryParamOutput) > 0, 'Query-param QR output is non-empty (' . strlen($queryParamOutput) . ' bytes)');
 assert_contains('<svg', $queryParamOutput, 'Query-param QR SVG starts with <svg>');
 
-// === Test 15: /api/barcode/ route is registered ===
+// === Test 15: /api/barcode/ has two routes (with and without {value}) ===
 $apiContainer = new Container();
 $apiRouter = new Router($apiContainer);
 $apiRouter->get('/api/barcode/{type}/{format}/{value}', 'BarcodeController@svg', [], 0);
+$apiRouter->get('/api/barcode/{type}/{format}', 'BarcodeController@svg', [], 0);
 
 $apiRoutes = (function () {
     return $this->routes;
 })->call($apiRouter);
 
-assert_true(count($apiRoutes) >= 1, '/api/barcode route is registered');
+assert_true(count($apiRoutes) === 2, 'Two barcode routes registered');
 
-$apiRoute = null;
+$apiRouteWithPath = null;
+$apiRouteWithoutPath = null;
 foreach ($apiRoutes as $r) {
-    if (strpos($r['path'], '/api/barcode') === 0) {
-        $apiRoute = $r;
-        break;
+    if (strpos($r['path'], '/{value}') !== false) {
+        $apiRouteWithPath = $r;
+    } elseif (strpos($r['path'], '/api/barcode/') === 0) {
+        $apiRouteWithoutPath = $r;
     }
 }
-assert_not_null($apiRoute, '/api/barcode route is registered');
-assert_true(str_starts_with($apiRoute['path'], '/api/barcode/'), 'API route path starts with /api/barcode/');
+assert_not_null($apiRouteWithPath, '/api/barcode/{type}/{format}/{value} route is registered');
+assert_not_null($apiRouteWithoutPath, '/api/barcode/{type}/{format} route is registered');
 
-// === Test 16: /barcode/ route is NOT registered ===
-$hasBarcodeAlias = false;
-foreach ($apiRoutes as $r) {
-    if ($r['path'] === '/{type}/{format}/{value}' || strpos($r['path'], '/barcode/') === false) {
-        // Check exact match for bare /barcode path
-    }
-    if (strpos($r['path'], '/barcode/') === false && strpos($r['path'], '/api/barcode/') !== 0) {
-        // This would be the /barcode/ alias if it existed
-        // Since we removed it, no bare /barcode path should exist
-    }
-}
-assert_true(count($apiRoutes) === 1, 'Only one barcode route registered (no /barcode/ alias)');
+// === Test 16: /barcode/ alias is NOT registered ===
+assert_true(count($apiRoutes) === 2, 'Only two barcode routes (no /barcode/ alias)');
 
-// === Test 17: URL-encoded slash value (query param fallback) ===
+// === Test 17: URL-encoded slash value via query param ===
 $_GET = ['value' => 'https%3A%2F%2Flaswitchtech.com%2F'];
 $_SERVER['REQUEST_URI'] = '/api/barcode/QR/SVG?value=https%3A%2F%2Flaswitchtech.com%2F';
 $encodedSlashOutput = null;
