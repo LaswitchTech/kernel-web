@@ -169,7 +169,7 @@ assert_true(strlen($hexSecret) > 0, 'hex secret is non-empty');
 
 // Generate a valid TOTP code at the current step
 $currentStep = (int) floor(time() / 30);
-$stepPack = pack('N*', $currentStep);
+$stepPack = pack('N2', 0, $currentStep);
 $hmac = hash_hmac('sha1', $stepPack, $hexSecret, true);
 $offset = ord($hmac[19]) & 0x0F;
 $codeNum = ((ord($hmac[$offset]) & 0x7F) << 24)
@@ -190,7 +190,7 @@ assert_false($service->verifyTotp(1, '000000'), 'all-zero code fails');
 
 // Previous step
 $prevStep = $currentStep - 1;
-$prevPack = pack('N*', $prevStep);
+$prevPack = pack('N2', 0, $prevStep);
 $prevHmac = hash_hmac('sha1', $prevPack, $hexSecret, true);
 $prevOffset = ord($prevHmac[19]) & 0x0F;
 $prevCodeNum = ((ord($prevHmac[$prevOffset]) & 0x7F) << 24)
@@ -201,7 +201,7 @@ $prevCode = str_pad((string) ($prevCodeNum % 1000000), 6, '0', STR_PAD_LEFT);
 
 // Next step
 $nextStep = $currentStep + 1;
-$nextPack = pack('N*', $nextStep);
+$nextPack = pack('N2', 0, $nextStep);
 $nextHmac = hash_hmac('sha1', $nextPack, $hexSecret, true);
 $nextOffset = ord($nextHmac[19]) & 0x0F;
 $nextCodeNum = ((ord($nextHmac[$nextOffset]) & 0x7F) << 24)
@@ -215,7 +215,7 @@ assert_true($service->verifyTotp(1, $nextCode), 'next step code verifies (±1 wi
 
 // Step -2 (should fail)
 $tooOldStep = $currentStep - 2;
-$tooOldPack = pack('N*', $tooOldStep);
+$tooOldPack = pack('N2', 0, $tooOldStep);
 $tooOldHmac = hash_hmac('sha1', $tooOldPack, $hexSecret, true);
 $tooOldOffset = ord($tooOldHmac[19]) & 0x0F;
 $tooOldCodeNum = ((ord($tooOldHmac[$tooOldOffset]) & 0x7F) << 24)
@@ -426,7 +426,7 @@ assert_true(empty($pendingData['totp_enabled_at']), 'totp_enabled_at is NOT set 
 $pendingHexSecret = hex2bin($decodeMethod->invoke($service, $pendingSecret));
 assert_not_null($pendingHexSecret, 'pending hex secret decoded');
 $pendingStep = (int) floor(time() / 30);
-$pendingPack = pack('N*', $pendingStep);
+$pendingPack = pack('N2', 0, $pendingStep);
 $pendingHmac = hash_hmac('sha1', $pendingPack, $pendingHexSecret, true);
 $pendingOffset = ord($pendingHmac[19]) & 0x0F;
 $pendingCodeNum = ((ord($pendingHmac[$pendingOffset]) & 0x7F) << 24)
@@ -469,7 +469,7 @@ assert_false($service->isEnabled(1), 'still not enabled after wrong code');
 $setupHexSecret = hex2bin($decodeMethod->invoke($service, $setupSecret));
 assert_not_null($setupHexSecret, 'setup hex secret decoded');
 $setupStep = (int) floor(time() / 30);
-$setupPack = pack('N*', $setupStep);
+$setupPack = pack('N2', 0, $setupStep);
 $setupHmac = hash_hmac('sha1', $setupPack, $setupHexSecret, true);
 $setupOffset = ord($setupHmac[19]) & 0x0F;
 $setupCodeNum = ((ord($setupHmac[$setupOffset]) & 0x7F) << 24)
@@ -502,7 +502,7 @@ $service->generateSecret(1);
 $testSec = $service->generateSecret(1);
 $testHex = hex2bin($decodeMethod->invoke($service, $testSec));
 $testStep = (int) floor(time() / 30);
-$testPack = pack('N*', $testStep);
+$testPack = pack('N2', 0, $testStep);
 $testHmac = hash_hmac('sha1', $testPack, $testHex, true);
 $testOffset = ord($testHmac[19]) & 0x0F;
 $testCodeNum = ((ord($testHmac[$testOffset]) & 0x7F) << 24)
@@ -573,7 +573,7 @@ assert_true(str_contains($uri, 'secret=' . $first), 'URI contains same secret as
 // Valid TOTP code from the pending secret must work
 $pendingHex = hex2bin($decodeMethod->invoke($service, $first));
 $pendingStep = (int) floor(time() / 30);
-$pendingHmac = hash_hmac('sha1', pack('N*', $pendingStep), $pendingHex, true);
+$pendingHmac = hash_hmac('sha1', pack('N2', 0, $pendingStep), $pendingHex, true);
 $pendingOffset = ord($pendingHmac[19]) & 0x0F;
 $pendingCodeNum = ((ord($pendingHmac[$pendingOffset]) & 0x7F) << 24)
               | ((ord($pendingHmac[$pendingOffset + 1]) & 0xFF) << 16)
@@ -589,6 +589,46 @@ assert_equal($first, $third, 'third generateSecret also returns same secret');
 // enable() must work with the valid code
 $service->enable(1);
 assert_true($service->isEnabled(1), '2FA enabled after valid code + enable');
+
+// ============= 21. RFC 6238 TEST VECTOR (Section B.3) ============
+// Critical regression test: TOTP must produce codes matching RFC 6238 Appendix B.3.
+// Secret = "12345678901234567890" (20 bytes, hex = 3132333435363738393031323334353637383930)
+// Counter = 64-bit big-endian (RFC 6238 §4)
+
+$rfcSecretHex = '3132333435363738393031323334353637383930';
+$rfcSecretBinary = hex2bin($rfcSecretHex);
+assert_not_null($rfcSecretBinary, 'RFC secret decodes');
+assert_equal(20, strlen($rfcSecretBinary), 'RFC secret is 20 bytes');
+
+// RFC 6238 B.3 step-based table: step 1 → TOTP 287082
+// (The table in B.3 lists time=59 → step=1 → TOTP=287082)
+$rfcStep = 1;
+$rfcExpected = '287082';
+$rfcHmac = hash_hmac('sha1', pack('N2', 0, $rfcStep), $rfcSecretBinary, true);
+$rfcOff = ord($rfcHmac[19]) & 0x0F;
+$rfcNum = ((ord($rfcHmac[$rfcOff]) & 0x7F) << 24)
+        | ((ord($rfcHmac[$rfcOff + 1]) & 0xFF) << 16)
+        | ((ord($rfcHmac[$rfcOff + 2]) & 0xFF) << 8)
+        | (ord($rfcHmac[$rfcOff + 3]) & 0xFF);
+$rfcCode = str_pad((string) ($rfcNum % 1000000), 6, '0', STR_PAD_LEFT);
+assert_equal($rfcExpected, $rfcCode, "RFC 6238 step 1 TOTP code matches expected '$rfcExpected'");
+
+// Verify counter is 8 bytes (not 4): the counter bytes must be
+// 00 00 00 00 00 00 00 01 for step 1 (big-endian 64-bit)
+$rfcCounterBytes = pack('N2', 0, $rfcStep);
+assert_equal(8, strlen($rfcCounterBytes), 'RFC counter is 8 bytes');
+assert_equal('0000000000000001', bin2hex($rfcCounterBytes), 'RFC counter bytes correct');
+
+// Verify: pack('N*', $rfcStep) produces 4 bytes and WRONG code
+assert_equal(4, strlen(pack('N*', $rfcStep)), 'pack(N*, step) produces 4 bytes (wrong)');
+$hmac4 = hash_hmac('sha1', pack('N*', $rfcStep), $rfcSecretBinary, true);
+$off4 = ord($hmac4[19]) & 0x0F;
+$num4 = ((ord($hmac4[$off4]) & 0x7F) << 24)
+      | ((ord($hmac4[$off4 + 1]) & 0xFF) << 16)
+      | ((ord($hmac4[$off4 + 2]) & 0xFF) << 8)
+      | (ord($hmac4[$off4 + 3]) & 0xFF);
+$wrongCode = str_pad((string) ($num4 % 1000000), 6, '0', STR_PAD_LEFT);
+assert_true($wrongCode !== $rfcExpected, "pack('N*') produces wrong code for RFC step");
 
 // ============= SUMMARY ============
 

@@ -175,7 +175,7 @@ assert_true(strlen($qrOutput) > 0, 'QR output is non-empty');
 // Generate a valid TOTP code from the pending secret
 $hexSecret = hex2bin($decodeMethod->invoke($svc, $secret));
 $currentStep = (int) floor(time() / 30);
-$stepPack = pack('N*', $currentStep);
+$stepPack = pack('N2', 0, $currentStep);
 $hmac = hash_hmac('sha1', $stepPack, $hexSecret, true);
 $offset = ord($hmac[19]) & 0x0F;
 $codeNum = ((ord($hmac[$offset]) & 0x7F) << 24)
@@ -227,7 +227,7 @@ assert_equal($step1Uri, $step2Qp['value'], 'QR value round-trips to original URI
 // Step 3: User scans QR, enters code from authenticator app
 $step3Hex = hex2bin($decodeMethod->invoke($svc, $step1Secret));
 $step3Step = (int) floor(time() / 30);
-$step3Hmac = hash_hmac('sha1', pack('N*', $step3Step), $step3Hex, true);
+$step3Hmac = hash_hmac('sha1', pack('N2', 0, $step3Step), $step3Hex, true);
 $step3Off = ord($step3Hmac[19]) & 0x0F;
 $step3Num = ((ord($step3Hmac[$step3Off]) & 0x7F) << 24)
           | ((ord($step3Hmac[$step3Off + 1]) & 0xFF) << 16)
@@ -257,7 +257,7 @@ $svc->disable(1);
 $testSecret = $svc->generateSecret(1);
 $testHex = hex2bin($decodeMethod->invoke($svc, $testSecret));
 $testStep = (int) floor(time() / 30);
-$testHmac = hash_hmac('sha1', pack('N*', $testStep), $testHex, true);
+$testHmac = hash_hmac('sha1', pack('N2', 0, $testStep), $testHex, true);
 $testOff = ord($testHmac[19]) & 0x0F;
 $testNum = ((ord($testHmac[$testOff]) & 0x7F) << 24)
          | ((ord($testHmac[$testOff + 1]) & 0xFF) << 16)
@@ -268,7 +268,7 @@ $testCode = str_pad((string) ($testNum % 1000000), 6, '0', STR_PAD_LEFT);
 // ±1 window test
 for ($i = -1; $i <= 1; $i++) {
     $s = $testStep + $i;
-    $h = hash_hmac('sha1', pack('N*', $s), $testHex, true);
+    $h = hash_hmac('sha1', pack('N2', 0, $s), $testHex, true);
     $o = ord($h[19]) & 0x0F;
     $n = ((ord($h[$o]) & 0x7F) << 24)
         | ((ord($h[$o + 1]) & 0xFF) << 16)
@@ -280,7 +280,7 @@ for ($i = -1; $i <= 1; $i++) {
 
 // Step -2 must fail (outside window)
 $tooOldStep = $testStep - 2;
-$tooOldHmac = hash_hmac('sha1', pack('N*', $tooOldStep), $testHex, true);
+$tooOldHmac = hash_hmac('sha1', pack('N2', 0, $tooOldStep), $testHex, true);
 $tooOldOff = ord($tooOldHmac[19]) & 0x0F;
 $tooOldNum = ((ord($tooOldHmac[$tooOldOff]) & 0x7F) << 24)
            | ((ord($tooOldHmac[$tooOldOff + 1]) & 0xFF) << 16)
@@ -307,7 +307,7 @@ $testSecret7 = $svc->disable(1);
 $testSecret7 = $svc->generateSecret(1);
 $testHex7 = hex2bin($decodeMethod->invoke($svc, $testSecret7));
 $testStep7 = (int) floor(time() / 30);
-$testHmac7 = hash_hmac('sha1', pack('N*', $testStep7), $testHex7, true);
+$testHmac7 = hash_hmac('sha1', pack('N2', 0, $testStep7), $testHex7, true);
 $testOff7 = ord($testHmac7[19]) & 0x0F;
 $testNum7 = ((ord($testHmac7[$testOff7]) & 0x7F) << 24)
           | ((ord($testHmac7[$testOff7 + 1]) & 0xFF) << 16)
@@ -349,7 +349,7 @@ assert_not_null($userHex, 'user secret decodes to hex');
 assert_true(strlen($userHex) === 20, 'user secret is 20 bytes (160 bits)');
 
 $userStep = (int) floor(time() / 30);
-$userHmac = hash_hmac('sha1', pack('N*', $userStep), $userHex, true);
+$userHmac = hash_hmac('sha1', pack('N2', 0, $userStep), $userHex, true);
 $userOff = ord($userHmac[19]) & 0x0F;
 $userCodeNum = ((ord($userHmac[$userOff]) & 0x7F) << 24)
              | ((ord($userHmac[$userOff + 1]) & 0xFF) << 16)
@@ -370,7 +370,7 @@ assert_true(count($enableResult['recoveryCodes']) > 0, 'recovery codes generated
 // Verify the code also works within ±1 window
 for ($i = -1; $i <= 1; $i++) {
     $s = $userStep + $i;
-    $h = hash_hmac('sha1', pack('N*', $s), $userHex, true);
+    $h = hash_hmac('sha1', pack('N2', 0, $s), $userHex, true);
     $o = ord($h[19]) & 0x0F;
     $n = ((ord($h[$o]) & 0x7F) << 24)
         | ((ord($h[$o + 1]) & 0xFF) << 16)

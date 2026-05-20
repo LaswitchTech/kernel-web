@@ -86,11 +86,13 @@ class TwoFactorService
 
         $step = (int) floor(time() / self::TOTP_STEP);
 
-        // Check ±1 window
+        // Check ±1 window. Counter is 8-byte big-endian (RFC 6238 §4).
+        // pack('N*', $step) produces 4 bytes — WRONG for TOTP.
+        // pack('N2', 0, $step) produces 8 bytes as required.
         for ($i = -self::TOTP_WINDOW; $i <= self::TOTP_WINDOW; $i++) {
             $hmac = hash_hmac(
                 'sha1',
-                pack('N*', $step + $i),
+                pack('N2', 0, $step + $i),
                 $binarySecret,
                 true
             );
