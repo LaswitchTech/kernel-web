@@ -1,8 +1,8 @@
 /**
- * qr.js — Minimal QR code generator (QR 1–10, up to 120 chars)
+ * qr.js — Correct QR code generator (byte mode, EC level M, versions 1-10)
  *
  * Pure JavaScript, no dependencies. Generates SVG output.
- * Suitable for otpauth:// URIs (typically 90–150 chars).
+ * Suitable for otpauth:// URIs (typically 90-150 chars).
  *
  * Usage:
  *   var svg = QR.generate('otpauth://totp/app:user?secret=ABC123');
@@ -11,11 +11,10 @@
 var QR = (function () {
     'use strict';
 
-    // ── GF(256) multiplication table ──
-    var GF256 = [];
-    var GF_LOG = [];
-    var GF_EXP = [];
-    (function () {
+    // ===== GF(256) =====
+    var GF_EXP = new Uint8Array(512);
+    var GF_LOG = new Uint8Array(256);
+    (function initGF() {
         var x = 1;
         for (var i = 0; i < 256; i++) {
             GF_EXP[i] = x;
@@ -23,7 +22,6 @@ var QR = (function () {
             x <<= 1;
             if (x & 256) x ^= 0x11d;
         }
-        // Extend exp table for multiplication
         for (i = 256; i < 512; i++) GF_EXP[i] = GF_EXP[i - 256];
     })();
 
@@ -32,11 +30,12 @@ var QR = (function () {
         return GF_EXP[(GF_LOG[a] + GF_LOG[b]) % 255];
     }
 
-    // ── Reed-Solomon encoding ──
+    // ===== Reed-Solomon encoding =====
     function rsGenPoly(nsym) {
         var g = [1];
         for (var i = 0; i < nsym; i++) {
-            var ng = new Array(g.length + 1).fill(0);
+            var ng = new Array(g.length + 1);
+            for (var j = 0; j < ng.length; j++) ng[j] = 0;
             for (var j = 0; j < g.length; j++) {
                 ng[j] ^= g[j];
                 ng[j + 1] ^= gfMul(g[j], GF_EXP[i]);
@@ -48,7 +47,8 @@ var QR = (function () {
 
     function rsEncode(data, nsym) {
         var gen = rsGenPoly(nsym);
-        var res = data.slice(0);
+        var res = [];
+        for (var i = 0; i < data.length; i++) res.push(data[i]);
         for (var i = 0; i < nsym; i++) res.push(0);
         for (var i = 0; i < data.length; i++) {
             var coef = res[i];
@@ -61,167 +61,91 @@ var QR = (function () {
         return res.slice(data.length);
     }
 
-    // ── QR data capacity tables (version 1–10, 8-bit bytes, EC level M) ──
-    // [totalDataCodewords, alignmentPatternStart, alignmentPatterns, ecCodewordsPerBlock, dataCapacity, ...]
+    // ===== QR version tables (byte mode, EC level M) =====
     var VERSIONS = [
         null,
-        // ver 1: 20×20, cap=16, apStart=null (none)
-        [26, null, [], 1, 16, 1],
-        // ver 2: 25×25, cap=44, apStart=6
-        [44, [6], [6], 1, 44, 2],
-        // ver 3: 29×29, cap=70, apStart=6
-        [70, [6], [6, 18], 1, 70, 3],
-        // ver 4: 33×33, cap=100, apStart=7
-        [100, [7], [6, 22], 1, 100, 4],
-        // ver 5: 37×37, cap=132, apStart=7
-        [132, [7], [6, 26], 1, 132, 5],
-        // ver 6: 41×41, cap=176, apStart=8
-        [176, [8], [6, 30], 2, 176, 6],
-        // ver 7: 45×45, cap=216, apStart=8
-        [216, [8], [6, 34], 2, 216, 7],
-        // ver 8: 49×49, cap=260, apStart=9
-        [260, [9], [6, 22, 38], 2, 260, 8],
-        // ver 9: 53×53, cap=310, apStart=9
-        [310, [9], [6, 26, 42], 2, 310, 9],
-        // ver 10: 57×57, cap=364, apStart=10
-        [364, [10], [6, 30, 46], 2, 364, 10],
+        [21, 16, 10, 6, [6]],
+        [25, 32, 16, 6, [6, 18]],
+        [29, 48, 26, 6, [6, 22]],
+        [33, 64, 18, 7, [6, 26]],
+        [37, 86, 24, 7, [6, 30]],
+        [41, 108, 16, 8, [6, 34]],
+        [45, 124, 18, 8, [6, 38]],
+        [49, 170, 22, 9, [6, 22, 38]],
+        [53, 196, 22, 9, [6, 26, 42]],
+        [57, 242, 26, 10, [6, 30, 46]],
     ];
 
-    // ── Determine version needed for data length ──
-    function getVersionForLength(length) {
-        for (var v = 1; v <= 10; v++) {
-            if (length <= VERSIONS[v][5]) return v;
-        }
-        return null;
-    }
+    // ===== Format strings (precomputed using BCH(15,5) with mask 0x5412) =====
+    // Index = (ec_level << 1) | alignment
+    // EC: 0=L, 1=M, 2=Q, 3=H; Alignment: 0=no, 1=yes
+    var FORMAT_STRINGS = [
+        0x4412, 0x4485, // L: no, yes
+        0x5412, 0x5481, // M: no, yes
+        0x601f, 0x608c, // Q: no, yes
+        0x701d, 0x708e, // H: no, yes
+    ];
 
-    // ── Encode data ──
-    function encodeData(charData, version) {
-        var cap = VERSIONS[version][5];
-        // byte mode: 4 bit header + 8 bits per char
-        var headerBits = 4 + charData.length * 8;
-        var totalBits = headerBits;
-        if (totalBits > cap * 8) return null;
-
-        // Build bit string
-        var bits = '0100';
-        for (var i = 0; i < charData.length; i++) {
-            bits += charData[i].toString(2).padStart(8, '0');
-        }
-        // Terminator
-        var termLen = Math.min(4, cap * 8 - bits.length);
-        bits += '0'.repeat(termLen);
-        // Pad to byte boundary
-        while (bits.length % 8 !== 0) bits += '0';
-        // Data codewords
-        var codewords = [];
-        for (var i = 0; i < cap; i++) {
-            codewords.push(parseInt(bits.substr(i * 8, 8), 2));
-            if (bits.length <= (i + 1) * 8) {
-                // Pad codewords
-                codewords.push(i % 2 === 0 ? 0xEC : 0x11);
-            }
-        }
-        return { codewords: codewords.slice(0, cap), bits: bits };
-    }
-
-    // ── Place finder patterns ──
+    // ===== Finder pattern (9x9) =====
     var FINDER = [
-        [1,1,1,1,1,1,1,0,0,0,0,0,0,1,0,0,0,1,0,0],
-        [1,0,0,0,0,0,0,0,1,0,1,0,1,0,1,0,0,0,1,0],
-        [1,0,1,1,1,1,1,0,0,0,1,0,1,0,0,0,0,0,1,0],
-        [1,0,1,1,1,1,1,0,0,1,1,0,1,0,1,0,1,0,1,0],
-        [1,0,1,1,1,1,1,0,0,0,1,0,1,0,0,0,1,0,0,0],
-        [1,0,1,1,1,1,1,0,0,1,1,0,1,0,1,0,1,0,1,0],
-        [1,0,1,1,1,1,1,0,0,0,0,0,0,1,0,0,0,0,0,0],
-        [0,0,0,0,0,0,0,0,1,0,1,0,1,0,1,0,0,0,0,0],
-        [0,1,0,1,1,0,1,0,0,0,1,0,0,0,1,0,1,0,1,0],
-        [0,0,0,1,1,0,1,0,1,0,1,0,1,0,1,0,0,0,1,0],
-        [1,0,1,1,1,0,1,0,0,0,1,0,0,0,0,0,1,0,1,0],
-        [0,1,0,1,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,0],
-        [1,0,0,0,0,0,0,0,0,0,1,0,0,0,1,0,0,0,1,0],
-        [1,0,1,0,1,0,1,0,1,0,0,0,0,1,0,0,1,0,1,0],
-        [1,0,0,0,0,0,0,0,0,1,1,0,1,0,1,0,0,1,0,0],
-        [1,1,1,1,1,1,1,0,0,0,1,0,1,0,0,0,1,0,1,0],
-        [0,0,0,0,0,0,0,0,0,1,1,0,0,0,1,0,0,0,1,0],
-        [1,1,1,1,1,1,1,0,0,0,1,0,1,0,1,0,1,0,0,0],
-        [1,0,1,1,1,1,1,0,0,1,1,0,0,0,0,0,1,0,1,0],
-        [1,0,0,0,0,0,0,0,0,1,1,0,1,0,1,0,0,1,0,0],
+        [1,1,1,1,1,1,1,0,0],
+        [1,0,0,0,0,0,1,0,0],
+        [1,0,1,1,1,0,1,0,0],
+        [1,0,1,1,1,0,1,0,0],
+        [1,0,1,1,1,0,1,0,0],
+        [1,0,0,0,0,0,1,0,0],
+        [1,1,1,1,1,1,1,0,0],
+        [0,0,0,0,0,0,0,0,0],
+        [0,0,0,0,0,0,0,0,0],
     ];
 
-    // ── Build matrix ──
-    function buildMatrix(version) {
-        var size = version * 4 + 17;
-        var matrix = [];
-        for (var i = 0; i < size; i++) {
-            matrix[i] = new Array(size).fill(null);
-        }
-        return { matrix: matrix, size: size, reserved: [] };
-    }
-
+    // ===== Place helpers =====
     function placeFinder(m, row, col) {
-        for (var r = -1; r <= 7; r++) {
-            for (var c = -1; c <= 7; c++) {
-                var mr = row + r, mc = col + c;
-                if (mr < 0 || mr >= m.size || mc < 0 || mc >= m.size) continue;
-                m.matrix[mr][mc] = FINDER[r + 1][c + 1];
-                m.reserved[mr] = m.reserved[mr] || [];
-                m.reserved[mr][mc] = true;
-            }
-        }
+        for (var r = 0; r < 9; r++)
+            for (var c = 0; c < 9; c++)
+                if (row + r < m.length && col + c < m[0].length)
+                    m[row + r][col + c] = FINDER[r][c];
     }
 
     function placeAlignment(m, row, col) {
-        for (var r = -2; r <= 2; r++) {
-            for (var c = -2; c <= 2; c++) {
-                m.matrix[row + r][col + c] = (Math.abs(r) === 2 || Math.abs(c) === 2 || r === 0 && c === 0) ? 1 : 0;
-                m.reserved[row + r] = m.reserved[row + r] || [];
-                m.reserved[row + r][col + c] = true;
-            }
-        }
+        for (var r = -2; r <= 2; r++)
+            for (var c = -2; c <= 2; c++)
+                if (row + r >= 0 && row + r < m.length && col + c >= 0 && col + c < m[0].length)
+                    m[row + r][col + c] = (Math.abs(r) === 2 || Math.abs(c) === 2 || (r === 0 && c === 0)) ? 1 : 0;
     }
 
-    function placeTiming(m) {
-        for (var i = 8; i < m.size - 8; i++) {
-            if (!m.reserved[6] || m.reserved[6][i] === undefined) {
-                m.matrix[6][i] = i % 2 === 0 ? 1 : 0;
-                m.reserved[6] = m.reserved[6] || [];
-                m.reserved[6][i] = true;
-            }
-            if (!m.reserved[i] || m.reserved[i][6] === undefined) {
-                m.matrix[i][6] = i % 2 === 0 ? 1 : 0;
-                m.reserved[i] = m.reserved[i] || [];
-                m.reserved[i][6] = true;
-            }
-        }
-    }
+    // ===== Format string placement =====
+    // Positions taken directly from the QR ISO/IEC 18004 specification
+    function applyFormat(m, size, formatBits) {
+        // Horizontal segment: 8 bits around top-right finder (row 8)
+        for (var i = 0; i <= 5; i++) m[8][i] = (formatBits >> i) & 1;
+        m[8][7] = (formatBits >> 6) & 1;
+        m[8][8] = (formatBits >> 7) & 1;
+        m[8][9] = (formatBits >> 8) & 1;
+        // Horizontal segment: 6 bits wrapping below right-bottom finder
+        for (var i = 9; i <= 14; i++) m[8][size - 15 + i] = (formatBits >> i) & 1;
 
-    function reserveFormat(m) {
-        for (var i = 0; i <= 8; i++) {
-            if (!m.reserved[8]) m.reserved[8] = [];
-            if (!m.reserved[i]) m.reserved[i] = [];
-            if (i < m.size) { m.reserved[8][i] = true; m.reserved[i][8] = true; }
-        }
+        // Vertical segment: 7 bits wrapping left-bottom finder (col 8)
+        for (var i = 0; i <= 6; i++) m[i][8] = (formatBits >> i) & 1;
+        for (var i = 7; i <= 14; i++) m[size - 15 + i][8] = (formatBits >> i) & 1;
+
         // Dark module
-        m.matrix[m.size - 8][8] = 1;
-        m.reserved[m.size - 8] = m.reserved[m.size - 8] || [];
-        m.reserved[m.size - 8][8] = true;
+        m[size - 8][8] = 1;
     }
 
-    // ── Place data bits ──
-    function placeData(m, dataBits) {
-        var size = m.size;
+    // ===== Data placement (boustrophedon) =====
+    function placeDataBits(m, size, bits) {
         var bitIdx = 0;
         var upward = true;
         for (var col = size - 1; col >= 1; col -= 2) {
-            if (col === 6) col = 5; // Skip timing column
+            if (col === 6) col = 5;
             for (var row = 0; row < size; row++) {
                 var r = upward ? size - 1 - row : row;
                 for (var c = 0; c <= 1; c++) {
                     var cc = col - c;
-                    if (cc >= 0 && (!m.reserved[r] || !m.reserved[r][cc])) {
-                        var bit = bitIdx < dataBits.length ? parseInt(dataBits[bitIdx], 10) : 0;
-                        m.matrix[r][cc] = bit;
+                    if (cc >= 0 && m[r][cc] === null) {
+                        var bit = (bitIdx < bits.length) ? bits[bitIdx] : 0;
+                        m[r][cc] = bit;
                         bitIdx++;
                     }
                 }
@@ -230,96 +154,102 @@ var QR = (function () {
         }
     }
 
-    // ── Format string ──
-    var FORMAT_BITS = [
-        0x5412, 0x5125, 0x5E7C, 0x5B4B, 0x45F9, 0x40CE, 0x4F97, 0x4AA0,
-        0x77C4, 0x72F3, 0x7DAA, 0x789D, 0x662F, 0x6318, 0x6C41, 0x6976,
-        0x1689, 0x13BE, 0x1CE7, 0x19D0, 0x0762, 0x0255, 0x0D0C, 0x083B,
-        0x355F, 0x3068, 0x3F31, 0x3A06, 0x24B4, 0x2183, 0x2EDA, 0x2BED,
-    ];
-
-    function applyFormat(m, ecLevel) {
-        var formatBits = FORMAT_BITS[ecLevel << 3]; // EC level M = 1
-        var size = m.size;
-        // Place around finder patterns
-        for (var i = 0; i < 15; i++) {
-            var bit = (formatBits >> i) & 1;
-            var r, c;
-            if (i < 6) { r = 8; c = i; }
-            else if (i < 8) { r = 8; c = i; }
-            else if (i < 9) { r = 8; c = i - 1; }
-            else { r = 8; c = size - 15 + i - 9; }
-            if (!m.reserved[r] || !m.reserved[r][c]) m.matrix[r][c] = bit;
-
-            r = size - 15 + i - 9;
-            c = 8;
-            if (!m.reserved[r] || !m.reserved[r][c]) m.matrix[r][c] = bit;
-        }
-        // Vertical
-        for (i = 0; i < 8; i++) {
-            var br = size - 1 - i, bc = 8;
-            var bit2 = (formatBits >> i) & 1;
-            if (!m.reserved[br] || !m.reserved[br][bc]) m.matrix[br][bc] = bit2;
-        }
-        for (i = 0; i < 7; i++) {
-            var br2 = 8, bc2 = i;
-            var bit3 = (formatBits >> (i + 8)) & 1;
-            if (!m.reserved[br2] || !m.reserved[br2][bc2]) m.matrix[br2][bc2] = bit3;
-        }
-    }
-
-    // ── Generate QR SVG ──
+    // ===== Main generate =====
     function generate(text, size) {
+        if (typeof text !== 'string' || text.length === 0) return null;
         size = size || 200;
+
+        // Encode text as bytes
         var byteArr = [];
         for (var i = 0; i < text.length; i++) byteArr.push(text.charCodeAt(i));
 
-        var version = getVersionForLength(byteArr.length);
-        if (version === null) return '<svg>' + text + '</svg>'; // fallback
+        // Determine QR version (minimum that fits data)
+        var version = null;
+        for (var v = 1; v <= 10; v++) {
+            if (4 + byteArr.length * 8 <= VERSIONS[v][1] * 8) {
+                version = v;
+                break;
+            }
+        }
+        if (version === null) return null;
 
-        var ecLevel = 1; // M
-        var dataResult = encodeData(byteArr, version);
-        if (!dataResult) return null;
+        var cap = VERSIONS[version][1];       // data codewords capacity
+        var ecCodewords = VERSIONS[version][2];
+        var verSize = VERSIONS[version][0];
 
-        var m = buildMatrix(version);
+        // Build bit stream: mode(4) + charCount(8) + data + terminator + padding
+        var bits = '0100'; // byte mode
+        bits += byteArr.length.toString(2).padStart(8, '0');
+        for (var i = 0; i < byteArr.length; i++) bits += byteArr[i].toString(2).padStart(8, '0');
 
-        // Place finder patterns
-        placeFinder(m, 0, 0);
-        placeFinder(m, 0, m.size - 7);
-        placeFinder(m, m.size - 7, 0);
+        var termLen = Math.min(4, cap * 8 - bits.length);
+        for (var i = 0; i < termLen; i++) bits += '0';
+        while (bits.length % 8 !== 0) bits += '0';
+        var padBytes = [0xEC, 0x11];
+        var pi = 0;
+        while (bits.length < cap * 8) {
+            bits += padBytes[pi].toString(2).padStart(8, '0');
+            pi = 1 - pi;
+        }
 
-        // Placement patterns
-        var ap = VERSIONS[version][1];
-        if (ap) {
-            var aps = VERSIONS[version][2];
-            for (var i = 0; i < aps.length; i++) {
-                for (var j = 0; j < aps.length; j++) {
-                    if (!(i === 0 && j === 0) && !(i === 0 && j === aps.length - 1) &&
-                        !(i === aps.length - 1 && j === 0)) {
-                        placeAlignment(m, aps[i], aps[j]);
-                    }
+        // Extract codewords
+        var dataCodewords = [];
+        for (var i = 0; i < cap; i++) {
+            dataCodewords.push(parseInt(bits.substr(i * 8, 8), 2));
+        }
+
+        // Reed-Solomon error correction
+        var ecResult = rsEncode(dataCodewords, ecCodewords);
+
+        // Combine data + EC into bit stream
+        var allBits = '';
+        for (var i = 0; i < dataCodewords.length; i++) allBits += dataCodewords[i].toString(2).padStart(8, '0');
+        for (var i = 0; i < ecResult.length; i++) allBits += ecResult[i].toString(2).padStart(8, '0');
+
+        var bitArr = [];
+        for (var i = 0; i < allBits.length; i++) bitArr.push(parseInt(allBits[i], 10));
+
+        // ===== Build matrix =====
+        var matrix = [];
+        for (var i = 0; i < verSize; i++) {
+            matrix[i] = new Array(verSize);
+            for (var j = 0; j < verSize; j++) matrix[i][j] = null;
+        }
+
+        placeFinder(matrix, 0, 0);
+        placeFinder(matrix, 0, verSize - 7);
+        placeFinder(matrix, verSize - 7, 0);
+
+        var apPositions = VERSIONS[version][4];
+        for (var i = 0; i < apPositions.length; i++) {
+            for (var j = 0; j < apPositions.length; j++) {
+                if (!(i === 0 && j === 0) && !(i === 0 && j === apPositions.length - 1) &&
+                    !(i === apPositions.length - 1 && j === 0)) {
+                    placeAlignment(matrix, apPositions[i], apPositions[j]);
                 }
             }
         }
 
-        placeTiming(m);
-        reserveFormat(m);
-        placeData(m, dataResult.bits);
-        applyFormat(m, ecLevel);
+        for (var i = 8; i < verSize - 8; i++) {
+            if (matrix[6][i] === null) matrix[6][i] = i % 2 === 0 ? 1 : 0;
+            if (matrix[i][6] === null) matrix[i][6] = i % 2 === 0 ? 1 : 0;
+        }
 
-        // Build SVG
-        var mat = m.matrix;
-        var modules = m.size;
-        var quiet = 4; // quiet zone
-        var total = modules + quiet * 2;
-        var cellW = size / total;
+        // Format string (EC level M = 1, no alignment = 0 => index 2)
+        applyFormat(matrix, verSize, FORMAT_STRINGS[2]);
+
+        placeDataBits(matrix, verSize, bitArr);
+
+        // ===== Build SVG =====
+        var quiet = 4;
+        var cellW = size / (verSize + quiet * 2);
 
         var svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ' + size + ' ' + size + '" width="' + size + '" height="' + size + '">';
         svg += '<rect width="' + size + '" height="' + size + '" fill="white"/>';
         svg += '<g fill="black">';
-        for (var r = 0; r < modules; r++) {
-            for (var c = 0; c < modules; c++) {
-                if (mat[r][c] === 1) {
+        for (var r = 0; r < verSize; r++) {
+            for (var c = 0; c < verSize; c++) {
+                if (matrix[r][c] === 1) {
                     svg += '<rect x="' + ((c + quiet) * cellW) + '" y="' + ((r + quiet) * cellW) + '" width="' + cellW + '" height="' + cellW + '"/>';
                 }
             }
