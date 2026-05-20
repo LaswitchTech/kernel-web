@@ -63,7 +63,13 @@ class BarcodeController extends Controller
     {
         $type    = strtoupper((string) ($params['type'] ?? ''));
         $format  = strtoupper((string) ($params['format'] ?? ''));
-        $value   = urldecode((string) ($params['value'] ?? ''));
+
+        // Value may come from route param or query string (for URL-encoded slashes).
+        $value = $params['value'] ?? '';
+        if ($value === '') {
+            $value = $_GET['value'] ?? '';
+        }
+        $value = urldecode((string) $value);
 
         // Validate type
         if ($type === '') {
