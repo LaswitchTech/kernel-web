@@ -183,6 +183,9 @@ $ctx = $ctx ?? [];
         });
     }
 
+    // Store the secret currently displayed to the user.
+    var displayedUiSecret = null;
+
     function generateSecret() {
         // Guard: prevent duplicate generate calls (idempotent on server but avoids unnecessary load).
         if (isGenerating) {
@@ -215,7 +218,11 @@ $ctx = $ctx ?? [];
                     sessionStorage.setItem('pm-2fa-setup-id', data.setupId);
                     currentSetupId = data.setupId;
 
+                    // Store the UI secret for enable debug.
+                    displayedUiSecret = data.secret;
+
                     console.log('[2FA] generateSecret #' + generateCallCount + ' (setupId: ' + currentSetupId.substring(0, 16) + '…) secret:', data.secret);
+                    if (data._debug) console.log('[2FA] generate _debug:', data._debug);
                     console.log('[2FA] generateTimestamps:', generateTimestamps.map(function(t) { return (Date.now() - t) + 'ms ago'; }));
 
                     // Render QR via the server-side barcode API (query-string form
@@ -259,7 +266,8 @@ $ctx = $ctx ?? [];
         clearErr();
 
         // Send the exact setupId that was used to generate the QR code.
-        var payload = JSON.stringify({ code: code, setupId: currentSetupId });
+        // Also send ui_secret for APP_DEBUG diagnosis.
+        var payload = JSON.stringify({ code: code, setupId: currentSetupId, uiSecret: displayedUiSecret });
         console.log('[2FA] POST /api/profile/2fa/enable body:', payload);
         console.log('[2FA] codeEl.value:', JSON.stringify(codeEl.value), 'trimmed:', JSON.stringify(code));
         console.log('[2FA] setupId:', currentSetupId ? currentSetupId.substring(0, 16) + '…' : 'none');

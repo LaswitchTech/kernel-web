@@ -65,7 +65,8 @@ class TwoFactorRepository
                     [$secret, $now, $setupId, $now, $userId]
                 );
             } else {
-                // Confirmed: store secret and mark as enabled
+                // Confirmed: store secret and mark as enabled.
+                // Clear pending state since 2FA is now active.
                 $this->db->execute(
                     'UPDATE users SET totp_secret = ?, totp_enabled_at = ?, totp_pending_at = NULL, totp_setup_id = NULL, updated_at = ? WHERE id = ?',
                     [$secret, $now, $now, $userId]

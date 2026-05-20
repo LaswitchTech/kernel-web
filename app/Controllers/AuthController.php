@@ -715,6 +715,8 @@ class AuthController extends Controller
 
         /** @var TwoFactorService $twoFactor */
         $twoFactor = $this->container->get('two_factor');
+        /** @var array<string, mixed> $config */
+        $config = $this->container->get('config');
 
         // Accept optional setup_id from frontend. If absent, generate one.
         $setupId = (string) ($this->input('setupId', $_GET['setupId'] ?? ''));
@@ -729,12 +731,28 @@ class AuthController extends Controller
             return;
         }
 
-        $this->json([
+        // APP_DEBUG diagnostic — safe: sha256 hashes only.
+        $debug = [];
+        if ($config['debug'] ?? false) {
+            $pendingInfo = $twoFactor->getPendingSetupInfo($user['id']);
+            $debug = [
+                '_debug' => [
+                    'user_id'                  => $user['id'],
+                    'session_id'               => session_id() ?: 'none',
+                    'generated_secret_sha256'  => substr(hash('sha256', $result['secret']), 0, 16),
+                    'setup_id'                 => $result['setupId'],
+                    'pending_at'               => $pendingInfo['pendingAt'] ?? null,
+                    'pending_secret_sha256'    => $pendingInfo ? substr(hash('sha256', $pendingInfo['secret']), 0, 16) : null,
+                ],
+            ];
+        }
+
+        $this->json(array_merge([
             'secret'    => $result['secret'],
             'uri'       => $result['uri'],
             'pending'   => true,
             'setupId'   => $result['setupId'],
-        ]);
+        ], $debug));
     }
 
     /**
@@ -764,13 +782,17 @@ class AuthController extends Controller
             $setupId = null;
         }
 
+        // Accept optional ui_secret from frontend for APP_DEBUG diagnosis.
+        $uiSecret = (string) ($this->input('uiSecret', $_GET['uiSecret'] ?? ''));
+
         // Setup flow: use ±10 window to accommodate time drift during initial setup.
-        // Login flow uses ±1 (TwoFactorService::TOTP_WINDOW).
         $debug = $config['debug'] ?? false;
 
         $secretData = $twoFactor->getPendingSetupInfo($user['id']);
         $pendingSetupId = $secretData['setupId'] ?? null;
+        $pendingSecret = $secretData['secret'] ?? null;
         $pendingAt = $secretData['pendingAt'] ?? 'never';
+        $enabledAt = $twoFactor->isEnabled($user['id']) ? 'enabled' : 'none';
 
         // Only enforce setup_id binding if the stored pending secret has one
         // (backward compatible with old pending secrets that lack setup_id).
@@ -782,37 +804,77 @@ class AuthController extends Controller
             $match = $twoFactor->verifyTotpWithInfo($user['id'], $code, 10);
         }
 
-        if ($debug) {
-            $secretSha1 = $secretData ? substr(hash('sha256', $secretData['secret'] ?? ''), 0, 12) : 'none';
-            $this->json([
-                'error'       => 'Invalid code. Please verify with your authenticator app.',
-                '_debug'      => [
-                    'pending_secret_sha1_prefix' => $secretSha1,
-                    'pending_at'                 => $pendingAt,
-                    'user_id'                    => $user['id'],
-                    'pending_setup_id'           => $pendingSetupId ?? 'none',
-                    'submitted_setup_id'         => $setupId ?? 'none',
-                    'setup_id_match'             => $pendingSetupId === $setupId,
-                    'secret_sha1'                => $secretSha1,
-                    'code_length'                => strlen($code),
-                    'code_is_digits'             => preg_match('/^\d+$/', $code),
-                    'window_checked'             => '±10',
-                ],
-            ], 400);
-            return;
+        // Build debug info.
+        $debugInfo = null;
+        if ($debug || $match === null) {
+            $pendingSecretHash = $pendingSecret ? substr(hash('sha256', $pendingSecret), 0, 16) : 'none';
+            $uiSecretHash = $uiSecret ? substr(hash('sha256', $uiSecret), 0, 16) : 'none';
+
+            // Compute current TOTP for pending DB secret.
+            $pendingTotp = null;
+            if ($pendingSecret !== null) {
+                $pendingTotpInfo = $twoFactor->verifyTotpWithInfo($user['id'], $code, 10);
+                if ($pendingTotpInfo !== null) {
+                    $pendingTotp = $pendingTotpInfo['code'];
+                }
+            }
+
+            // Compute TOTP for UI secret if provided.
+            $uiTotp = null;
+            if ($uiSecret !== '' && $pendingSecret !== null) {
+                $ref = new \ReflectionClass($twoFactor);
+                $dec = $ref->getMethod('decodeBase32');
+                $hex = $dec->invoke($twoFactor, $uiSecret);
+                if ($hex !== false && strlen($hex) > 0) {
+                    $bin = hex2bin($hex);
+                    if ($bin !== false) {
+                        $step = (int) floor(time() / 30);
+                        for ($i = -10; $i <= 10; $i++) {
+                            $hmac = hash_hmac('sha1', pack('N2', 0, $step + $i), $bin, true);
+                            $offset = ord($hmac[19]) & 0x0F;
+                            $codeNum = ((ord($hmac[$offset]) & 0x7F) << 24)
+                                | ((ord($hmac[$offset + 1]) & 0xFF) << 16)
+                                | ((ord($hmac[$offset + 2]) & 0xFF) << 8)
+                                | (ord($hmac[$offset + 3]) & 0xFF);
+                            $gen = str_pad((string) ($codeNum % 1000000), 6, '0', STR_PAD_LEFT);
+                            if ($gen === $code) { $uiTotp = $gen; break; }
+                        }
+                    }
+                }
+            }
+
+            $debugInfo = [
+                'user_id'                => $user['id'],
+                'session_id'             => session_id() ?: 'none',
+                'submitted_code'         => $code,
+                'submitted_code_sha256'  => substr(hash('sha256', $code), 0, 16),
+                'submitted_setup_id'     => $setupId ?? 'none',
+                'pending_secret_sha256'  => $pendingSecretHash,
+                'pending_setup_id'       => $pendingSetupId ?? 'none',
+                'pending_at'             => $pendingAt,
+                'enabled_at'             => $secretData['enabledAt'] ?? 'none',
+                'setup_id_match'         => ($pendingSetupId !== null && $pendingSetupId === $setupId),
+                'code_matches_pending'   => $match !== null,
+                'pending_secret_totp'    => $pendingTotp,
+                'ui_secret_sha256'       => $uiSecretHash,
+                'ui_secret_totp_match'   => $uiTotp,
+            ];
         }
 
         if ($match === null) {
-            $this->json(['error' => 'Invalid code. Please verify with your authenticator app.'], 400);
+            $this->json([
+                'error' => 'Invalid code. Please verify with your authenticator app.',
+                '_debug' => $debugInfo,
+            ], 400);
             return;
         }
 
         $result = $twoFactor->enable($user['id']);
 
-        $this->json([
+        $this->json(array_merge([
             'enabled'       => true,
             'recoveryCodes' => $result['recoveryCodes'],
-        ]);
+        ], $debugInfo !== null ? ['_debug' => $debugInfo] : []));
     }
 
     /**
