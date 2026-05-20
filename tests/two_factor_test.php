@@ -61,6 +61,7 @@ $db->execute("CREATE TABLE users (
     totp_secret VARCHAR(255),
     totp_enabled_at VARCHAR(32),
     totp_pending_at VARCHAR(32),
+    totp_setup_id VARCHAR(255),
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL
 )");
@@ -629,6 +630,214 @@ $num4 = ((ord($hmac4[$off4]) & 0x7F) << 24)
       | (ord($hmac4[$off4 + 3]) & 0xFF);
 $wrongCode = str_pad((string) ($num4 % 1000000), 6, '0', STR_PAD_LEFT);
 assert_true($wrongCode !== $rfcExpected, "pack('N*') produces wrong code for RFC step");
+
+// ============= 22. USER'S EXACT SECRET — END-TO-END (LIVE BROWSER REGRESSION) ============
+// Regression test for browser "Invalid code" issue.
+// Uses the exact secret the user reported scanning: 4X6KFARIEZOM2YS3AIIHHGSCBE3EGDRL
+
+$userSecret = '4X6KFARIEZOM2YS3AIIHHGSCBE3EGDRL';
+assert_true((bool) preg_match('/^[A-Z2-7]+$/', $userSecret), 'user secret is valid base32');
+assert_equal(32, strlen($userSecret), 'user secret is 32 chars (padded to 40-bit boundary)');
+
+// Decode the user secret independently
+$ub = '';
+for ($u = 0; $u < strlen($userSecret); $u++) {
+    $ui = strpos('ABCDEFGHIJKLMNOPQRSTUVWXYZ234567', $userSecret[$u]);
+    $ub .= str_pad(decbin($ui), 5, '0', STR_PAD_LEFT);
+}
+$uBytes = '';
+for ($u = 0; $u + 7 < strlen($ub); $u += 8) {
+    $uBytes .= chr(bindec(substr($ub, $u, 8)));
+}
+assert_equal(20, strlen($uBytes), 'user secret decodes to 20 bytes (160 bits)');
+$uHex = bin2hex($uBytes);
+
+// Create a fresh user with this exact secret as pending
+$pdoUser = new PDO('sqlite::memory:');
+$pdoUser->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+
+class TestDBUserSecret implements DatabaseInterface
+{
+    public function __construct(private PDO $pdo) {}
+    public function pdo(): PDO { return $this->pdo; }
+    public function fetch(string $sql, array $params = []): array {
+        $stmt = $this->pdo->prepare($sql); $stmt->execute($params); return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+    public function fetchOne(string $sql, array $params = []): ?array {
+        $rows = $this->fetch($sql, $params); return $rows[0] ?? null;
+    }
+    public function execute(string $sql, array $bindings = []): int {
+        $stmt = $this->pdo->prepare($sql); $stmt->execute($bindings); return (int) $stmt->rowCount();
+    }
+    public function beginTransaction(): bool { return $this->pdo->beginTransaction(); }
+    public function commit(): bool { return $this->pdo->commit(); }
+    public function rollBack(): bool { return $this->pdo->rollBack(); }
+    public function lastInsertId(): string { return $this->pdo->lastInsertId(); }
+}
+
+$dbUser = new TestDBUserSecret($pdoUser);
+$dbUser->execute("CREATE TABLE users (
+    id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT UNIQUE NOT NULL,
+    email TEXT UNIQUE NOT NULL, display_name TEXT DEFAULT '',
+    password_hash TEXT NOT NULL, is_active INTEGER DEFAULT 1,
+    email_verified_at VARCHAR(32), totp_secret VARCHAR(255),
+    totp_enabled_at VARCHAR(32), totp_pending_at VARCHAR(32),
+    totp_setup_id VARCHAR(255),
+    created_at TEXT NOT NULL, updated_at TEXT NOT NULL
+)");
+$dbUser->execute(
+    "INSERT INTO users (id, username, email, display_name, password_hash, is_active, created_at, updated_at)
+     VALUES (1, 'testuser', 'test@example.com', 'Test User', ?, 1, '2024-01-01 00:00:00', '2024-01-01 00:00:00')",
+    [password_hash('testpass123', PASSWORD_DEFAULT)]
+);
+$dbUser->execute(
+    "UPDATE users SET totp_secret = ?, totp_pending_at = ?, totp_setup_id = 'setup-user-secret' WHERE id = 1",
+    [$userSecret]
+);
+
+$userSvc = new TwoFactorService(new TwoFactorRepository($dbUser), new App\Models\UserRepository($dbUser));
+assert_true($userSvc->hasPendingSetup(1), 'user has pending setup with exact secret');
+
+// Compute TOTP code for current step using the exact secret
+$userStep = (int) floor(time() / 30);
+$userHmac = hash_hmac('sha1', pack('N2', 0, $userStep), hex2bin($uHex), true);
+$userOff = ord($userHmac[19]) & 0x0F;
+$userCodeNum = ((ord($userHmac[$userOff]) & 0x7F) << 24)
+             | ((ord($userHmac[$userOff + 1]) & 0xFF) << 16)
+             | ((ord($userHmac[$userOff + 2]) & 0xFF) << 8)
+             | (ord($userHmac[$userOff + 3]) & 0xFF);
+$userCode = str_pad((string) ($userCodeNum % 1000000), 6, '0', STR_PAD_LEFT);
+
+assert_true($userSvc->verifyTotp(1, $userCode), "user secret produces valid TOTP at step $userStep (code: $userCode)");
+
+// ±1 window
+for ($wi = -1; $wi <= 1; $wi++) {
+    $ws = $userStep + $wi;
+    $wh = hash_hmac('sha1', pack('N2', 0, $ws), hex2bin($uHex), true);
+    $wo = ord($wh[19]) & 0x0F;
+    $wn = ((ord($wh[$wo]) & 0x7F) << 24)
+        | ((ord($wh[$wo + 1]) & 0xFF) << 16)
+        | ((ord($wh[$wo + 2]) & 0xFF) << 8)
+        | (ord($wh[$wo + 3]) & 0xFF);
+    $wc = str_pad((string) ($wn % 1000000), 6, '0', STR_PAD_LEFT);
+    assert_true($userSvc->verifyTotp(1, $wc), "user secret ±$wi window code '$wc' verifies");
+}
+
+// Enable with user secret
+assert_true($userSvc->verifyTotp(1, $userCode), 'code matches before enable');
+$enableResult = $userSvc->enable(1);
+assert_true($userSvc->isEnabled(1), '2FA enabled after user secret verification');
+assert_false($userSvc->hasPendingSetup(1), 'pending cleared after enable');
+assert_true(count($enableResult['recoveryCodes']) > 0, 'recovery codes generated');
+
+// ============= 23. STALE QR / SETUP_ID BINDING REGRESSION ============
+// Regression test: simulate stale QR scenario where setup_id binding prevents
+// enabling with a code from an earlier QR code.
+
+// Create a fresh user with setup_id tracking
+$pdoS23 = new PDO('sqlite::memory:');
+$pdoS23->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+
+class TestDB_S23 implements DatabaseInterface
+{
+    public function __construct(private PDO $pdo) {}
+    public function pdo(): PDO { return $this->pdo; }
+    public function fetch(string $sql, array $params = []): array {
+        $stmt = $this->pdo->prepare($sql); $stmt->execute($params); return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+    public function fetchOne(string $sql, array $params = []): ?array {
+        $rows = $this->fetch($sql, $params); return $rows[0] ?? null;
+    }
+    public function execute(string $sql, array $bindings = []): int {
+        $stmt = $this->pdo->prepare($sql); $stmt->execute($bindings); return (int) $stmt->rowCount();
+    }
+    public function beginTransaction(): bool { return $this->pdo->beginTransaction(); }
+    public function commit(): bool { return $this->pdo->commit(); }
+    public function rollBack(): bool { return $this->pdo->rollBack(); }
+    public function lastInsertId(): string { return $this->pdo->lastInsertId(); }
+}
+
+$dbS23 = new TestDB_S23($pdoS23);
+$dbS23->execute("CREATE TABLE users (
+    id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT UNIQUE NOT NULL,
+    email TEXT UNIQUE NOT NULL, display_name TEXT DEFAULT '',
+    password_hash TEXT NOT NULL, is_active INTEGER DEFAULT 1,
+    email_verified_at VARCHAR(32), totp_secret VARCHAR(255),
+    totp_enabled_at VARCHAR(32), totp_pending_at VARCHAR(32),
+    totp_setup_id VARCHAR(255),
+    created_at TEXT NOT NULL, updated_at TEXT NOT NULL
+)");
+$dbS23->execute(
+    "INSERT INTO users (id, username, email, display_name, password_hash, is_active, created_at, updated_at)
+     VALUES (1, 'testuser', 'test@example.com', 'Test User', ?, 1, '2024-01-01 00:00:00', '2024-01-01 00:00:00')",
+    [password_hash('testpass123', PASSWORD_DEFAULT)]
+);
+
+$s23Svc = new TwoFactorService(new TwoFactorRepository($dbS23), new App\Models\UserRepository($dbS23));
+
+// Step 1: Generate secret with setup_id A
+$setupIdA = 'aaaa1111';
+$resultA = $s23Svc->generateSecretFull(1, $setupIdA);
+assert_not_null($resultA, 'generateSecretFull returns array with setupId');
+assert_not_null($resultA['setupId'], 'setupId is returned');
+assert_equal($setupIdA, $resultA['setupId'], 'setupId matches what was sent');
+$secretA = $resultA['secret'];
+
+// Step 2: Compute TOTP code for secret A
+$refA = new ReflectionClass($s23Svc);
+$decA = $refA->getMethod('decodeBase32');
+$hexA = $decA->invoke($s23Svc, $secretA);
+$binA = hex2bin($hexA);
+$stepA = (int) floor(time() / 30);
+$hmacA = hash_hmac('sha1', pack('N2', 0, $stepA), $binA, true);
+$offA = ord($hmacA[19]) & 0x0F;
+$numA = ((ord($hmacA[$offA]) & 0x7F) << 24)
+      | ((ord($hmacA[$offA + 1]) & 0xFF) << 16)
+      | ((ord($hmacA[$offA + 2]) & 0xFF) << 8)
+      | (ord($hmacA[$offA + 3]) & 0xFF);
+$codeA = str_pad((string) ($numA % 1000000), 6, '0', STR_PAD_LEFT);
+
+// Step 3: Generate new secret with setup_id B (simulates stale QR)
+$setupIdB = 'bbbb2222';
+$resultB = $s23Svc->generateSecretFull(1, $setupIdB);
+assert_not_null($resultB, 'generateSecretFull B returns array');
+assert_not_null($resultB['setupId'], 'setupId B returned');
+assert_equal($setupIdB, $resultB['setupId'], 'setupId B matches');
+assert_true($resultB['secret'] !== $secretA, 'New secret differs from secret A');
+$secretB = $resultB['secret'];
+
+// Step 4: Verify code A fails against pending setup B's secret (stale QR detection)
+// The pending secret is now secretB (with setupId B).
+// Code A was generated for secretA (with setupId A).
+// Since pending setup has setupId B and we check against pending secret,
+// verifyTotpWithSetupCheck should reject code A because setupId doesn't match.
+$secretDataS23 = (new TwoFactorRepository($dbS23))->getTotpSecret(1);
+assert_not_null($secretDataS23, 'pending secret data exists');
+assert_not_null($secretDataS23['totp_setup_id'], 'setup_id is stored');
+assert_equal($setupIdB, $secretDataS23['totp_setup_id'], 'setup_id B is in DB');
+assert_false($s23Svc->verifyTotp(1, $codeA), 'Code A does NOT verify against different pending secret (expected: different secrets → different codes)');
+// But verifyTotpWithSetupCheck should reject because code A doesn't match secret B's pending_id.
+$ref23 = new ReflectionClass($s23Svc);
+$decS23 = $ref23->getMethod('decodeBase32');
+
+// Step 5: Verify code B passes and enable works
+$hexB = $decS23->invoke($s23Svc, $secretB);
+$binB = hex2bin($hexB);
+$hmacB = hash_hmac('sha1', pack('N2', 0, $stepA), $binB, true);
+$offB = ord($hmacB[19]) & 0x0F;
+$numB = ((ord($hmacB[$offB]) & 0x7F) << 24)
+      | ((ord($hmacB[$offB + 1]) & 0xFF) << 16)
+      | ((ord($hmacB[$offB + 2]) & 0xFF) << 8)
+      | (ord($hmacB[$offB + 3]) & 0xFF);
+$codeB = str_pad((string) ($numB % 1000000), 6, '0', STR_PAD_LEFT);
+assert_true($s23Svc->verifyTotp(1, $codeB), 'Code B verifies against secret B');
+
+// Step 6: Enable with code B
+assert_true($s23Svc->hasPendingSetup(1), 'pending before enable');
+$enableS23 = $s23Svc->enable(1);
+assert_true($s23Svc->isEnabled(1), '2FA enabled after code B');
+assert_false($s23Svc->hasPendingSetup(1), 'pending cleared after enable');
+assert_true(count($enableS23['recoveryCodes']) > 0, 'recovery codes generated');
 
 // ============= SUMMARY ============
 

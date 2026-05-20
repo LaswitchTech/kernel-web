@@ -26,7 +26,7 @@ $ctx = $ctx ?? [];
         <div class="mb-3">
             <label for="pm-2fa-code" class="form-label small">Verification Code</label>
             <input type="text" class="form-control form-control-sm" id="pm-2fa-code"
-                   maxlength="6" placeholder="123456" inputmode="numeric">
+               maxlength="6" placeholder="123456" inputmode="numeric">
             <div class="form-text">Enter the 6-digit code from your authenticator app.</div>
         </div>
         <div class="d-flex gap-2">
@@ -67,7 +67,7 @@ $ctx = $ctx ?? [];
             </div>
             <div class="d-flex gap-2 align-items-center">
                 <input type="text" class="form-control form-control-sm" id="pm-2fa-disable-code"
-                       maxlength="6" placeholder="123456" inputmode="numeric" style="width:140px;">
+                   maxlength="6" placeholder="123456" inputmode="numeric" style="width:140px;">
                 <button type="button" class="btn btn-sm btn-danger" id="pm-2fa-disable-confirm-btn">Confirm Disable</button>
                 <button type="button" class="btn btn-sm btn-link btn-sm" id="pm-2fa-disable-cancel-btn">Cancel</button>
             </div>
@@ -108,9 +108,36 @@ $ctx = $ctx ?? [];
     var regenCodes  = document.getElementById('pm-2fa-recovery-codes');
     var disableErr  = document.getElementById('pm-2fa-disable-error');
 
+    // Setup ID: unique to this QR code lifetime.
+    // Prevents stale QR / multiple generate issues.
+    var currentSetupId = null;
+    var generateCallCount = 0;
+    var generateTimestamps = [];
+    var isGenerating = false;
+
     function showEl() { statusEl.classList.add('d-none'); setupEl.classList.add('d-none'); enabledEl.classList.add('d-none'); disabledEl.classList.add('d-none'); var el = arguments[0]; if (el) el.classList.remove('d-none'); }
     function showErr(msg) { errorEl.style.display = ''; errorEl.textContent = msg; }
     function clearErr() { errorEl.style.display = ''; errorEl.textContent = ''; }
+
+    // Generate (or retrieve) a unique setup_id for this QR code session.
+    // Persisted in sessionStorage so it survives tab activations within the same session.
+    function getOrCreateSetupId() {
+        if (currentSetupId) return currentSetupId;
+        var key = 'pm-2fa-setup-id';
+        var stored = sessionStorage.getItem(key);
+        if (stored) {
+            currentSetupId = stored;
+            console.log('[2FA] Reusing existing setupId from sessionStorage:', currentSetupId.substring(0, 16) + '…');
+            return currentSetupId;
+        }
+        // Generate new UUID-like ID
+        var arr = new Uint8Array(16);
+        crypto.getRandomValues(arr);
+        currentSetupId = Array.from(arr, function(b) { return b.toString(16).padStart(2, '0'); }).join('');
+        sessionStorage.setItem(key, currentSetupId);
+        console.log('[2FA] Created new setupId:', currentSetupId.substring(0, 16) + '…');
+        return currentSetupId;
+    }
 
     function loadStatus() {
         fetch('/api/profile/2fa/status', { credentials: 'same-origin' })
@@ -120,19 +147,22 @@ $ctx = $ctx ?? [];
                     // 2FA is fully enabled — show the enabled card.
                     showEl(enabledEl);
                     renderRecoveryCodes([]);
-                    // Mark as pending-disable so the disable form knows what to show.
                     statusEl.dataset.disableHint = 'totp';
                 } else if (data.pending) {
-                    // 2FA setup is pending (secret generated but not confirmed).
-                    // Re-show the setup card with the existing secret.
+                    // 2FA setup is pending — reuse existing secret, do NOT regenerate.
                     showEl(setupEl);
-                    generateSecret();
                     statusEl.dataset.disableHint = 'pending';
+                    // Show existing QR/code by re-fetching the pending secret via generate (idempotent).
+                    // The frontend generates the same setupId so the server recognizes it and returns
+                    // the existing pending secret (same QR).
+                    getOrCreateSetupId();
+                    generateSecret();
                 } else {
-                    // No 2FA at all.
+                    // No 2FA at all — generate a fresh secret.
                     showEl(setupEl);
-                    generateSecret();
                     statusEl.dataset.disableHint = 'pending';
+                    getOrCreateSetupId();
+                    generateSecret();
                 }
             })
             .catch(function () { showEl(disabledEl); });
@@ -154,10 +184,40 @@ $ctx = $ctx ?? [];
     }
 
     function generateSecret() {
-        fetch('/api/profile/2fa/generate', { method: 'POST', credentials: 'same-origin' })
+        // Guard: prevent duplicate generate calls (idempotent on server but avoids unnecessary load).
+        if (isGenerating) {
+            console.warn('[2FA] generateSecret already in progress, skipping duplicate call');
+            return;
+        }
+        isGenerating = true;
+        generateCallCount++;
+        generateTimestamps.push(Date.now());
+
+        var setupId = getOrCreateSetupId();
+
+        fetch('/api/profile/2fa/generate', {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ setupId: setupId }),
+        })
             .then(function (r) { return r.json(); })
             .then(function (data) {
                 if (data.uri) {
+                    // Verify setup_id matches (guard against stale QR).
+                    if (data.setupId && data.setupId !== currentSetupId) {
+                        console.warn('[2FA] setupId mismatch! Server returned different setupId. QR may be stale.');
+                        // Don't update UI — keep showing old QR so user can still enable with it.
+                        return;
+                    }
+
+                    // Update sessionStorage with server-confirmed setupId.
+                    sessionStorage.setItem('pm-2fa-setup-id', data.setupId);
+                    currentSetupId = data.setupId;
+
+                    console.log('[2FA] generateSecret #' + generateCallCount + ' (setupId: ' + currentSetupId.substring(0, 16) + '…) secret:', data.secret);
+                    console.log('[2FA] generateTimestamps:', generateTimestamps.map(function(t) { return (Date.now() - t) + 'ms ago'; }));
+
                     // Render QR via the server-side barcode API (query-string form
                     // avoids %2F routing issues with complex otpauth URIs).
                     var encoded = encodeURIComponent(data.uri);
@@ -186,7 +246,8 @@ $ctx = $ctx ?? [];
                     qrEl.appendChild(secretWrap);
                 }
             })
-            .catch(function () { showEl(disabledEl); });
+            .catch(function (e) { console.error('[2FA] generateSecret error:', e); showEl(disabledEl); })
+            .finally(function () { isGenerating = false; });
     }
 
     if (verifyBtn) verifyBtn.addEventListener('click', function () {
@@ -196,10 +257,17 @@ $ctx = $ctx ?? [];
         verifyBtn.querySelector('.btn-label').classList.add('d-none');
         verifyBtn.querySelector('.btn-loading').classList.remove('d-none');
         clearErr();
+
+        // Send the exact setupId that was used to generate the QR code.
+        var payload = JSON.stringify({ code: code, setupId: currentSetupId });
+        console.log('[2FA] POST /api/profile/2fa/enable body:', payload);
+        console.log('[2FA] codeEl.value:', JSON.stringify(codeEl.value), 'trimmed:', JSON.stringify(code));
+        console.log('[2FA] setupId:', currentSetupId ? currentSetupId.substring(0, 16) + '…' : 'none');
+
         fetch('/api/profile/2fa/enable', {
             method: 'POST', credentials: 'same-origin',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ code: code }),
+            body: payload,
         })
         .then(function (r) { return r.json(); })
         .then(function (data) {
@@ -222,6 +290,11 @@ $ctx = $ctx ?? [];
     if (skipBtn) skipBtn.addEventListener('click', function () {
         setupEl.classList.add('d-none');
         disabledEl.classList.remove('d-none');
+        // Clear setup state on skip
+        sessionStorage.removeItem('pm-2fa-setup-id');
+        currentSetupId = null;
+        generateCallCount = 0;
+        generateTimestamps = [];
     });
 
     var disableBtn = document.getElementById('pm-2fa-disable-btn');

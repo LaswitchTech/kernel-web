@@ -16,7 +16,7 @@ class TwoFactorRepository
     public function __construct(private DatabaseInterface $db) {}
 
     /**
-     * Get a user's TOTP secret data (includes totp_secret, totp_enabled_at, totp_pending_at).
+     * Get a user's TOTP secret data (includes totp_secret, totp_enabled_at, totp_pending_at, totp_setup_id).
      *
      * Returns null if the user has no data, the user doesn't exist,
      * or the totp_secret/totp_enabled_at/totp_pending_at columns are missing from the
@@ -27,7 +27,7 @@ class TwoFactorRepository
     {
         try {
             return $this->db->fetchOne(
-                'SELECT totp_secret, totp_enabled_at, totp_pending_at FROM users WHERE id = ? LIMIT 1',
+                'SELECT totp_secret, totp_enabled_at, totp_pending_at, totp_setup_id FROM users WHERE id = ? LIMIT 1',
                 [$userId]
             );
         } catch (\PDOException $e) {
@@ -46,27 +46,28 @@ class TwoFactorRepository
      *
      * @param string|null $secret NULL to clear.
      * @param bool $pending Whether this is an unconfirmed pending secret.
+     * @param string|null $setupId Optional setup_id to bind this QR code to.
      */
-    public function setTotpSecret(int $userId, ?string $secret, bool $pending = false): void
+    public function setTotpSecret(int $userId, ?string $secret, bool $pending = false, ?string $setupId = null): void
     {
         try {
             $now = date('Y-m-d H:i:s');
             if ($secret === null) {
                 // Clear all 2FA state
                 $this->db->execute(
-                    'UPDATE users SET totp_secret = ?, totp_enabled_at = ?, totp_pending_at = ?, updated_at = ? WHERE id = ?',
-                    [null, null, null, $now, $userId]
+                    'UPDATE users SET totp_secret = ?, totp_enabled_at = ?, totp_pending_at = ?, totp_setup_id = ?, updated_at = ? WHERE id = ?',
+                    [null, null, null, null, $now, $userId]
                 );
             } elseif ($pending) {
                 // Pending: store secret but mark as unconfirmed
                 $this->db->execute(
-                    'UPDATE users SET totp_secret = ?, totp_pending_at = ?, updated_at = ? WHERE id = ?',
-                    [$secret, $now, $now, $userId]
+                    'UPDATE users SET totp_secret = ?, totp_pending_at = ?, totp_setup_id = ?, updated_at = ? WHERE id = ?',
+                    [$secret, $now, $setupId, $now, $userId]
                 );
             } else {
                 // Confirmed: store secret and mark as enabled
                 $this->db->execute(
-                    'UPDATE users SET totp_secret = ?, totp_enabled_at = ?, totp_pending_at = NULL, updated_at = ? WHERE id = ?',
+                    'UPDATE users SET totp_secret = ?, totp_enabled_at = ?, totp_pending_at = NULL, totp_setup_id = NULL, updated_at = ? WHERE id = ?',
                     [$secret, $now, $now, $userId]
                 );
             }

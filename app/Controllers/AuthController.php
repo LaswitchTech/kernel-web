@@ -715,20 +715,25 @@ class AuthController extends Controller
 
         /** @var TwoFactorService $twoFactor */
         $twoFactor = $this->container->get('two_factor');
-        $secret = $twoFactor->generateSecret($user['id']);
 
-        if ($secret === null) {
+        // Accept optional setup_id from frontend. If absent, generate one.
+        $setupId = (string) ($this->input('setupId', $_GET['setupId'] ?? ''));
+        if ($setupId === '') {
+            $setupId = bin2hex(random_bytes(16));
+        }
+
+        $result = $twoFactor->generateSecretFull($user['id'], $setupId);
+
+        if ($result === null) {
             $this->json(['error' => 'User not found'], 404);
             return;
         }
 
-        $appName = ($this->container->get('config')['name'] ?? 'Kernel-Web');
-        $uri = $twoFactor->getOtpauthUri($user['id'], $appName, $user['email']);
-
         $this->json([
-            'secret' => $secret,
-            'uri'    => $uri,
-            'pending' => true,
+            'secret'    => $result['secret'],
+            'uri'       => $result['uri'],
+            'pending'   => true,
+            'setupId'   => $result['setupId'],
         ]);
     }
 
@@ -750,8 +755,54 @@ class AuthController extends Controller
 
         /** @var TwoFactorService $twoFactor */
         $twoFactor = $this->container->get('two_factor');
+        /** @var array<string, mixed> $config */
+        $config = $this->container->get('config');
 
-        if (!$twoFactor->verifyTotp($user['id'], $code)) {
+        // Accept optional setup_id from frontend for stale-QR detection.
+        $setupId = (string) ($this->input('setupId', $_GET['setupId'] ?? ''));
+        if ($setupId === '') {
+            $setupId = null;
+        }
+
+        // Setup flow: use ±10 window to accommodate time drift during initial setup.
+        // Login flow uses ±1 (TwoFactorService::TOTP_WINDOW).
+        $debug = $config['debug'] ?? false;
+
+        $secretData = $twoFactor->getPendingSetupInfo($user['id']);
+        $pendingSetupId = $secretData['setupId'] ?? null;
+        $pendingAt = $secretData['pendingAt'] ?? 'never';
+
+        // Only enforce setup_id binding if the stored pending secret has one
+        // (backward compatible with old pending secrets that lack setup_id).
+        $match = null;
+        if ($pendingSetupId !== null && $pendingSetupId !== '') {
+            $match = $twoFactor->verifyTotpWithSetupCheck($user['id'], $code, 10, $pendingSetupId);
+        }
+        if ($match === null) {
+            $match = $twoFactor->verifyTotpWithInfo($user['id'], $code, 10);
+        }
+
+        if ($debug) {
+            $secretSha1 = $secretData ? substr(hash('sha256', $secretData['secret'] ?? ''), 0, 12) : 'none';
+            $this->json([
+                'error'       => 'Invalid code. Please verify with your authenticator app.',
+                '_debug'      => [
+                    'pending_secret_sha1_prefix' => $secretSha1,
+                    'pending_at'                 => $pendingAt,
+                    'user_id'                    => $user['id'],
+                    'pending_setup_id'           => $pendingSetupId ?? 'none',
+                    'submitted_setup_id'         => $setupId ?? 'none',
+                    'setup_id_match'             => $pendingSetupId === $setupId,
+                    'secret_sha1'                => $secretSha1,
+                    'code_length'                => strlen($code),
+                    'code_is_digits'             => preg_match('/^\d+$/', $code),
+                    'window_checked'             => '±10',
+                ],
+            ], 400);
+            return;
+        }
+
+        if ($match === null) {
             $this->json(['error' => 'Invalid code. Please verify with your authenticator app.'], 400);
             return;
         }

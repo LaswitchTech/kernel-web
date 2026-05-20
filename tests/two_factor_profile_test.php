@@ -67,7 +67,7 @@ $db->execute("CREATE TABLE users (
     email TEXT UNIQUE NOT NULL, display_name TEXT DEFAULT '',
     password_hash TEXT NOT NULL, is_active INTEGER DEFAULT 1,
     email_verified_at VARCHAR(32), totp_secret VARCHAR(255),
-    totp_enabled_at VARCHAR(32), totp_pending_at VARCHAR(32),
+    totp_enabled_at VARCHAR(32), totp_pending_at VARCHAR(32), totp_setup_id VARCHAR(255),
     created_at TEXT NOT NULL, updated_at TEXT NOT NULL
 )");
 $db->execute("CREATE TABLE auth_2fa_recovery_codes (
@@ -84,7 +84,7 @@ $db->execute(
 );
 
 // Clear any existing 2FA for test user
-$db->execute("UPDATE users SET totp_secret = NULL, totp_enabled_at = NULL, totp_pending_at = NULL WHERE id = 1");
+$db->execute("UPDATE users SET totp_secret = NULL, totp_enabled_at = NULL, totp_pending_at = NULL, totp_setup_id = NULL WHERE id = 1");
 
 // --- Container setup ---
 $container = new Container();
@@ -207,7 +207,7 @@ assert_true(empty($enabledData['totp_pending_at']), 'totp_pending_at cleared aft
 
 // Reset: clear everything
 $svc->disable(1);
-$db->execute("UPDATE users SET totp_secret = NULL, totp_enabled_at = NULL, totp_pending_at = NULL WHERE id = 1");
+$db->execute("UPDATE users SET totp_secret = NULL, totp_enabled_at = NULL, totp_pending_at = NULL, totp_setup_id = NULL WHERE id = 1");
 assert_false($svc->isEnabled(1), 'user 1 has no 2FA');
 assert_false($svc->hasPendingSetup(1), 'no pending setup');
 
@@ -295,7 +295,7 @@ assert_false($svc->verifyTotp(1, $tooOldCode), 'step -2 code outside ±1 window 
 
 // Reset
 $svc->disable(1);
-$db->execute("UPDATE users SET totp_secret = NULL, totp_enabled_at = NULL, totp_pending_at = NULL WHERE id = 1");
+$db->execute("UPDATE users SET totp_secret = NULL, totp_enabled_at = NULL, totp_pending_at = NULL, totp_setup_id = NULL WHERE id = 1");
 $svc->generateSecret(1);
 
 // Test that empty code returns false from verifyTotp
@@ -333,7 +333,7 @@ assert_false($svc->verifyTotp(1, ''), 'empty string from wrong key rejected');
 // the service layer is correct and the issue is elsewhere (time drift, etc.)
 
 $svc->disable(1);
-$db->execute("UPDATE users SET totp_secret = NULL, totp_enabled_at = NULL, totp_pending_at = NULL WHERE id = 1");
+$db->execute("UPDATE users SET totp_secret = NULL, totp_enabled_at = NULL, totp_pending_at = NULL, totp_setup_id = NULL WHERE id = 1");
 
 // Use the user's EXACT secret as the pending secret in DB
 $USER_SECRET = 'LHOOF4DUQDZDGC523M6KRNBSMNTLROGE';
