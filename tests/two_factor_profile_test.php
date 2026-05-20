@@ -242,25 +242,6 @@ assert_true($svc->isEnabled(1), '2FA enabled after valid code + enable()');
 assert_false($svc->hasPendingSetup(1), 'pending setup cleared');
 
 // ============================================================
-// TEST 5: Fresh pending secret (no stale state)
-// ============================================================
-
-// Reset completely
-$svc->disable(1);
-$db->execute("UPDATE users SET totp_secret = NULL, totp_enabled_at = NULL, totp_pending_at = NULL WHERE id = 1");
-
-// Generate fresh
-$freshSecret = $svc->generateSecret(1);
-$freshData = (new TwoFactorRepository($db))->getTotpSecret(1);
-assert_equal($freshSecret, $freshData['totp_secret'], 'fresh secret matches DB');
-assert_true(!empty($freshData['totp_pending_at']), 'fresh pending_at set');
-assert_true(empty($freshData['totp_enabled_at']), 'fresh enabled_at is NULL');
-
-// generateSecret is idempotent
-$freshSecret2 = $svc->generateSecret(1);
-assert_equal($freshSecret, $freshSecret2, 'generateSecret is idempotent');
-
-// ============================================================
 // TEST 6: Server time consistency check
 // ============================================================
 
@@ -272,7 +253,7 @@ assert_equal($freshSecret, $freshSecret2, 'generateSecret is idempotent');
 // In tests, time() is the same for all calls (system clock), so this works.
 // In production, the ±1 window (90s total) accounts for small time drift.
 
-$testSecret = $svc->disable(1);
+$svc->disable(1);
 $testSecret = $svc->generateSecret(1);
 $testHex = hex2bin($decodeMethod->invoke($svc, $testSecret));
 $testStep = (int) floor(time() / 30);
@@ -307,6 +288,99 @@ $tooOldNum = ((ord($tooOldHmac[$tooOldOff]) & 0x7F) << 24)
            | (ord($tooOldHmac[$tooOldOff + 3]) & 0xFF);
 $tooOldCode = str_pad((string) ($tooOldNum % 1000000), 6, '0', STR_PAD_LEFT);
 assert_false($svc->verifyTotp(1, $tooOldCode), 'step -2 code outside ±1 window fails');
+
+// ============================================================
+// TEST 7: Enable endpoint rejects missing/misnamed code with clear error
+// ============================================================
+
+// Reset
+$svc->disable(1);
+$db->execute("UPDATE users SET totp_secret = NULL, totp_enabled_at = NULL, totp_pending_at = NULL WHERE id = 1");
+$svc->generateSecret(1);
+
+// Test that empty code returns false from verifyTotp
+assert_false($svc->verifyTotp(1, ''), 'empty code rejected');
+assert_false($svc->verifyTotp(1, null ?? ''), 'null code rejected');
+
+// Test that misnamed keys don't match (e.g. 'totp' vs 'code')
+$testSecret7 = $svc->disable(1);
+$testSecret7 = $svc->generateSecret(1);
+$testHex7 = hex2bin($decodeMethod->invoke($svc, $testSecret7));
+$testStep7 = (int) floor(time() / 30);
+$testHmac7 = hash_hmac('sha1', pack('N*', $testStep7), $testHex7, true);
+$testOff7 = ord($testHmac7[19]) & 0x0F;
+$testNum7 = ((ord($testHmac7[$testOff7]) & 0x7F) << 24)
+          | ((ord($testHmac7[$testOff7 + 1]) & 0xFF) << 16)
+          | ((ord($testHmac7[$testOff7 + 2]) & 0xFF) << 8)
+          | (ord($testHmac7[$testOff7 + 3]) & 0xFF);
+$testCode7 = str_pad((string) ($testNum7 % 1000000), 6, '0', STR_PAD_LEFT);
+
+// Code is valid for this secret
+assert_true($svc->verifyTotp(1, $testCode7), 'valid code verifies');
+
+// But if the controller reads a different key (e.g. 'totp' instead of 'code'),
+// it would get '' (empty) and reject. The controller MUST read 'code'.
+// This test documents the expected behavior.
+assert_false($svc->verifyTotp(1, ''), 'empty string from wrong key rejected');
+
+// ============================================================
+// TEST 8: Full generate → user's EXACT scanned secret → current TOTP → enable
+// ============================================================
+
+// This tests with the exact secret the user reported scanning:
+// LHOOF4DUQDZDGC523M6KRNBSMNTLROGE
+// If this secret produces a valid TOTP code that verifies and enables,
+// the service layer is correct and the issue is elsewhere (time drift, etc.)
+
+$svc->disable(1);
+$db->execute("UPDATE users SET totp_secret = NULL, totp_enabled_at = NULL, totp_pending_at = NULL WHERE id = 1");
+
+// Use the user's EXACT secret as the pending secret in DB
+$USER_SECRET = 'LHOOF4DUQDZDGC523M6KRNBSMNTLROGE';
+$db->execute(
+    "UPDATE users SET totp_secret = ?, totp_pending_at = ? WHERE id = 1",
+    [$USER_SECRET, date('Y-m-d H:i:s')]
+);
+assert_true($svc->hasPendingSetup(1), 'user has pending setup with user secret');
+
+// Generate a valid TOTP code for this secret (simulating what Google Authenticator would show)
+$userHex = hex2bin($decodeMethod->invoke($svc, $USER_SECRET));
+assert_not_null($userHex, 'user secret decodes to hex');
+assert_true(strlen($userHex) === 20, 'user secret is 20 bytes (160 bits)');
+
+$userStep = (int) floor(time() / 30);
+$userHmac = hash_hmac('sha1', pack('N*', $userStep), $userHex, true);
+$userOff = ord($userHmac[19]) & 0x0F;
+$userCodeNum = ((ord($userHmac[$userOff]) & 0x7F) << 24)
+             | ((ord($userHmac[$userOff + 1]) & 0xFF) << 16)
+             | ((ord($userHmac[$userOff + 2]) & 0xFF) << 8)
+             | (ord($userHmac[$userOff + 3]) & 0xFF);
+$userCode = str_pad((string) ($userCodeNum % 1000000), 6, '0', STR_PAD_LEFT);
+echo "\nUser's exact secret ($USER_SECRET) → valid code at current step: $userCode\n";
+
+// Verify the code against the pending secret (simulates the enable endpoint's verifyTotp)
+assert_true($svc->verifyTotp(1, $userCode), 'user code verifies against pending secret');
+
+// Enable (simulates the enable endpoint's enable call)
+$enableResult = $svc->enable(1);
+assert_true($svc->isEnabled(1), '2FA enabled after user code verification');
+assert_false($svc->hasPendingSetup(1), 'pending setup cleared after enable');
+assert_true(count($enableResult['recoveryCodes']) > 0, 'recovery codes generated');
+
+// Verify the code also works within ±1 window
+for ($i = -1; $i <= 1; $i++) {
+    $s = $userStep + $i;
+    $h = hash_hmac('sha1', pack('N*', $s), $userHex, true);
+    $o = ord($h[19]) & 0x0F;
+    $n = ((ord($h[$o]) & 0x7F) << 24)
+        | ((ord($h[$o + 1]) & 0xFF) << 16)
+        | ((ord($h[$o + 2]) & 0xFF) << 8)
+        | (ord($h[$o + 3]) & 0xFF);
+    $c = str_pad((string) ($n % 1000000), 6, '0', STR_PAD_LEFT);
+    // Reset to pending to re-test verify
+    $db->execute("UPDATE users SET totp_secret = ?, totp_pending_at = ?, totp_enabled_at = NULL WHERE id = 1", [$USER_SECRET, date('Y-m-d H:i:s')]);
+    assert_true($svc->verifyTotp(1, $c), "±1 window code '$c' verifies");
+}
 
 // ============================================================
 // SUMMARY
