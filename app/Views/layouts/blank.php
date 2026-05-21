@@ -50,5 +50,9 @@
 <?= $content ?>
 
 <?php echo \App\Core\HookRegistry::render('layout.body.end'); ?>
+
+<!-- Developer Tools -->
+<?php include __DIR__ . '/../partials/dev-tools-offcanvas.php'; ?>
+
 </body>
 </html>
