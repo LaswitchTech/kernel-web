@@ -35,6 +35,13 @@ class SessionAuth implements MiddlewareInterface
         $auth = $this->container->get('auth');
         $user = $auth->user();
 
+        // Allow pending 2FA users to reach the 2FA form without full session auth.
+        if ($user === null && $auth->hasPendingTwoFactor()) {
+            $auth->setTwoFactorPendingAccess();
+            $next($params);
+            return;
+        }
+
         if ($user === null) {
             http_response_code(401);
             header('Content-Type: application/json');

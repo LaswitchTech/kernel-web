@@ -596,13 +596,15 @@ class AuthController extends Controller
         /** @var AuthService $auth */
         $auth = $this->container->get('auth');
 
-        if (!$auth->hasPendingTwoFactor()) {
+        // Must have either pending 2FA state or pending 2FA access (from SessionAuth).
+        if (!$auth->hasPendingTwoFactor() && !$auth->hasPendingTwoFactorAccess()) {
             header('Location: /signin', true, 302);
             exit;
         }
 
         $userId = $auth->getPendingTwoFactorUserId();
-        $user   = $userId !== null ? $auth->user() : null;
+        // Get user from pending 2FA state (not full session, since user_id is not set yet).
+        $user = $userId !== null ? $auth->provider()->getUserById($userId) : null;
 
         $config    = $this->container->get('config');
         $appName   = $config['name'] ?? 'Kernel-Web';
@@ -629,7 +631,8 @@ class AuthController extends Controller
         /** @var AuthService $auth */
         $auth = $this->container->get('auth');
 
-        if (!$auth->hasPendingTwoFactor()) {
+        // Must have either pending 2FA state or pending 2FA access (from SessionAuth).
+        if (!$auth->hasPendingTwoFactor() && !$auth->hasPendingTwoFactorAccess()) {
             header('Location: /signin', true, 302);
             exit;
         }
@@ -659,8 +662,8 @@ class AuthController extends Controller
             return;
         }
 
-        // Verify user is still active
-        $user = $auth->user();
+        // Verify user is still active (get from pending 2FA state, not full session).
+        $user = $auth->provider()->getUserById($userId);
         if ($user === null || !$user['is_active']) {
             $this->json(['error' => 'Account is not active.'], 401);
             return;

@@ -31,6 +31,9 @@ class AuthService
     /** @var \App\Core\Container|null DI container (for TwoFactorService access) */
     private ?\App\Core\Container $container = null;
 
+    /** @var bool Whether SessionAuth allowed pending 2FA access through */
+    private bool $pendingTwoFactorAccess = false;
+
     // 5-minute window for pending 2FA state
     private const TWO_FACTOR_PENDING_LIFETIME = 300;
 
@@ -51,7 +54,15 @@ class AuthService
         return $this->rememberMe;
     }
 
-    // -------------------------------------------------------------------------
+    /**
+     * Get the auth provider (for 2FA flow user lookups).
+     */
+    public function provider(): AuthProviderInterface
+    {
+        return $this->provider;
+    }
+
+    // ------------------------------------
     // Public API
     // -------------------------------------------------------------------------
 
@@ -174,12 +185,33 @@ class AuthService
     }
 
     /**
+     * Signal that SessionAuth allowed pending 2FA access through.
+     * Used by SessionAuth middleware to allow pending 2FA users through.
+     */
+    public function setTwoFactorPendingAccess(): void
+    {
+        $this->pendingTwoFactorAccess = true;
+    }
+
+    /**
+     * Check whether pending 2FA access is allowed.
+     * Returns true when SessionAuth explicitly allowed a pending 2FA user through.
+     * Note: this is NOT the same as hasPendingTwoFactor() — it requires an explicit
+     * setTwoFactorPendingAccess() call to return true.
+     */
+    public function hasPendingTwoFactorAccess(): bool
+    {
+        return $this->pendingTwoFactorAccess;
+    }
+
+    /**
      * Log out the current user and destroy their session.
      */
     public function logout(): void
     {
         $this->startSession();
 
+        // Clear ALL session state (full auth + pending 2FA).
         $_SESSION = [];
 
         // Expire the session cookie immediately
@@ -256,8 +288,12 @@ class AuthService
     {
         $this->startSession();
 
-        $_SESSION['user_id'] = $userId;
+        // Do NOT restore full session if 2FA is enabled.
+        if ($this->hasTwoFactorEnabled($userId)) {
+            return; // 2FA blocks auto-login — user must enter TOTP code first.
+        }
 
+        $_SESSION['user_id'] = $userId;
         $this->cachedUser = $this->provider->getUserById($userId);
     }
 
