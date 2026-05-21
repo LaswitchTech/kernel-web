@@ -1128,7 +1128,7 @@ div.dt-container td.dt-empty {
   transform: translateY(-50%);
   border-radius: 8px 0 0 8px;
   padding: 0.5rem 0.65rem;
-  z-index: 1055;
+  z-index: 1044;
   border: none;
   box-shadow: -2px 2px 8px rgba(0, 0, 0, 0.15);
   font-size: 0.85rem;
