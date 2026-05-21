@@ -53,7 +53,7 @@
 
             <div class="d-grid gap-2">
                 <?php if ($isAuthenticated): ?>
-                <div class="text-center small text-muted mb-2">Signed in as <strong><?= htmlspecialchars($user['username'] ?? $user['email'] ?? 'user') ?></strong></div>
+                <div class="text-center small text-muted mb-2">Signed in as <strong><?= htmlspecialchars($currentUsername ?? $currentUserEmail ?? 'user') ?></strong></div>
                 <a href="/admin" class="btn btn-primary btn-lg">
                     <i class="bi bi-box-arrow-in-right"></i> Go to App
                 </a>

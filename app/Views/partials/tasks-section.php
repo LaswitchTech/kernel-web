@@ -6,7 +6,7 @@
  *   $tasks       (array)   — rows from TaskService::getByEntity (may be empty)
  *   $entityType  (string)  — entity type string ('device', 'alert', 'finding')
  *   $entityId    (int)     — primary key of the linked entity
- *   $permissions (array)   — permission names for the authenticated user
+ *   $currentUserPermissions (array) — permission names for the authenticated user
  *
  * Intentionally NOT using DataTables: this is an embedded compact section
  * within a detail page, not a standalone table view.  The same rationale
@@ -18,7 +18,7 @@
 
 use App\Modules\Tasks\Services\TaskService;
 
-$canManageTasks = in_array('tasks.manage', $permissions ?? [], true);
+$canManageTasks = in_array('tasks.manage', $currentUserPermissions ?? [], true);
 ?>
 
 <!-- ── Tasks ─────────────────────────────────────────────────────────────── -->

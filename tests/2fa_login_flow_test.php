@@ -11,6 +11,11 @@
  * - restoreSession blocked for 2FA user
  */
 
+// Start session before any output so AuthService session methods work correctly.
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
 require __DIR__ . '/bootstrap.php';
 require __DIR__ . '/assert.php';
 reset_counters();
@@ -65,7 +70,7 @@ class TestContainer2faLogin extends \App\Core\Container
 {
     public function __construct(TwoFactorService $twoFactor)
     {
-        $this->items['two_factor'] = $twoFactor;
+        $this->set('two_factor', $twoFactor);
     }
 }
 
@@ -73,9 +78,14 @@ $container = new TestContainer2faLogin($twoFactorSvc);
 $config = ['session' => ['name' => 'test_s2fa', 'lifetime' => 7200, 'secure' => false, 'httponly' => true, 'samesite' => 'Lax', 'path' => '/']];
 
 // ===== TEST: Login with 2FA creates pending state =====
+// Suppress session_set_cookie_params warning: session was started above before echo output,
+// so headers are already sent when AuthService tries to set cookie params.
+$oldErr = error_reporting();
+error_reporting($oldErr & ~E_WARNING & ~E_DEPRECATED);
 echo "= TEST: Login with 2FA creates pending state =\n";
 $auth = new AuthService($provider, $config, null);
 $auth->setContainer($container);
+error_reporting($oldErr);
 
 $user = $auth->login(['identity' => 'testuser', 'password' => 'testpass123']);
 assert_not_null($user, 'login returns user');
@@ -109,7 +119,9 @@ if ($auth->hasPendingTwoFactor() || $auth->hasPendingTwoFactorAccess()) {
 echo "= TEST: completeTwoFactor promotes to full session =\n";
 $auth2 = new AuthService($provider, $config, null);
 $auth2->setContainer($container);
+error_reporting($oldErr & ~E_WARNING & ~E_DEPRECATED);
 $auth2->login(['identity' => 'testuser', 'password' => 'testpass123']);
+error_reporting($oldErr);
 assert_true($auth2->hasPendingTwoFactor(), 'pending state exists');
 assert_null($auth2->user(), 'user() is null before complete');
 $auth2->completeTwoFactor();
@@ -139,10 +151,13 @@ $hash2 = password_hash('nopass', PASSWORD_DEFAULT);
 $db->execute("INSERT INTO users VALUES (2, 'user2', 'user2@test.com', '$hash2', 1, 'User 2', '$now', NULL, NULL, NULL, NULL, '$now', '$now')");
 $auth4 = new AuthService($provider, $config, null);
 $auth4->setContainer($container);
+error_reporting($oldErr & ~E_WARNING & ~E_DEPRECATED);
 $user4 = $auth4->login(['identity' => 'user2', 'password' => 'nopass']);
+error_reporting($oldErr);
 assert_not_null($user4, 'login for 2FA-disabled user returns user');
 assert_not_null($auth4->user(), 'user() is set for 2FA-disabled user');
 assert_false($auth4->hasPendingTwoFactor(), 'no pending state for 2FA-disabled user');
 echo "PASS\n";
 
+error_reporting($oldErr);
 echo "\n=== ALL TESTS PASSED ===\n";

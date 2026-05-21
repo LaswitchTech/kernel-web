@@ -5,7 +5,7 @@
  * Variables expected (set by the including view):
  *   $notes       (array)   — rows from NoteRepository::findByEntity (may be empty)
  *   $noteBaseUrl (string)  — URL prefix for note actions, e.g. '/devices/5' or '/alerts/3'
- *   $user        (array)   — authenticated user record (must contain 'id')
+ *   $currentUserId (int)    — ID of the authenticated user (0 if guest)
  *
  * Notes are rendered without DataTables — each note is a prose block with
  * variable content length, which does not fit a tabular layout.
@@ -40,7 +40,7 @@
                     $noteAuthor = $note['author_name'];
                 }
 
-                $isOwn    = $note['user_id'] !== null && (int) $note['user_id'] === (int) $user['id'];
+                $isOwn    = $note['user_id'] !== null && (int) $note['user_id'] === (int) $currentUserId;
                 $isEdited = $note['updated_at'] !== $note['created_at'];
             ?>
             <div class="p-3 mb-2 rounded" style="background:var(--app-panel-2); border:1px solid var(--app-border);">

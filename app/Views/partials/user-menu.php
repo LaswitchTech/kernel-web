@@ -36,14 +36,14 @@
     <div class="app-topbar-user-trigger">
         <div class="dropdown">
             <a class="topbar-user" href="#" data-bs-toggle="dropdown" aria-expanded="false">
-                <div class="app-topbar-user-avatar"><?= htmlspecialchars(mb_strtoupper(mb_substr($displayName, 0, 1))) ?></div>
+                <div class="app-topbar-user-avatar"><?= htmlspecialchars(mb_strtoupper(mb_substr($currentUserDisplayName ?? '', 0, 1))) ?></div>
                 <div class="app-topbar-user-meta">
-                    <div class="app-topbar-user-label"><?= htmlspecialchars($displayName) ?></div>
-                    <div class="app-topbar-user-subtitle"><?= htmlspecialchars($user['email']) ?></div>
+                    <div class="app-topbar-user-label"><?= htmlspecialchars($currentUserDisplayName ?? '') ?></div>
+                    <div class="app-topbar-user-subtitle"><?= htmlspecialchars($currentUserEmail ?? '') ?></div>
                 </div>
             </a>
             <ul class="dropdown-menu dropdown-menu-end">
-                <li><h6 class="dropdown-header"><?= htmlspecialchars($user['username']) ?></h6></li>
+                <li><h6 class="dropdown-header"><?= htmlspecialchars($currentUsername ?? '') ?></h6></li>
                 <li><hr class="dropdown-divider"></li>
                 <li>
                     <button class="dropdown-item js-profile-trigger" type="button">
@@ -51,8 +51,9 @@
                     </button>
                 </li>
                 <?php
-                $canAdmin = in_array('admin', $permissions ?? [], true)
-                            || in_array('admin.access', $permissions ?? [], true);
+                $_perms = $currentUserPermissions ?? [];
+                $canAdmin = in_array('admin', $_perms, true)
+                            || in_array('admin.access', $_perms, true);
                 ?>
                 <?php if ($canAdmin): ?>
                 <li>

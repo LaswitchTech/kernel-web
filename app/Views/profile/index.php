@@ -2,13 +2,16 @@
 /**
  * Profile page content fragment.
  *
- * Variables available (set by ProfileController::index before ob_start):
- *   $user          (array)   — authenticated user record (id, username, display_name, email)
- *   $permissions   (array)   — permission names for the authenticated user
- *   $appName       (string)  — application name from config
- *   $displayName   (string)  — display_name if set, otherwise username
- *   $notifPrefs    (array)   — ['in_app' => bool, 'email' => bool]
- *   $flash         (array|null) — one-time status message ['type', 'message']
+ * Variables available (set by ViewGlobals + ProfileController::index):
+ *   $currentUser           (array|null) — authenticated user record (id, username, display_name, email) or null
+ *   $currentUserId         (int)         — user ID (0 if guest)
+ *   $currentUsername       (string)      — username
+ *   $currentUserEmail      (string)      — email address
+ *   $currentUserDisplayName (string)      — display_name or username
+ *   $currentUserPermissions (array)       — permission names for the authenticated user
+ *   $appName               (string)      — application name from config
+ *   $notifPrefs            (array)        — ['in_app' => bool, 'email' => bool]
+ *   $flash                 (array|null)  — one-time status message ['type', 'message']
  */
 ?>
 
@@ -35,13 +38,13 @@
         <dl class="row mb-0" style="row-gap:.5rem;">
             <dt class="col-sm-3 text-muted small fw-normal">Display name</dt>
             <dd class="col-sm-9 mb-0 small">
-                <?= htmlspecialchars(($user['display_name'] ?? '') !== '' ? $user['display_name'] : '—') ?>
+                <?= htmlspecialchars(($currentUserDisplayName ?? '') !== '' ? $currentUserDisplayName : '—') ?>
             </dd>
             <dt class="col-sm-3 text-muted small fw-normal">Username</dt>
-            <dd class="col-sm-9 mb-0 small"><?= htmlspecialchars($user['username']) ?></dd>
+            <dd class="col-sm-9 mb-0 small"><?= htmlspecialchars($currentUsername) ?></dd>
             <dt class="col-sm-3 text-muted small fw-normal">Email</dt>
             <dd class="col-sm-9 mb-0 small">
-                <?= ($user['email'] ?? '') !== '' ? htmlspecialchars($user['email']) : '—' ?>
+                <?= ($currentUserEmail ?? '') !== '' ? htmlspecialchars($currentUserEmail) : '—' ?>
             </dd>
         </dl>
     </div>
@@ -82,8 +85,8 @@
                     <label class="form-check-label" for="pref-email">
                         <span class="small fw-medium">Email notifications</span>
                         <span class="d-block text-muted" style="font-size:.8rem;">
-                            Delivered to <?= ($user['email'] ?? '') !== ''
-                                ? '<strong>' . htmlspecialchars($user['email']) . '</strong>'
+                            Delivered to <?= ($currentUserEmail ?? '') !== ''
+                                ? '<strong>' . htmlspecialchars($currentUserEmail) . '</strong>'
                                 : 'your email address (not set)' ?>.
                         </span>
                     </label>

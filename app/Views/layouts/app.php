@@ -84,6 +84,7 @@
     </script>
 </head>
 <body>
+<?php use App\Core\ViewGlobals; $__devScope = get_defined_vars(); $__globals = ViewGlobals::varsFromScope(null, $__devScope); extract($__globals); $__devScope = null; ?>
 
 <?php
 // Hook: layout.body.start — plugins can inject content at the start of <body>
