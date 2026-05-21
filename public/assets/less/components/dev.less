@@ -19,8 +19,10 @@
     }
 }
 
+/* Wider offcanvas — use CSS variable so Bootstrap respects it */
 .dev-tools-offcanvas {
-    width: 520px !important;
+    --bs-offcanvas-width: min(900px, 95vw) !important;
+    width: min(900px, 95vw) !important;
 }
 
 .dev-vars-container {
@@ -33,19 +35,28 @@
     max-height: calc(100vh - 180px);
 }
 
+/* Variable table — fixed column widths, content wraps properly */
 .dev-vars-table {
     font-size: .75rem;
     min-width: 100%;
+    max-width: 100%;
+    table-layout: fixed;
 
     th {
         font-weight: 600;
         border-bottom: 1px solid var(--bs-border-color);
         white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
 
-    th:nth-child(1) { width: 28%; min-width: 100px; }
-    th:nth-child(2) { width: 14%; min-width: 60px; }
-    th:nth-child(3) { width: 58%; min-width: 200px; }
+    td {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        vertical-align: top;
+        word-break: break-word;
+        overflow-wrap: anywhere;
+    }
 }
 
 .dev-var-name {
@@ -61,10 +72,21 @@
 
 .dev-var-value {
     font-size: .75rem;
+    line-height: 1.4;
+    white-space: normal;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+}
+
+.dev-var-masked {
+    color: #dc3545 !important;
 }
 
 .dev-var-preview {
     font-size: .7rem;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+    max-width: 100%;
 }
 
 .dev-var-matched {
@@ -85,38 +107,46 @@
 }
 
 .dev-var-detail-row {
-    display: none;
-
-    &.dev-var-hidden {
-        display: none !important;
-    }
+    // Bootstrap collapse controls visibility of its contents
 }
 
 .dev-var-details {
     background: var(--bs-tertiary-bg);
     font-size: .7rem;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+    max-width: 100%;
 }
 
 .dev-var-detail-table {
+    font-size: .7rem;
+    width: 100%;
+    max-width: 100%;
+
     td {
         vertical-align: top;
         padding: .15rem .4rem;
+        word-break: break-word;
+        overflow-wrap: anywhere;
     }
 
     code {
         font-size: .68rem;
-        word-break: break-all;
+        word-break: break-word;
+        overflow-wrap: anywhere;
     }
 }
 
 .dev-obj-tostring {
     code {
         font-size: .7rem;
-        word-break: break-all;
+        word-break: break-word;
+        overflow-wrap: anywhere;
     }
 }
 
 .dev-var-trunc {
     font-size: .68rem;
     color: var(--bs-secondary-color);
+    padding-top: .25rem;
 }

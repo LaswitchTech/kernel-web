@@ -30,11 +30,27 @@ $devExclude = [
 ];
 $devVars = array_diff_key($devVars, array_flip($devExclude));
 
-/* ── Scalars ───────────────────────────────────────────────────── */
+/**
+ * Strict type label for any PHP value.
+ */
+function devTypeLabel(mixed $val): string {
+    if (is_array($val))  return 'array';
+    if (is_object($val)) return 'object';
+    if (is_string($val)) return 'string';
+    if (is_int($val))    return 'integer';
+    if (is_float($val))  return 'float';
+    if (is_bool($val))   return 'boolean';
+    if (is_null($val))   return 'null';
+    if (is_resource($val)) return 'resource';
+    return 'unknown';
+}
 
+/**
+ * HTML-escape a scalar for display. Truncates at $maxLen.
+ */
 function devScalarDisplay(mixed $val, int $maxLen): string {
-    if (is_bool($val)) return $val ? 'true' : 'false';
-    if ($val === null) return 'null';
+    if (is_bool($val))   return $val ? 'true' : 'false';
+    if ($val === null)   return 'null';
     $s = (string)$val;
     if (strlen($s) > $maxLen) {
         return substr($s, 0, $maxLen) . '… (' . strlen($s) . ' chars)';
@@ -42,12 +58,15 @@ function devScalarDisplay(mixed $val, int $maxLen): string {
     return htmlspecialchars($s, ENT_QUOTES, 'UTF-8');
 }
 
-/* ── Sanitize a value for safe HTML display ─────────────────── */
-// Returns one of:
-//   scalar (string) — already HTML-escaped
-//   ['_t' => 'array', '_p' => 'Array (N items)', '_d' => [...], '_c' => ?count]
-//   ['_t' => 'object', '_c' => class, '_p' => 'Object (N props)', '_d' => [...]]
-function devSanitize(mixed $val, int $depth = 0, int $maxDepth = 6, int $maxItems = 6, int $maxStrLen = 200): array|string {
+/* ── Unified sanitized structure ──────────────────────── */
+// Always returns an associative array with strict keys:
+//   'type'      => string  (strict type name)
+//   'preview'   => string  (human-readable preview)
+//   'value'     => ?string (scalar HTML-escaped value, null if not scalar)
+//   'count'     => ?int    (array/object count)
+//   'children'  => ?array  (sanitized children for array/object)
+//   'truncated' => ?int    (number of hidden children)
+function devSanitize(mixed $val, int $depth = 0, int $maxDepth = 6, int $maxItems = 6, int $maxStrLen = 200): array {
     static $sensitivePatterns = null;
     if ($sensitivePatterns === null) {
         $sensitivePatterns = ['password', 'passwd', 'secret', 'token', 'key', 'cookie', 'authorization', 'csrf', 'session'];
@@ -55,62 +74,97 @@ function devSanitize(mixed $val, int $depth = 0, int $maxDepth = 6, int $maxItem
     $sensitiveKey = fn(string $k): bool => str_starts_with($k, '_')
         || preg_match('/'.implode('|', $sensitivePatterns).'/', $k);
 
-    if ($depth > $maxDepth) return '… [max depth]';
+    if ($depth > $maxDepth) {
+        return ['type' => 'unknown', 'preview' => '… [max depth]', 'value' => null, 'count' => null, 'children' => null, 'truncated' => null];
+    }
 
     /* Arrays */
     if (is_array($val)) {
-        $total   = count($val);
-        $preview = 'Array (' . $total . ' items)';
-        $result  = ['_t' => 'array', '_p' => $preview, '_d' => []];
-        if ($total === 0) {
-            $result['_c'] = 0;
-            return $result;
-        }
+        $total = count($val);
+        $result = [
+            'type' => 'array',
+            'preview' => 'Array (' . $total . ' items)',
+            'count' => $total,
+            'value' => null,
+            'children' => [],
+            'truncated' => null,
+        ];
+        if ($total === 0) return $result;
+
         $count = 0;
         foreach ($val as $k => $v) {
             if ($count >= $maxItems) break;
             $keySafe = htmlspecialchars((string)$k, ENT_QUOTES, 'UTF-8');
             if ($sensitiveKey((string)$k)) {
-                $result['_d'][$keySafe] = ['_m' => 1]; // masked
+                $result['children'][$keySafe] = [
+                    'type' => 'masked',
+                    'preview' => '▌***',
+                    'value' => null,
+                    'count' => null,
+                    'children' => null,
+                    'truncated' => null,
+                ];
             } elseif (is_scalar($v)) {
-                $result['_d'][$keySafe] = devScalarDisplay($v, $maxStrLen);
+                $result['children'][$keySafe] = [
+                    'type' => devTypeLabel($v),
+                    'preview' => devScalarDisplay($v, $maxStrLen),
+                    'value' => devScalarDisplay($v, $maxStrLen),
+                    'count' => null,
+                    'children' => null,
+                    'truncated' => null,
+                ];
             } else {
-                $r = devSanitize($v, $depth + 1, $maxDepth, $maxItems, $maxStrLen);
-                $result['_d'][$keySafe] = is_array($r) ? $r : ['_v' => $r];
+                $result['children'][$keySafe] = devSanitize($v, $depth + 1, $maxDepth, $maxItems, $maxStrLen);
             }
             $count++;
         }
         if ($count < $total) {
-            $result['_c'] = $total - $count; // truncated count
+            $result['truncated'] = $total - $count;
         }
         return $result;
     }
 
     /* Objects */
     if (is_object($val)) {
-        $class     = $val::class;
-        $props     = get_object_vars($val);
-        $total     = count($props);
-        $result    = ['_t' => 'object', '_c' => htmlspecialchars($class, ENT_QUOTES, 'UTF-8'), '_p' => 'Object (' . $total . ' props)', '_d' => []];
+        $class  = $val::class;
+        $props  = get_object_vars($val);
+        $total  = count($props);
+        $result = [
+            'type' => 'object',
+            'preview' => htmlspecialchars($class, ENT_QUOTES, 'UTF-8') . ' (' . $total . ' props)',
+            'count' => $total,
+            'value' => null,
+            'children' => [],
+            'truncated' => null,
+        ];
+
         $allowedMagic = ['Stringable', 'Throwable', 'Exception', 'RuntimeException', 'InvalidArgumentException', 'LogicException', 'DomainException'];
         // Safe string repr for allowed magic classes
         if ($total === 0 && in_array($class, $allowedMagic, true) && method_exists($val, '__toString')) {
             try {
                 $s = $val->__toString();
-                $result['_to'] = (strlen($s) > 80 ? substr($s, 0, 80) . '…' : $s);
+                $result['preview'] = htmlspecialchars($class, ENT_QUOTES, 'UTF-8') . ' → '
+                    . ((strlen($s) > 80 ? substr($s, 0, 80) . '…' : htmlspecialchars($s, ENT_QUOTES, 'UTF-8')));
                 return $result;
             } catch (\Throwable $e) { /* fall through */ }
         }
+
         $shown = 0;
         foreach ($props as $pk => $pv) {
             if ($shown >= 4) break;
             if (str_starts_with($pk, '_') || str_starts_with($pk, 'private') || str_starts_with($pk, 'protected')) continue;
             $pkSafe = htmlspecialchars($pk, ENT_QUOTES, 'UTF-8');
             if (is_scalar($pv)) {
-                $result['_d'][$pkSafe] = devScalarDisplay($pv, 80);
+                $result['children'][$pkSafe] = [
+                    'type' => devTypeLabel($pv),
+                    'preview' => devScalarDisplay($pv, 80),
+                    'value' => devScalarDisplay($pv, 80),
+                    'count' => null,
+                    'children' => null,
+                    'truncated' => null,
+                ];
             } else {
-                $r = devSanitize($pv, $depth + 1, $maxDepth, $maxItems, $maxStrLen);
-                $result['_d'][$pkSafe] = is_array($r) ? $r : ['_v' => $r];
+                $result['children'][$pkSafe] = devSanitize($pv, $depth + 1, $maxDepth, $maxItems, $maxStrLen);
             }
             $shown++;
         }
@@ -118,39 +172,41 @@ function devSanitize(mixed $val, int $depth = 0, int $maxDepth = 6, int $maxItem
     }
 
     /* Scalars */
-    if (is_scalar($val)) return ['_v' => devScalarDisplay($val, $maxStrLen)];
-    if ($val === null)   return ['_v' => 'null'];
-    return ['_v' => ' [' . gettype($val) . ']'];
+    if (is_scalar($val)) {
+        $display = devScalarDisplay($val, $maxStrLen);
+        return [
+            'type' => devTypeLabel($val),
+            'preview' => $display,
+            'value' => $display,
+            'count' => null,
+            'children' => null,
+            'truncated' => null,
+        ];
+    }
+    if ($val === null) {
+        return [
+            'type' => 'null',
+            'preview' => 'null',
+            'value' => 'null',
+            'count' => null,
+            'children' => null,
+            'truncated' => null,
+        ];
+    }
+    // Fallback for unknown types (resources, etc.)
+    return [
+        'type' => gettype($val),
+        'preview' => '[' . gettype($val) . ']',
+        'value' => null,
+        'count' => null,
+        'children' => null,
+        'truncated' => null,
+    ];
 }
 
 $devSanitized = [];
 foreach ($devVars as $varName => $varVal) {
     $devSanitized[$varName] = devSanitize($varVal);
-}
-
-/* ── Build type labels and row data ────────────────────────────── */
-
-$devRowTypes = [];
-$devRowExtras = []; // truncation info per variable
-foreach ($devSanitized as $varName => $varData) {
-    // Extract type and truncation count from the sanitized structure
-    $type = match ($varData['_t'] ?? 'unknown') {
-        'array'  => 'array',
-        'object' => 'object',
-        default  => $varData['_v'] ?? 'unknown',
-    };
-    // If type is a scalar hint (string/number/boolean/null), convert
-    if (in_array($type, ['string', 'number', 'boolean', 'null'])) {
-        $typeLabel = ucfirst($type);
-    } else {
-        $typeLabel = $type;
-    }
-    $devRowTypes[$varName] = $typeLabel;
-
-    // Truncation info
-    if (is_array($varData) && isset($varData['_c']) && $varData['_c'] > 0) {
-        $devRowExtras[$varName] = $varData['_c'];
-    }
 }
 
 ?>
@@ -198,26 +254,29 @@ foreach ($devSanitized as $varName => $varData) {
                         </tr>
                     </thead>
                     <tbody id="dev-vars-body">
-                        <?php foreach ($devSanitized as $varName => $varData): ?>
+                        <?php foreach ($devSanitized as $varName => $meta): ?>
                         <?php
-            $typeLabel = $devRowTypes[$varName];
+            $typeLabel = $meta['type'];
             $typeBadge = match ($typeLabel) {
-                'array'  => 'bg-secondary-subtle text-secondary-emphasis',
-                'object' => 'bg-info-subtle text-info-emphasis',
-                'string' => 'bg-success-subtle text-success-emphasis',
-                'number' => 'bg-success-subtle text-success-emphasis',
-                'boolean'=> 'bg-warning-subtle text-warning-emphasis',
-                'null'   => 'bg-secondary-subtle text-secondary-emphasis',
-                default  => 'bg-secondary-subtle text-secondary-emphasis',
+                'array'     => 'bg-secondary-subtle text-secondary-emphasis',
+                'object'    => 'bg-info-subtle text-info-emphasis',
+                'string'    => 'bg-success-subtle text-success-emphasis',
+                'integer'   => 'bg-success-subtle text-success-emphasis',
+                'float'     => 'bg-success-subtle text-success-emphasis',
+                'boolean'   => 'bg-warning-subtle text-warning-emphasis',
+                'null'      => 'bg-secondary-subtle text-secondary-emphasis',
+                'resource'  => 'bg-warning-subtle text-warning-emphasis',
+                'masked'    => 'bg-danger-subtle text-danger-emphasis',
+                'unknown'   => 'bg-secondary-subtle text-secondary-emphasis',
+                default     => 'bg-secondary-subtle text-secondary-emphasis',
             };
-            $isExpandable = isset($varData['_t']) && ($varData['_t'] === 'array' || $varData['_t'] === 'object');
-            $isScalar     = isset($varData['_v']) && !isset($varData['_t']);
-            $preview      = $isExpandable ? ($varData['_p'] ?? '') : null;
-            $details      = $isExpandable ? ($varData['_d'] ?? []) : null;
-            $truncCount   = ($devRowExtras[$varName] ?? 0);
-            $scalarVal    = $isScalar ? ($varData['_v'] ?? '') : null;
-            $objClass     = $isExpandable && isset($varData['_c']) ? $varData['_c'] : null;
-            $toStringVal  = $isExpandable ? ($varData['_to'] ?? null) : null;
+            $isExpandable = ($typeLabel === 'array' || $typeLabel === 'object');
+            $isScalar     = ($typeLabel === 'string' || $typeLabel === 'integer' || $typeLabel === 'float' || $typeLabel === 'boolean');
+            $isMasked     = ($typeLabel === 'masked');
+            $preview      = $meta['preview'];
+            $children     = ($isExpandable && !empty($meta['children'])) ? $meta['children'] : [];
+            $truncCount   = ($meta['truncated'] ?? 0);
+            $scalarVal    = $isScalar ? ($meta['value'] ?? '') : null;
         ?>
                         <tr class="dev-var-row"
                             data-var-name="<?= htmlspecialchars($varName, ENT_QUOTES, 'UTF-8') ?>"
@@ -237,63 +296,66 @@ foreach ($devSanitized as $varName => $varData) {
                             </td>
                             <td><span class="badge <?= htmlspecialchars($typeBadge, ENT_QUOTES, 'UTF-8') ?> dev-var-type-badge"><?= htmlspecialchars($typeLabel, ENT_QUOTES, 'UTF-8') ?></span></td>
                             <td>
-                                <?php if ($scalarVal !== null): ?>
+                                <?php if ($isMasked): ?>
+                                    <code class="dev-var-value dev-var-masked">▌***</code>
+                                <?php elseif ($isScalar && $scalarVal !== null): ?>
                                     <code class="dev-var-value"><?= $scalarVal ?></code>
-                                <?php elseif ($isExpandable && isset($objClass)): ?>
-                                    <code class="dev-var-value"><?= htmlspecialchars($objClass, ENT_QUOTES, 'UTF-8') ?> · <?= htmlspecialchars($preview, ENT_QUOTES, 'UTF-8') ?></code>
-                                    <?php if ($toStringVal !== null): ?>
-                                    <div class="dev-obj-tostring mt-1"><code><?= $toStringVal ?></code></div>
-                                    <?php endif; ?>
                                 <?php elseif ($isExpandable): ?>
                                     <div class="dev-var-preview text-muted small"><?= htmlspecialchars($preview, ENT_QUOTES, 'UTF-8') ?></div>
                                 <?php endif; ?>
                             </td>
                         </tr>
                         <?php if ($isExpandable): ?>
-                        <tr class="dev-var-detail-row" style="display: none;">
+                        <tr class="dev-var-detail-row">
                             <td colspan="3">
                                 <div class="collapse" id="dev-var-<?= (string)$varName ?>">
-                                    <div class="dev-var-details p-2 mt-1 border rounded" style="background: var(--bs-tertiary-bg); font-size: .7rem;">
-                                        <?php if (!empty($details)): ?>
-                                        <table class="dev-var-detail-table table table-sm table-borderless mb-0" style="font-size: .7rem;">
-                                            <?php foreach ($details as $detailKey => $detailValRaw): ?>
-                                            <?php
-                                                // Flatten one level: if _d is a nested sanitized value, unwrap it
-                                                if (is_array($detailValRaw) && isset($detailValRaw['_d'])) {
-                                                    $nested = $detailValRaw;
-                                                    $hasNestedDetails = isset($nested['_d']) && is_array($nested['_d']);
-                                                } else {
-                                                    $nested = null;
-                                                    $hasNestedDetails = false;
-                                                }
-                                            ?>
+                                    <div class="dev-var-details">
+                                        <?php if (!empty($children)): ?>
+                                        <table class="dev-var-detail-table">
+                                            <?php foreach ($children as $detailKey => $childMeta): ?>
                                             <tr>
-                                                <td style="width: 35%;"><code class="text-muted"><?= $detailKey ?></code></td>
+                                                <td><code class="text-muted"><?= $detailKey ?></code></td>
                                                 <td>
-                                                    <?php if ($nested !== null): ?>
-                                                        <span class="text-muted small">[</span>
-                                                        <?php if (isset($nested['_t'])): ?>
-                                                            <code class="text-<?= $nested['_t'] === 'array' ? 'secondary' : 'info' ?>-emphasis"><?= htmlspecialchars(strtoupper($nested['_t']), ENT_QUOTES, 'UTF-8') ?></code>
-                                                        <?php elseif (isset($nested['_m'])): ?>
-                                                            <code style="color:#dc3545;">▌***</code>
-                                                        <?php elseif (isset($nested['_v'])): ?>
-                                                            <code><?= $nested['_v'] ?></code>
-                                                        <?php else: ?>
-                                                            <code><?= htmlspecialchars(json_encode($nested, JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT | JSON_THROW_ON_ERROR), ENT_QUOTES, 'UTF-8') ?></code>
-                                                        <?php endif; ?>
-                                                        <span class="text-muted small">]</span>
-                                                    <?php elseif (is_string($detailValRaw)): ?>
-                                                        <code><?= $detailValRaw ?></code>
-                                                    <?php else: ?>
-                                                        <code><?= htmlspecialchars(json_encode($detailValRaw, JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT | JSON_THROW_ON_ERROR), ENT_QUOTES, 'UTF-8') ?></code>
-                                                    <?php endif; ?>
+                                                    <?php
+                                                        $childType = $childMeta['type'];
+                                                        // Handle nested arrays/objects
+                                                        if ($childType === 'array' || $childType === 'object') {
+                                                            echo '<span class="text-muted small">[</span>';
+                                                            echo '<code class="text-' . ($childType === 'array' ? 'secondary' : 'info') . '-emphasis">'
+                                                                 . htmlspecialchars(strtoupper($childType), ENT_QUOTES, 'UTF-8')
+                                                                 . '</code>';
+                                                            if (!empty($childMeta['children'])) {
+                                                                // One level of nested detail: show first few children inline
+                                                                $inlineChildren = array_slice($childMeta['children'], 0, 3);
+                                                                $inlineParts = [];
+                                                                foreach ($inlineChildren as $ik => $iv) {
+                                                                    $ivDisplay = $iv['type'] === 'masked'
+                                                                        ? '▌***'
+                                                                        : ($iv['value'] ?? $iv['preview'] ?? $iv['type']);
+                                                                    $inlineParts[] = $ik . ' → ' . $ivDisplay;
+                                                                }
+                                                                $childCount = count($childMeta['children']);
+                                                                if ($childCount > 3) {
+                                                                    $inlineParts[] = '+ ' . ($childCount - 3) . ' more';
+                                                                }
+                                                                echo ' <span class="text-muted small">{' . implode(', ', $inlineParts) . '}</span>';
+                                                            } else {
+                                                                echo ' <span class="text-muted small">{' . ($childMeta['count'] ?? 0) . '}</span>';
+                                                            }
+                                                            echo '<span class="text-muted small">]</span>';
+                                                        } elseif ($childType === 'masked') {
+                                                            echo '<code style="color:#dc3545;">▌***</code>';
+                                                        } else {
+                                                            echo '<code>' . ($childMeta['value'] ?? $childMeta['preview'] ?? htmlspecialchars($childType, ENT_QUOTES, 'UTF-8')) . '</code>';
+                                                        }
+                                                    ?>
                                                 </td>
                                             </tr>
                                             <?php endforeach; ?>
                                         </table>
                                         <?php endif; ?>
                                         <?php if ($truncCount > 0): ?>
-                                        <div class="dev-var-trunc mt-1" style="font-size: .68rem; color: var(--bs-secondary-color);">
+                                        <div class="dev-var-trunc">
                                             + <?= $truncCount ?> <?= $truncCount === 1 ? 'item' : 'items' ?> not shown
                                         </div>
                                         <?php endif; ?>
@@ -312,10 +374,6 @@ foreach ($devSanitized as $varName => $varData) {
 
 <script>
 (function () {
-    /* Server-side sanitized data (safe HTML strings) */
-    var DEV_VARS = <?= json_encode($devSanitized, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR) ?>;
-    var DEV_TYPES = <?= json_encode($devRowTypes, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR) ?>;
-
     /* Bind collapse events to toggle icons */
     var panel = document.getElementById('dev-tools-offcanvas');
     panel.addEventListener('shown.bs.collapse', function (e) {
