@@ -142,6 +142,7 @@ These are planned or requested but are out of scope for the current development 
 | Extension update checks | Implemented | ExtensionUpdateChecker + ExtensionUpdate VO, controller integration, catalog table UI columns + badges, dependency blocking (Check A + Check B), design doc at docs/developer/extensions/updates.md — local-only comparison, no remote sync, no auto-install. |
 | Documentation plugin | Implemented | Plugin at lib/plugins/documentation/, DocsController with lightweight markdown renderer (headers, bold, italic, code, lists, links, images), panel layout with sidebar TOC + prev/next nav, breadcrumbs, Edit on GitHub link — see lib/plugins/documentation/ |
 | Setup session | Fixed | Session cookie config applied from auth.php |
+| 2FA session split | Fixed | Zombie PHPSESSID session from Apache mod_session.so properly detected and destroyed via session_id('') reset |
 | Validation convention | Implemented | Keyed field errors, documented in /docs/developer/kernel/validation.md |
 | GitHub workflows | Implemented | CI (PHP lint, JSON validate) + release workflow |
 | Contributing docs | Implemented | Documented in /docs/contributing.md |

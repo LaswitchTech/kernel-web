@@ -164,6 +164,7 @@ class AuthService
         if (!isset($this->container)) {
             return false;
         }
+
         $userId = (int) ($_SESSION['_2fa_user_id'] ?? 0);
         $expires = (int) ($_SESSION['_2fa_expires'] ?? 0);
 
@@ -324,14 +325,41 @@ class AuthService
 
     private function startSession(): void
     {
-        if ($this->sessionStarted || session_status() === PHP_SESSION_ACTIVE) {
+        static $started = false;
+        if ($started) {
+            return;
+        }
+        $started = true;
+
+        $preId   = session_id();
+        $preName = session_name();
+        $preStat = session_status();
+        $configName = $this->config['session']['name'] ?? 'kernel_web_session';
+
+        // Check for external sessions:
+        // 1) Real session: status=ACTIVE with a non-empty session ID and wrong name
+        // 2) Zombie session: status=ACTIVE with empty ID (PHP module loaded, no real session)
+        // In both cases, if the active name != config name, we need to destroy the
+        // external session and start fresh with our config.
+        $cond1 = ($preId !== '' || $preStat === PHP_SESSION_ACTIVE);
+        $cond2 = $preName !== $configName;
+        if ($cond1 && $cond2) {
+            @session_write_close();
+            $_SESSION = [];
+            @setcookie($preName, '', time() - 42000, '/');
+            // session_write_close() does NOT clear session_id() or change status.
+            // Explicitly reset so we can distinguish "real session" from "none".
+            @session_id('');
+        }
+
+        if (session_id() !== '' || session_status() === PHP_SESSION_ACTIVE) {
             $this->sessionStarted = true;
             return;
         }
 
         $sessionCfg = $this->config['session'] ?? [];
 
-        session_name($sessionCfg['name'] ?? 'kernel_web_session');
+        session_name($configName);
 
         session_set_cookie_params([
             'lifetime' => (int) ($sessionCfg['lifetime'] ?? 7200),
