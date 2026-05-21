@@ -325,7 +325,7 @@ echo \App\Core\HookRegistry::render('layout.body.end');
 <?php include __DIR__ . '/../partials/profile-modal.php'; ?>
 
 <!-- Developer Tools -->
-<?php include __DIR__ . '/../partials/dev-tools-offcanvas.php'; ?>
+<?php $__devVars = get_defined_vars(); include __DIR__ . '/../partials/dev-tools-offcanvas.php'; unset($__devVars); ?>
 
 </body>
 </html>
