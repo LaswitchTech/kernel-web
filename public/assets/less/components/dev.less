@@ -19,7 +19,6 @@
     }
 }
 
-/* Wider offcanvas — use CSS variable so Bootstrap respects it */
 .dev-tools-offcanvas {
     --bs-offcanvas-width: min(900px, 95vw) !important;
     width: min(900px, 95vw) !important;
@@ -35,7 +34,7 @@
     max-height: calc(100vh - 180px);
 }
 
-/* Variable table — fixed column widths, content wraps properly */
+/* Top-level variable table */
 .dev-vars-table {
     font-size: .75rem;
     min-width: 100%;
@@ -97,7 +96,8 @@
     display: none !important;
 }
 
-.dev-var-expand {
+.dev-var-expand,
+.dev-nested-expand {
     color: #6c757d;
     font-size: .8rem;
 
@@ -106,8 +106,16 @@
     }
 }
 
+.dev-var-type-badge,
+.dev-nested-expand .badge,
+.dev-var-detail-table .badge {
+    font-size: .65rem;
+    text-transform: capitalize;
+}
+
+/* Detail section */
 .dev-var-detail-row {
-    // Bootstrap collapse controls visibility of its contents
+    // Bootstrap collapse controls visibility
 }
 
 .dev-var-details {
@@ -149,4 +157,86 @@
     font-size: .68rem;
     color: var(--bs-secondary-color);
     padding-top: .25rem;
+}
+
+/* Nested expansion tree */
+.dev-nested-details {
+    background: var(--bs-tertiary-bg);
+    font-size: .68rem;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+    max-width: 100%;
+    padding-left: .5rem;
+}
+
+.dev-nested-table {
+    font-size: .68rem;
+    width: 100%;
+    max-width: 100%;
+
+    td {
+        vertical-align: top;
+        padding: .1rem .3rem;
+        word-break: break-word;
+        overflow-wrap: anywhere;
+    }
+
+    code {
+        font-size: .65rem;
+        word-break: break-word;
+        overflow-wrap: anywhere;
+    }
+}
+
+.dev-nested-indent {
+    display: inline-block;
+}
+
+.dev-nested-row {
+    td {
+        padding: .15rem .4rem;
+    }
+}
+
+.dev-nested-name {
+    white-space: nowrap;
+}
+
+.dev-nested-type-badge {
+    font-size: .6rem;
+}
+
+.dev-nested-expand {
+    color: #6c757d;
+    font-size: .75rem;
+
+    &:hover {
+        color: #0d6efd;
+    }
+}
+
+/* Progressive loading */
+.dev-var-batch-hidden {
+    display: none;
+}
+
+.dev-batch-more {
+    padding: .15rem .4rem;
+}
+
+.dev-batch-more-btn {
+    color: #0d6efd;
+    font-size: .68rem;
+    text-decoration: underline;
+    cursor: pointer;
+
+    &:hover {
+        color: #0a58ca;
+    }
+}
+
+.dev-batch-row {
+    td {
+        padding: 0;
+    }
 }

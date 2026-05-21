@@ -30,24 +30,20 @@ $devExclude = [
 ];
 $devVars = array_diff_key($devVars, array_flip($devExclude));
 
-/**
- * Strict type label for any PHP value.
- */
+/* ── Strict helpers ─────────────────────────────────────── */
+
 function devTypeLabel(mixed $val): string {
-    if (is_array($val))  return 'array';
-    if (is_object($val)) return 'object';
-    if (is_string($val)) return 'string';
-    if (is_int($val))    return 'integer';
-    if (is_float($val))  return 'float';
-    if (is_bool($val))   return 'boolean';
-    if (is_null($val))   return 'null';
+    if (is_array($val))   return 'array';
+    if (is_object($val))  return 'object';
+    if (is_string($val))  return 'string';
+    if (is_int($val))     return 'integer';
+    if (is_float($val))   return 'float';
+    if (is_bool($val))    return 'boolean';
+    if (is_null($val))    return 'null';
     if (is_resource($val)) return 'resource';
     return 'unknown';
 }
 
-/**
- * HTML-escape a scalar for display. Truncates at $maxLen.
- */
 function devScalarDisplay(mixed $val, int $maxLen): string {
     if (is_bool($val))   return $val ? 'true' : 'false';
     if ($val === null)   return 'null';
@@ -58,15 +54,21 @@ function devScalarDisplay(mixed $val, int $maxLen): string {
     return htmlspecialchars($s, ENT_QUOTES, 'UTF-8');
 }
 
-/* ── Unified sanitized structure ──────────────────────── */
-// Always returns an associative array with strict keys:
-//   'type'      => string  (strict type name)
-//   'preview'   => string  (human-readable preview)
-//   'value'     => ?string (scalar HTML-escaped value, null if not scalar)
-//   'count'     => ?int    (array/object count)
-//   'children'  => ?array  (sanitized children for array/object)
-//   'truncated' => ?int    (number of hidden children)
-function devSanitize(mixed $val, int $depth = 0, int $maxDepth = 6, int $maxItems = 6, int $maxStrLen = 200): array {
+/**
+ * Recursively sanitize a value into a strict typed structure.
+ *
+ * Returns:
+ *  [
+ *    'type'      => string (strict type name)
+ *    'preview'   => string (human-readable preview)
+ *    'value'     => ?string (HTML-escaped scalar value, null if not scalar)
+ *    'count'     => ?int    (array/object count)
+ *    'children'  => ?array  (sanitized children for array/object)
+ *    'truncated' => ?int    (number of hidden children)
+ *    'masked'    => ?bool   (true if this node is a masked value)
+ *  ]
+ */
+function devSanitize(mixed $val, int $depth = 0, int $maxDepth = 5, int $maxItems = 6, int $maxStrLen = 200): array {
     static $sensitivePatterns = null;
     if ($sensitivePatterns === null) {
         $sensitivePatterns = ['password', 'passwd', 'secret', 'token', 'key', 'cookie', 'authorization', 'csrf', 'session'];
@@ -75,52 +77,44 @@ function devSanitize(mixed $val, int $depth = 0, int $maxDepth = 6, int $maxItem
         || preg_match('/'.implode('|', $sensitivePatterns).'/', $k);
 
     if ($depth > $maxDepth) {
-        return ['type' => 'unknown', 'preview' => '… [max depth]', 'value' => null, 'count' => null, 'children' => null, 'truncated' => null];
+        return [
+            'type' => 'unknown', 'preview' => '… [max depth]',
+            'value' => null, 'count' => null, 'children' => null,
+            'truncated' => null, 'masked' => false,
+        ];
     }
 
     /* Arrays */
     if (is_array($val)) {
         $total = count($val);
         $result = [
-            'type' => 'array',
-            'preview' => 'Array (' . $total . ' items)',
-            'count' => $total,
-            'value' => null,
-            'children' => [],
-            'truncated' => null,
+            'type' => 'array', 'preview' => 'Array (' . $total . ' items)',
+            'count' => $total, 'value' => null,
+            'children' => [], 'truncated' => null, 'masked' => false,
         ];
         if ($total === 0) return $result;
-
         $count = 0;
         foreach ($val as $k => $v) {
             if ($count >= $maxItems) break;
             $keySafe = htmlspecialchars((string)$k, ENT_QUOTES, 'UTF-8');
             if ($sensitiveKey((string)$k)) {
                 $result['children'][$keySafe] = [
-                    'type' => 'masked',
-                    'preview' => '▌***',
-                    'value' => null,
-                    'count' => null,
-                    'children' => null,
-                    'truncated' => null,
+                    'type' => 'masked', 'preview' => '▌***',
+                    'value' => null, 'count' => null, 'children' => null,
+                    'truncated' => null, 'masked' => true,
                 ];
             } elseif (is_scalar($v)) {
                 $result['children'][$keySafe] = [
-                    'type' => devTypeLabel($v),
-                    'preview' => devScalarDisplay($v, $maxStrLen),
-                    'value' => devScalarDisplay($v, $maxStrLen),
-                    'count' => null,
-                    'children' => null,
-                    'truncated' => null,
+                    'type' => devTypeLabel($v), 'preview' => devScalarDisplay($v, $maxStrLen),
+                    'value' => devScalarDisplay($v, $maxStrLen), 'count' => null,
+                    'children' => null, 'truncated' => null, 'masked' => false,
                 ];
             } else {
                 $result['children'][$keySafe] = devSanitize($v, $depth + 1, $maxDepth, $maxItems, $maxStrLen);
             }
             $count++;
         }
-        if ($count < $total) {
-            $result['truncated'] = $total - $count;
-        }
+        if ($count < $total) $result['truncated'] = $total - $count;
         return $result;
     }
 
@@ -132,14 +126,11 @@ function devSanitize(mixed $val, int $depth = 0, int $maxDepth = 6, int $maxItem
         $result = [
             'type' => 'object',
             'preview' => htmlspecialchars($class, ENT_QUOTES, 'UTF-8') . ' (' . $total . ' props)',
-            'count' => $total,
-            'value' => null,
-            'children' => [],
-            'truncated' => null,
+            'count' => $total, 'value' => null,
+            'children' => [], 'truncated' => null, 'masked' => false,
         ];
-
-        $allowedMagic = ['Stringable', 'Throwable', 'Exception', 'RuntimeException', 'InvalidArgumentException', 'LogicException', 'DomainException'];
-        // Safe string repr for allowed magic classes
+        $allowedMagic = ['Stringable', 'Throwable', 'Exception', 'RuntimeException',
+                         'InvalidArgumentException', 'LogicException', 'DomainException'];
         if ($total === 0 && in_array($class, $allowedMagic, true) && method_exists($val, '__toString')) {
             try {
                 $s = $val->__toString();
@@ -148,7 +139,6 @@ function devSanitize(mixed $val, int $depth = 0, int $maxDepth = 6, int $maxItem
                 return $result;
             } catch (\Throwable $e) { /* fall through */ }
         }
-
         $shown = 0;
         foreach ($props as $pk => $pv) {
             if ($shown >= 4) break;
@@ -156,12 +146,9 @@ function devSanitize(mixed $val, int $depth = 0, int $maxDepth = 6, int $maxItem
             $pkSafe = htmlspecialchars($pk, ENT_QUOTES, 'UTF-8');
             if (is_scalar($pv)) {
                 $result['children'][$pkSafe] = [
-                    'type' => devTypeLabel($pv),
-                    'preview' => devScalarDisplay($pv, 80),
-                    'value' => devScalarDisplay($pv, 80),
-                    'count' => null,
-                    'children' => null,
-                    'truncated' => null,
+                    'type' => devTypeLabel($pv), 'preview' => devScalarDisplay($pv, 80),
+                    'value' => devScalarDisplay($pv, 80), 'count' => null,
+                    'children' => null, 'truncated' => null, 'masked' => false,
                 ];
             } else {
                 $result['children'][$pkSafe] = devSanitize($pv, $depth + 1, $maxDepth, $maxItems, $maxStrLen);
@@ -173,40 +160,177 @@ function devSanitize(mixed $val, int $depth = 0, int $maxDepth = 6, int $maxItem
 
     /* Scalars */
     if (is_scalar($val)) {
-        $display = devScalarDisplay($val, $maxStrLen);
+        $d = devScalarDisplay($val, $maxStrLen);
         return [
-            'type' => devTypeLabel($val),
-            'preview' => $display,
-            'value' => $display,
-            'count' => null,
-            'children' => null,
-            'truncated' => null,
+            'type' => devTypeLabel($val), 'preview' => $d, 'value' => $d,
+            'count' => null, 'children' => null, 'truncated' => null, 'masked' => false,
         ];
     }
     if ($val === null) {
         return [
-            'type' => 'null',
-            'preview' => 'null',
-            'value' => 'null',
-            'count' => null,
-            'children' => null,
-            'truncated' => null,
+            'type' => 'null', 'preview' => 'null', 'value' => 'null',
+            'count' => null, 'children' => null, 'truncated' => null, 'masked' => false,
         ];
     }
-    // Fallback for unknown types (resources, etc.)
+    // Resources / unknown
     return [
-        'type' => gettype($val),
-        'preview' => '[' . gettype($val) . ']',
-        'value' => null,
-        'count' => null,
-        'children' => null,
-        'truncated' => null,
+        'type' => gettype($val), 'preview' => '[' . gettype($val) . ']',
+        'value' => null, 'count' => null, 'children' => null,
+        'truncated' => null, 'masked' => false,
     ];
 }
 
 $devSanitized = [];
-foreach ($devVars as $varName => $varVal) {
-    $devSanitized[$varName] = devSanitize($varVal);
+foreach ($devVars as $_k => $_v) {
+    $devSanitized[$_k] = devSanitize($_v);
+}
+
+/* ── Path helpers for unique collapse IDs ────────────────── */
+
+// Encode a path segment into a valid HTML ID fragment
+function devIdSegment(string $seg): string {
+    return strtolower(preg_replace('/[^a-zA-Z0-9]/', '_', $seg));
+}
+
+// Generate a unique collapse ID from the variable path
+function devCollapseId(string $varPath, string $childKey): string {
+    return 'dev-var-' . $varPath . '-' . devIdSegment($childKey);
+}
+
+/**
+ * Render a nested expandable node (recursive).
+ * Outputs HTML rows for the child and its descendants.
+ */
+function devRenderNestedNode(string $detailKey, array $childMeta, string $parentPath, int $level, int $initialBatch = 5): void {
+    $childType  = $childMeta['type'];
+    $hasChildren = ($childType === 'array' || $childType === 'object') && !empty($childMeta['children']);
+    $indent = str_repeat('&nbsp;&nbsp;', max(0, $level));
+    $path   = ($parentPath !== '') ? $parentPath . '-' . devIdSegment($detailKey) : devIdSegment($detailKey);
+
+    // Determine which children are initial (visible) vs hidden
+    $children = $childMeta['children'] ?? [];
+    $childCount = count($children);
+    $visibleCount = min($initialBatch, $childCount);
+    $hiddenCount  = $childCount - $visibleCount;
+
+    // Indentation badge for nested levels
+    $indentBadge = $level > 0 ? '<span class="dev-nested-indent">' . $indent . '</span>' : '';
+
+    // Type badge for child
+    $childBadge = match ($childType) {
+        'array'     => 'bg-secondary-subtle text-secondary-emphasis',
+        'object'    => 'bg-info-subtle text-info-emphasis',
+        'masked'    => 'bg-danger-subtle text-danger-emphasis',
+        'string'    => 'bg-success-subtle text-success-emphasis',
+        'integer'   => 'bg-success-subtle text-success-emphasis',
+        'float'     => 'bg-success-subtle text-success-emphasis',
+        'boolean'   => 'bg-warning-subtle text-warning-emphasis',
+        'null'      => 'bg-secondary-subtle text-secondary-emphasis',
+        'resource'  => 'bg-warning-subtle text-warning-emphasis',
+        default     => 'bg-secondary-subtle text-secondary-emphasis',
+    };
+
+    // Preview value
+    $childPreview = '';
+    if ($childType === 'masked') {
+        $childPreview = '▌***';
+    } elseif ($childType === 'array' || $childType === 'object') {
+        $childPreview = htmlspecialchars($childMeta['preview'] ?? $childType, ENT_QUOTES, 'UTF-8');
+    } elseif ($childMeta['value'] !== null) {
+        $childPreview = $childMeta['value'];
+    } else {
+        $childPreview = htmlspecialchars($childMeta['preview'] ?? $childMeta['type'], ENT_QUOTES, 'UTF-8');
+    }
+
+    echo '<tr class="dev-nested-row" data-path="' . htmlspecialchars($path, ENT_QUOTES, 'UTF-8') . '">' . "\n";
+    echo '  <td class="dev-nested-name">' . $indentBadge . '<code class="text-muted">' . htmlspecialchars($detailKey, ENT_QUOTES, 'UTF-8') . '</code></td>' . "\n";
+    echo '  <td><span class="badge ' . htmlspecialchars($childBadge, ENT_QUOTES, 'UTF-8') . ' dev-var-type-badge dev-nested-type-badge">' . htmlspecialchars($childType, ENT_QUOTES, 'UTF-8') . '</span></td>' . "\n";
+    echo '  <td>' . $childPreview;
+    if ($hasChildren) {
+        $collapseId = 'dev-var-' . $path;
+        echo ' <button class="btn btn-sm btn-link dev-nested-expand p-0 ms-1" type="button" data-bs-toggle="collapse" data-bs-target="#' . $collapseId . '" aria-expanded="false" aria-controls="' . $collapseId . '"><i class="bi bi-chevron-expand"></i></button>';
+    }
+    echo '</td>' . "\n";
+    echo '</tr>' . "\n";
+
+    if ($hasChildren) {
+        // Collapse container for grandchildren
+        $collapseId = 'dev-var-' . $path;
+        echo '<tr class="dev-nested-detail-row">' . "\n";
+        echo '  <td colspan="3">' . "\n";
+        echo '    <div class="collapse" id="' . $collapseId . '">' . "\n";
+        echo '      <div class="dev-nested-details">' . "\n";
+        echo '        <table class="dev-nested-table">' . "\n";
+
+        $idx = 0;
+        foreach ($children as $gk => $gm) {
+            $isHidden = $idx >= $initialBatch;
+            $extra = $isHidden ? ' class="dev-var-batch-hidden"' : '';
+            $idx++;
+            echo '          <tr class="dev-batch-item"' . $extra . '>' . "\n";
+            echo '            <td colspan="3">' . "\n";
+            devRenderNestedNode($gk, $gm, $path, $level + 1, $initialBatch);
+            echo '            </td>' . "\n";
+            echo '          </tr>' . "\n";
+        }
+
+        echo '        </table>' . "\n";
+
+        // Show N more button (only if there are hidden items)
+        if ($hiddenCount > 0) {
+            $totalShown = $visibleCount;
+            echo '        <div class="dev-batch-more" data-batch-total="' . $childCount . '" data-batch-shown="' . $visibleCount . '" data-batch-step="' . $initialBatch . '">' . "\n";
+            echo '          <button type="button" class="btn btn-link btn-sm dev-batch-more-btn p-0">' . "\n";
+            echo '            +&nbsp;Show ' . $initialBatch . ' more' . "\n";
+            echo '          </button>' . "\n";
+            echo '        </div>' . "\n";
+        }
+
+        // Truncation info from parent
+        if (!empty($childMeta['truncated']) && $childMeta['truncated'] > 0) {
+            echo '        <div class="dev-var-trunc mt-1">';
+            echo '+ ' . $childMeta['truncated'] . ' ' . ($childMeta['truncated'] === 1 ? 'item' : 'items') . ' not shown';
+            echo '</div>' . "\n";
+        }
+
+        echo '      </div>' . "\n";
+        echo '    </div>' . "\n";
+        echo '  </td>' . "\n";
+        echo '</tr>' . "\n";
+    }
+}
+
+/**
+ * Render detail rows for top-level children (inside the expanded variable).
+ */
+function devRenderTopLevelChildren(array $children, string $varId, int $initialBatch = 5): void {
+    $childCount = count($children);
+    $visibleCount = min($initialBatch, $childCount);
+    $hiddenCount = $childCount - $visibleCount;
+    $idx = 0;
+
+    foreach ($children as $detailKey => $childMeta) {
+        $isHidden = $idx >= $initialBatch;
+        $extra = $isHidden ? ' class="dev-var-batch-hidden"' : '';
+        $idx++;
+        echo '<tr class="dev-batch-item"' . $extra . '>' . "\n";
+        echo '  <td colspan="3">' . "\n";
+        devRenderNestedNode($detailKey, $childMeta, $varId, 0, $initialBatch);
+        echo '  </td>' . "\n";
+        echo '</tr>' . "\n";
+    }
+
+    if ($hiddenCount > 0) {
+        echo '<tr class="dev-batch-row">' . "\n";
+        echo '  <td colspan="3">' . "\n";
+        echo '    <div class="dev-batch-more" data-batch-total="' . $childCount . '" data-batch-shown="' . $visibleCount . '" data-batch-step="' . $initialBatch . '">' . "\n";
+        echo '      <button type="button" class="btn btn-link btn-sm dev-batch-more-btn p-0">' . "\n";
+        echo '        +&nbsp;Show ' . $initialBatch . ' more' . "\n";
+        echo '      </button>' . "\n";
+        echo '    </div>' . "\n";
+        echo '  </td>' . "\n";
+        echo '</tr>' . "\n";
+    }
 }
 
 ?>
@@ -256,8 +380,8 @@ foreach ($devVars as $varName => $varVal) {
                     <tbody id="dev-vars-body">
                         <?php foreach ($devSanitized as $varName => $meta): ?>
                         <?php
-            $typeLabel = $meta['type'];
-            $typeBadge = match ($typeLabel) {
+            $typeLabel  = $meta['type'];
+            $typeBadge  = match ($typeLabel) {
                 'array'     => 'bg-secondary-subtle text-secondary-emphasis',
                 'object'    => 'bg-info-subtle text-info-emphasis',
                 'string'    => 'bg-success-subtle text-success-emphasis',
@@ -271,12 +395,14 @@ foreach ($devVars as $varName => $varVal) {
                 default     => 'bg-secondary-subtle text-secondary-emphasis',
             };
             $isExpandable = ($typeLabel === 'array' || $typeLabel === 'object');
-            $isScalar     = ($typeLabel === 'string' || $typeLabel === 'integer' || $typeLabel === 'float' || $typeLabel === 'boolean');
-            $isMasked     = ($typeLabel === 'masked');
+            $isScalar     = in_array($typeLabel, ['string','integer','float','boolean']);
+            $isMasked     = ($meta['masked'] === true);
             $preview      = $meta['preview'];
             $children     = ($isExpandable && !empty($meta['children'])) ? $meta['children'] : [];
             $truncCount   = ($meta['truncated'] ?? 0);
             $scalarVal    = $isScalar ? ($meta['value'] ?? '') : null;
+            // Encode var name for use in IDs
+            $varPath = devIdSegment($varName);
         ?>
                         <tr class="dev-var-row"
                             data-var-name="<?= htmlspecialchars($varName, ENT_QUOTES, 'UTF-8') ?>"
@@ -287,9 +413,9 @@ foreach ($devVars as $varName => $varVal) {
                                 <button class="btn btn-sm btn-link dev-var-expand p-0 ms-1"
                                         type="button"
                                         data-bs-toggle="collapse"
-                                        data-bs-target="#dev-var-<?= (string)$varName ?>"
+                                        data-bs-target="#dev-var-<?= $varPath ?>"
                                         aria-expanded="false"
-                                        aria-controls="dev-var-<?= (string)$varName ?>">
+                                        aria-controls="dev-var-<?= $varPath ?>">
                                     <i class="bi bi-chevron-expand"></i>
                                 </button>
                                 <?php endif; ?>
@@ -308,50 +434,11 @@ foreach ($devVars as $varName => $varVal) {
                         <?php if ($isExpandable): ?>
                         <tr class="dev-var-detail-row">
                             <td colspan="3">
-                                <div class="collapse" id="dev-var-<?= (string)$varName ?>">
+                                <div class="collapse" id="dev-var-<?= $varPath ?>">
                                     <div class="dev-var-details">
                                         <?php if (!empty($children)): ?>
                                         <table class="dev-var-detail-table">
-                                            <?php foreach ($children as $detailKey => $childMeta): ?>
-                                            <tr>
-                                                <td><code class="text-muted"><?= $detailKey ?></code></td>
-                                                <td>
-                                                    <?php
-                                                        $childType = $childMeta['type'];
-                                                        // Handle nested arrays/objects
-                                                        if ($childType === 'array' || $childType === 'object') {
-                                                            echo '<span class="text-muted small">[</span>';
-                                                            echo '<code class="text-' . ($childType === 'array' ? 'secondary' : 'info') . '-emphasis">'
-                                                                 . htmlspecialchars(strtoupper($childType), ENT_QUOTES, 'UTF-8')
-                                                                 . '</code>';
-                                                            if (!empty($childMeta['children'])) {
-                                                                // One level of nested detail: show first few children inline
-                                                                $inlineChildren = array_slice($childMeta['children'], 0, 3);
-                                                                $inlineParts = [];
-                                                                foreach ($inlineChildren as $ik => $iv) {
-                                                                    $ivDisplay = $iv['type'] === 'masked'
-                                                                        ? '▌***'
-                                                                        : ($iv['value'] ?? $iv['preview'] ?? $iv['type']);
-                                                                    $inlineParts[] = $ik . ' → ' . $ivDisplay;
-                                                                }
-                                                                $childCount = count($childMeta['children']);
-                                                                if ($childCount > 3) {
-                                                                    $inlineParts[] = '+ ' . ($childCount - 3) . ' more';
-                                                                }
-                                                                echo ' <span class="text-muted small">{' . implode(', ', $inlineParts) . '}</span>';
-                                                            } else {
-                                                                echo ' <span class="text-muted small">{' . ($childMeta['count'] ?? 0) . '}</span>';
-                                                            }
-                                                            echo '<span class="text-muted small">]</span>';
-                                                        } elseif ($childType === 'masked') {
-                                                            echo '<code style="color:#dc3545;">▌***</code>';
-                                                        } else {
-                                                            echo '<code>' . ($childMeta['value'] ?? $childMeta['preview'] ?? htmlspecialchars($childType, ENT_QUOTES, 'UTF-8')) . '</code>';
-                                                        }
-                                                    ?>
-                                                </td>
-                                            </tr>
-                                            <?php endforeach; ?>
+                                            <?php devRenderTopLevelChildren($children, $varPath, 5); ?>
                                         </table>
                                         <?php endif; ?>
                                         <?php if ($truncCount > 0): ?>
@@ -374,18 +461,51 @@ foreach ($devVars as $varName => $varVal) {
 
 <script>
 (function () {
-    /* Bind collapse events to toggle icons */
     var panel = document.getElementById('dev-tools-offcanvas');
+
+    /* Bind all collapse events (including nested) */
     panel.addEventListener('shown.bs.collapse', function (e) {
         var btn = document.querySelector('[data-bs-target="#' + e.target.id + '"]');
-        if (btn) btn.querySelector('i').className = 'bi bi-chevron-collapse';
+        if (btn) { var icon = btn.querySelector('i'); if (icon) icon.className = 'bi bi-chevron-collapse'; }
     });
     panel.addEventListener('hidden.bs.collapse', function (e) {
         var btn = document.querySelector('[data-bs-target="#' + e.target.id + '"]');
-        if (btn) btn.querySelector('i').className = 'bi bi-chevron-expand';
+        if (btn) { var icon = btn.querySelector('i'); if (icon) icon.className = 'bi bi-chevron-expand'; }
     });
 
-    /* Client-side filter */
+    /* "Show N more" progressive loading */
+    panel.addEventListener('click', function (e) {
+        var btn = e.target.closest('.dev-batch-more-btn');
+        if (!btn) return;
+        var container = btn.closest('.dev-batch-more');
+        if (!container) return;
+        var total = parseInt(container.getAttribute('data-batch-total'), 10) || 0;
+        var shown = parseInt(container.getAttribute('data-batch-shown'), 10) || 0;
+        var step  = parseInt(container.getAttribute('data-batch-step'), 10) || 5;
+        var next  = Math.min(shown + step, total);
+
+        // Find the batch items in the associated detail table
+        var detailDiv = btn.closest('.dev-nested-details, .dev-var-details');
+        if (!detailDiv) return;
+        var items = detailDiv.querySelectorAll('.dev-batch-item');
+
+        items.forEach(function (item, idx) {
+            if (idx >= shown && idx < next) {
+                item.classList.remove('dev-var-batch-hidden');
+            }
+        });
+
+        container.setAttribute('data-batch-shown', next);
+        var remaining = total - next;
+        if (remaining > 0) {
+            btn.childNodes[1].textContent = ' + Show ' + Math.min(step, remaining) + ' more ';
+        } else {
+            // All shown — hide the button
+            btn.parentElement.style.display = 'none';
+        }
+    });
+
+    /* Client-side filter (top-level rows only) */
     var searchInput = document.getElementById('dev-tools-search');
     if (searchInput) {
         searchInput.addEventListener('input', function () {
@@ -406,7 +526,7 @@ foreach ($devVars as $varName => $varVal) {
 
                 row.classList.toggle('dev-var-hidden', !match);
 
-                // Show/hide detail row along with parent
+                // Hide detail row along with parent
                 var detailRow = row.nextElementSibling;
                 if (detailRow && detailRow.classList.contains('dev-var-detail-row')) {
                     detailRow.classList.toggle('dev-var-hidden', !match);
