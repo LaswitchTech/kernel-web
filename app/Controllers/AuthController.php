@@ -596,9 +596,30 @@ class AuthController extends Controller
         /** @var AuthService $auth */
         $auth = $this->container->get('auth');
 
+        // Start the session (auto-kills zombie) so we can inspect it.
+        $hasPending = $auth->hasPendingTwoFactor();
+        $hasAccess  = $auth->hasPendingTwoFactorAccess();
+
         // Must have either pending 2FA state or pending 2FA access (from SessionAuth).
-        if (!$auth->hasPendingTwoFactor() && !$auth->hasPendingTwoFactorAccess()) {
-            header('Location: /signin', true, 302);
+        if (!$hasPending && !$hasAccess) {
+            // Show a redirect reason panel.
+            http_response_code(200);
+            header('Content-Type: text/html; charset=utf-8');
+            echo '<!DOCTYPE html><html><head><style>body{font-family:monospace;padding:20px;background:#1a1a2e;color:#e0e0e0;}h1{color:#f87171;}table{border-collapse:collapse;margin:10px 0;}th,td{border:1px solid #333;padding:8px;text-align:left;}th{background:#16213e;color:#f87171;}a{color:#00d2ff;}</style></head><body>';
+            echo "<h1>Redirect to /signin</h1>";
+            echo "<table><tr><th>Field</th><th>Value</th></tr>";
+            echo "<tr><td>hasPendingTwoFactor()</td><td>" . ($hasPending ? 'YES' : 'NO') . "</td></tr>";
+            echo "<tr><td>hasPendingTwoFactorAccess()</td><td>" . ($hasAccess ? 'YES' : 'NO') . "</td></tr>";
+            echo "<tr><td>session_name()</td><td>" . session_name() . "</td></tr>";
+            echo "<tr><td>session_id()</td><td>" . htmlspecialchars(session_id()) . "</td></tr>";
+            echo "<tr><td>session_status()</td><td>" . session_status() . "</td></tr>";
+            echo "<tr><td>session_save_path()</td><td>" . htmlspecialchars(ini_get('session.save_path')) . "</td></tr>";
+            echo "<tr><td>\$_SESSION keys</td><td>" . implode(', ', array_keys($_SESSION)) . "</td></tr>";
+            echo "<tr><td>\$_COOKIE['PHPSESSID']</td><td>" . htmlspecialchars($_COOKIE['PHPSESSID'] ?? '(not set)') . "</td></tr>";
+            echo "<tr><td>\$_COOKIE['kernel_web_session']</td><td>" . htmlspecialchars($_COOKIE['kernel_web_session'] ?? '(not set)') . "</td></tr>";
+            echo "</table>";
+            echo '<p><a href="' . htmlspecialchars($_SERVER['REQUEST_URI'] . '?_debug_session=1') . '">→ Full session debug</a></p>';
+            echo '</body></html>';
             exit;
         }
 
@@ -609,6 +630,74 @@ class AuthController extends Controller
         $config    = $this->container->get('config');
         $appName   = $config['name'] ?? 'Kernel-Web';
         $viewsPath = __DIR__ . '/../Views';
+
+        // Full session debug panel (via ?_debug_session=1).
+        $debugSession = $_GET['_debug_session'] ?? $_POST['_debug_session'] ?? null;
+        if ($debugSession !== null) {
+            http_response_code(200);
+            header('Content-Type: text/html; charset=utf-8');
+            $sid = session_id();
+            $sname = session_name();
+            $sstatus = session_status();
+            $sstatusStr = match($sstatus) {
+                PHP_SESSION_NONE => 'NONE (1)',
+                PHP_SESSION_ACTIVE => 'ACTIVE (2)',
+                default => 'UNKNOWN (' . $sstatus . ')',
+            };
+            echo '<!DOCTYPE html><html><head><style>body{font-family:monospace;padding:20px;background:#1a1a2e;color:#e0e0e0;}h1{color:#00d2ff;}table{border-collapse:collapse;margin:10px 0;}th,td{border:1px solid #333;padding:8px;text-align:left;}th{background:#16213e;color:#00d2ff;}.ok{color:#4ade80;}.bad{color:#f87171;}.warn{color:#fbbf24;}</style></head><body>';
+            echo "<h1>2FA Session Debug — /auth/2fa</h1>";
+            echo "<h2>Session Info</h2>";
+            echo "<table><tr><th>Field</th><th>Value</th></tr>";
+            echo "<tr><td>session_name()</td><td>" . htmlspecialchars($sname) . "</td></tr>";
+            echo "<tr><td>session_id()</td><td>" . htmlspecialchars($sid ?: '(empty)') . "</td></tr>";
+            echo "<tr><td>session_status()</td><td class=" . ($sstatus === PHP_SESSION_ACTIVE ? '"ok"' : '"bad"') . ">" . $sstatusStr . "</td></tr>";
+            echo "<tr><td>session_save_path()</td><td>" . htmlspecialchars(ini_get('session.save_path')) . "</td></tr>";
+            echo "</table>";
+            echo "<h2>\$_SESSION Contents</h2>";
+            echo "<table><tr><th>Key</th><th>Value</th></tr>";
+            if (count($_SESSION) === 0) echo "<tr><td colspan='2' class='bad'>EMPTY</td></tr>";
+            foreach ($_SESSION as $k => $v) echo "<tr><td>" . htmlspecialchars($k) . "</td><td>" . htmlspecialchars(is_array($v) ? json_encode($v) : $v) . "</td></tr>";
+            echo "</table>";
+            echo "<h2>Auth Service State</h2>";
+            echo "<table><tr><th>Field</th><th>Value</th></tr>";
+            echo "<tr><td>hasPendingTwoFactor()</td><td class=" . ($auth->hasPendingTwoFactor() ? '"ok"' : '"bad"') . ">" . ($auth->hasPendingTwoFactor() ? 'YES' : 'NO') . "</td></tr>";
+            echo "<tr><td>hasPendingTwoFactorAccess()</td><td class=" . ($auth->hasPendingTwoFactorAccess() ? '"ok"' : '"warn"') . ">" . ($auth->hasPendingTwoFactorAccess() ? 'YES' : 'NO') . "</td></tr>";
+            echo "<tr><td>getPendingTwoFactorUserId()</td><td>" . ($auth->getPendingTwoFactorUserId() ?? 'null') . "</td></tr>";
+            echo "<tr><td>hasTwoFactorEnabled($userId)</td><td class=" . ($auth->hasTwoFactorEnabled($userId) ? '"ok"' : '"bad"') . ">" . ($auth->hasTwoFactorEnabled($userId) ? 'YES' : 'NO') . "</td></tr>";
+            $loggedUser = $auth->user();
+            echo "<tr><td>auth->user() (logged-in)</td><td class=" . ($loggedUser !== null ? '"ok"' : '"bad"') . ">" . ($loggedUser !== null ? 'user_id=' . $loggedUser['id'] : '(null)') . "</td></tr>";
+            echo "</table>";
+            echo "<h2>Cookie Info</h2>";
+            echo "<table><tr><th>Field</th><th>Value</th></tr>";
+            echo "<tr><td>\$_COOKIE[session_name()]</td><td>" . htmlspecialchars($_COOKIE[$sname] ?? '(not set)') . "</td></tr>";
+            echo "<tr><td>\$_COOKIE['PHPSESSID']</td><td>" . htmlspecialchars($_COOKIE['PHPSESSID'] ?? '(not set)') . "</td></tr>";
+            echo "</table>";
+            echo "<h2>Session File</h2>";
+            $sdir = ini_get('session.save_path') ?: '/tmp';
+            $sessFile = "$sdir/sess_" . $sname;
+            echo "<table><tr><th>Field</th><th>Value</th></tr>";
+            echo "<tr><td>Session file</td><td>" . htmlspecialchars($sessFile) . "</td></tr>";
+            if (file_exists($sessFile)) {
+                $sz = filesize($sessFile);
+                echo "<tr><td>File exists</td><td class='ok'>YES (size=$sz)</td></tr>";
+                echo "<tr><td>File content (first 200)</td><td>" . htmlspecialchars(substr(file_get_contents($sessFile), 0, 200)) . "</td></tr>";
+            } else {
+                echo "<tr><td>File exists</td><td class='bad'>NO</td></tr>";
+            }
+            echo "</table>";
+            echo "<h2>Notes</h2>";
+            echo "<table><tr><th>Check</th><th>Result</th></tr>";
+            if ($sstatus !== PHP_SESSION_ACTIVE) echo "<tr><td class='bad'>Session NOT active</td><td class='bad'>PHP thinks no session is running</td></tr>";
+            if (count($_SESSION) === 0) echo "<tr><td class='warn'>Session empty</td><td class='warn'>$_SESSION has no keys</td></tr>";
+            if (!isset($_COOKIE[$sname])) echo "<tr><td class='warn'>No session cookie</td><td class='warn'>Browser missing cookie for '$sname'</td></tr>";
+            if (isset($_COOKIE['PHPSESSID']) && $_COOKIE[$sname] !== $_COOKIE['PHPSESSID']) echo "<tr><td class='bad'>Cookie mismatch!</td><td class='bad'>PHPSESSID != $sname</td></tr>";
+            if (!file_exists($sessFile)) echo "<tr><td class='bad'>Session file missing</td><td class='bad'>Data not persisted</td></tr>";
+            echo "</table>";
+            echo '<p><a href="' . htmlspecialchars($_SERVER['REQUEST_URI'] ?? '/auth/2fa') . '">← Back to 2FA form</a></p>';
+            echo '<p><a href="' . htmlspecialchars($_SERVER['REQUEST_URI'] ?? '/auth/2fa') . '?_debug_session=1">⟳ Refresh debug</a></p>';
+            echo '</body></html>';
+            exit;
+        }
 
         http_response_code(200);
         header('Content-Type: text/html; charset=utf-8');
@@ -643,11 +732,29 @@ class AuthController extends Controller
             return;
         }
 
-        $code = (string) $this->input('code', '');
+        $code = trim((string) $this->input('code', ''));
         $type = (string) $this->input('type', 'totp'); // 'totp' or 'recovery'
 
         /** @var TwoFactorService $twoFactor */
         $twoFactor = $this->container->get('two_factor');
+
+        // Collect debug info for failed verification
+        $debugTrace = null;
+        if (!empty($_GET['_debug_session'])) {
+            $debugTrace = [
+                'time' => date('Y-m-d H:i:s'),
+                'userId' => $userId,
+                'code' => $code,
+                'code_hex' => bin2hex($code),
+                'code_len' => strlen($code),
+                'type' => $type,
+            ];
+            $secret = $twoFactor->getSecretForDebug($userId);
+            if ($secret !== null) {
+                $debugTrace['secret'] = $secret;
+                $debugTrace['secret_hex'] = bin2hex($secret);
+            }
+        }
 
         $verified = false;
 
@@ -657,8 +764,21 @@ class AuthController extends Controller
             $verified = $twoFactor->verifyTotp($userId, $code);
         }
 
+        if ($debugTrace !== null) {
+            $debugTrace['verified'] = $verified;
+            file_put_contents(
+                __DIR__ . '/../../storage/logs/2fa_verify_trace.log',
+                json_encode($debugTrace) . "\n",
+                FILE_APPEND | LOCK_EX
+            );
+        }
+
         if (!$verified) {
-            $this->json(['error' => 'Invalid code. Please try again.'], 401);
+            if ($debugTrace !== null) {
+                $this->json(['error' => 'Invalid code. Please try again. (DEBUG trace: storage/logs/2fa_verify_trace.log)', 'debug_trace' => $debugTrace], 401);
+            } else {
+                $this->json(['error' => 'Invalid code. Please try again.'], 401);
+            }
             return;
         }
 

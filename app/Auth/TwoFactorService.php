@@ -110,6 +110,15 @@ class TwoFactorService
     }
 
     /**
+     * Get the TOTP secret for a user (for debugging).
+     */
+    public function getSecretForDebug(int $userId): ?string
+    {
+        $secretData = $this->repository->getTotpSecret($userId);
+        return $secretData['totp_secret'] ?? null;
+    }
+
+    /**
      * Verify a TOTP code and return diagnostic info about the match.
      *
      * Useful for setup flows where time drift may be larger.

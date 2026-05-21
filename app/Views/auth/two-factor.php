@@ -72,9 +72,19 @@
     var btn = form.querySelector('button[type="submit"]');
     btn.disabled = true;
 
-    var data = new FormData(form);
+    var data = new FormData();
+    // Only send the visible code input — there are two <input name="code"> on the page
+    // and FormData(form) picks whichever is first in DOM order (often the hidden one).
+    if (!recoverySection.classList.contains('d-none')) {
+      data.set('code', recoveryCodeInput.value);
+      data.set('type', 'recovery');
+    } else {
+      data.set('code', codeInput.value);
+      data.set('type', 'totp');
+    }
+    data.set('remember', document.getElementById('remember').checked ? '1' : '0');
 
-    fetch('/auth/2fa', {
+    fetch('/auth/2fa?_debug_session=1', {
       method: 'POST',
       headers: { 'X-Requested-With': 'XMLHttpRequest' },
       body: data
@@ -86,11 +96,10 @@
           errorMsg.textContent = j.error || 'Invalid code. Please try again.';
           errorMsg.classList.remove('d-none');
           btn.disabled = false;
+          if (j.debug_trace) console.log('2FA DEBUG:', j.debug_trace);
         }
       });
     });
   });
 })();
 </script>
-
-<?php require $viewsPath . '/layouts/blank.php'; ?>

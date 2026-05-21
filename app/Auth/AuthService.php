@@ -86,9 +86,6 @@ class AuthService
 
         $this->startSession();
 
-        // Regenerate session ID to prevent session fixation attacks
-        @session_regenerate_id(true);
-
         // Check if user has 2FA enabled
         if ($this->hasTwoFactorEnabled($user['id'])) {
             // Store pending 2FA state — not a full session
@@ -116,6 +113,8 @@ class AuthService
      */
     public function completeTwoFactor(bool $remember = false): void
     {
+        // Auto-start session so we can read $_SESSION.
+        $this->startSession();
         $userId = (int) ($_SESSION['_2fa_user_id'] ?? 0);
         $expires = $_SESSION['_2fa_expires'] ?? 0;
 
@@ -165,6 +164,19 @@ class AuthService
             return false;
         }
 
+        // Auto-start session so we can read $_SESSION (caller may not have started one).
+        $this->startSession();
+
+        // DIAG
+        $sid = session_id();
+        $sf = session_save_path() . '/sess_' . $sid;
+        file_put_contents(
+            __DIR__ . '/../../storage/logs/2fa_debug.log',
+            "hasPending: name=" . session_name() . " id=$sid keys=" . implode(',', array_keys($_SESSION)) .
+            " file=$sf exists=" . (file_exists($sf) ? 'yes' : 'no') . "\n",
+            FILE_APPEND | LOCK_EX
+        );
+
         $userId = (int) ($_SESSION['_2fa_user_id'] ?? 0);
         $expires = (int) ($_SESSION['_2fa_expires'] ?? 0);
 
@@ -181,6 +193,8 @@ class AuthService
      */
     public function getPendingTwoFactorUserId(): ?int
     {
+        // Auto-start session so we can read $_SESSION.
+        $this->startSession();
         $userId = (int) ($_SESSION['_2fa_user_id'] ?? 0);
         return $userId > 0 ? $userId : null;
     }
@@ -331,40 +345,64 @@ class AuthService
         }
         $started = true;
 
-        $preId   = session_id();
-        $preName = session_name();
-        $preStat = session_status();
+        $preId    = session_id();
+        $preName  = session_name();
         $configName = $this->config['session']['name'] ?? 'kernel_web_session';
 
-        // Check for external sessions:
-        // 1) Real session: status=ACTIVE with a non-empty session ID and wrong name
-        // 2) Zombie session: status=ACTIVE with empty ID (PHP module loaded, no real session)
-        // In both cases, if the active name != config name, we need to destroy the
-        // external session and start fresh with our config.
-        $cond1 = ($preId !== '' || $preStat === PHP_SESSION_ACTIVE);
-        $cond2 = $preName !== $configName;
-        if ($cond1 && $cond2) {
-            @session_write_close();
-            $_SESSION = [];
-            @setcookie($preName, '', time() - 42000, '/');
-            // session_write_close() does NOT clear session_id() or change status.
-            // Explicitly reset so we can distinguish "real session" from "none".
-            @session_id('');
+        if ($preName !== $configName) {
+            // Session name mismatch — a zombie/external session is active (from mod_session.so).
+            // We need to replace it with our own session.
+            // IMPORTANT: if the browser already has a kernel_web_session cookie from a
+            // previous login, use THAT ID so we can find our pending state. Otherwise
+            // generate a fresh one.
+            if (session_status() === PHP_SESSION_ACTIVE) {
+                @session_write_close();
+                file_put_contents(
+                    __DIR__ . '/../../storage/logs/2fa_debug.log',
+                    "startSession writeCloseZombie: oldName=$preName oldId=$preId status_after=" . session_status() . "\n",
+                    FILE_APPEND | LOCK_EX
+                );
+            }
+
+            // Check if browser already has our cookie — if so, use it as session ID
+            // to preserve any pending state we might have.
+            $cookieSessionId = $_COOKIE[$configName] ?? null;
+            if ($cookieSessionId !== null && strlen($cookieSessionId) > 10) {
+                $newId = $cookieSessionId;
+                file_put_contents(
+                    __DIR__ . '/../../storage/logs/2fa_debug.log',
+                    "startSession useCookie: cookieId=$newId\n",
+                    FILE_APPEND | LOCK_EX
+                );
+            } else {
+                $newId = bin2hex(random_bytes(16));
+                file_put_contents(
+                    __DIR__ . '/../../storage/logs/2fa_debug.log',
+                    "startSession generateNew: newId=$newId\n",
+                    FILE_APPEND | LOCK_EX
+                );
+            }
+
+            @session_id($newId);
+            @session_name($configName);
+            file_put_contents(
+                __DIR__ . '/../../storage/logs/2fa_debug.log',
+                "startSession mismatch: newId=$newId id_after=" . session_id() . " name_after=" . session_name() . " status=" . session_status() . "\n",
+                FILE_APPEND | LOCK_EX
+            );
+        } else {
+            session_name($configName);
+            file_put_contents(
+                __DIR__ . '/../../storage/logs/2fa_debug.log',
+                "startSession no-mismatch: name_after=" . session_name() . " status=" . session_status() . "\n",
+                FILE_APPEND | LOCK_EX
+            );
         }
-
-        if (session_id() !== '' || session_status() === PHP_SESSION_ACTIVE) {
-            $this->sessionStarted = true;
-            return;
-        }
-
-        $sessionCfg = $this->config['session'] ?? [];
-
-        session_name($configName);
 
         session_set_cookie_params([
-            'lifetime' => (int) ($sessionCfg['lifetime'] ?? 7200),
+            'lifetime' => (int) ($this->config['session']['lifetime'] ?? 7200),
             'path'     => '/',
-            'secure'   => (bool) ($sessionCfg['secure'] ?? false),
+            'secure'   => (bool) ($this->config['session']['secure'] ?? false),
             'httponly' => true,
             'samesite' => 'Lax',
         ]);
@@ -373,6 +411,28 @@ class AuthService
         @ini_set('session.use_strict_mode', '1');
 
         @session_start();
+
+        // DIAG: verify session loaded correctly
+        file_put_contents(
+            __DIR__ . '/../../storage/logs/2fa_debug.log',
+            "after_start: name=" . session_name() . " id=" . session_id() .
+            " keys=" . implode(',', array_keys($_SESSION)) . "\n",
+            FILE_APPEND | LOCK_EX
+        );
+
+        // Explicit setcookie to ensure the browser always has the session cookie,
+        // even if PHP skips it because $_COOKIE already has it.
+        setcookie(
+            $configName,
+            session_id(),
+            [
+                'expires'  => time() + ($this->config['session']['lifetime'] ?? 7200),
+                'path'     => '/',
+                'secure'   => (bool) ($this->config['session']['secure'] ?? false),
+                'httponly' => true,
+                'samesite' => 'Lax',
+            ]
+        );
 
         $this->sessionStarted = true;
     }
