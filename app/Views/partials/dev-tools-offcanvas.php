@@ -55,29 +55,6 @@ if (!$devEnabled || !$debugEnabled) {
     </div>
 </div>
 
-<style>
-.dev-tools-toggle {
-    position: fixed;
-    top: 50%;
-    right: 0;
-    transform: translateY(-50%);
-    border-radius: 0 8px 8px 0;
-    padding: .5rem .65rem;
-    z-index: 1055;
-    border: none;
-    box-shadow: -2px 2px 8px rgba(0,0,0,.15);
-    font-size: .85rem;
-}
-.dev-tools-toggle:hover { box-shadow: -2px 2px 12px rgba(0,0,0,.25); }
-.dev-tools-offcanvas { width: 520px !important; }
-.dev-vars-container pre { max-height: calc(100vh - 180px); }
-.dev-var-name { color: #0d6efd; font-weight: 600; }
-.dev-var-type { color: #6c757d; font-size: .65rem; margin-left: .3rem; }
-.dev-var-value { color: var(--bs-body-color); display: block; margin-top: .15rem; }
-.dev-var-matched { background: #fff3cd; }
-.dev-var-hidden { display: none; }
-</style>
-
 <script>
 (function () {
     var SENSITIVE_KEYS = ['password', 'token', 'secret', 'key', 'cookie', 'authorization', 'csrf'];
