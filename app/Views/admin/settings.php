@@ -83,6 +83,7 @@
                     </div>
                 </div>
             </div>
+            <div id="settings-dev-result" class="mb-2"></div>
             <div class="form-text">
                 Toggling this saves to the database and takes effect immediately.
                 Reload the page to confirm the new state.
@@ -138,3 +139,44 @@
 </div>
 
 </form>
+<script>
+(function() {
+    var toggle = document.getElementById('settings_developer');
+    var result = document.getElementById('settings-dev-result');
+    if (!toggle) return;
+
+    function showResult(type, message) {
+        var cls = type === 'success' ? 'alert-success' : 'alert-danger';
+        result.innerHTML = '<div class="alert ' + cls + ' alert-dismissible small mb-0">' +
+            message +
+            '<button type="button" class="btn-close btn-close-sm float-end" data-bs-dismiss="alert" aria-label="Close"></button></div>';
+    }
+
+    toggle.addEventListener('change', function() {
+        var checked = toggle.checked;
+        // Optimistically update label.
+        toggle.nextElementSibling.textContent = checked ? 'On' : 'Off';
+
+        var data = new FormData();
+        data.set('developer_developer', checked ? '1' : '0');
+
+        fetch('/admin/developer/settings', {
+            method: 'POST',
+            body: data
+        }).then(function(resp) { return resp.json(); })
+          .then(function(json) {
+              if (json.ok) {
+                  showResult('success', json.message);
+              } else {
+                  toggle.checked = !checked;
+                  toggle.nextElementSibling.textContent = checked ? 'On' : 'Off';
+                  showResult('error', json.error || 'Failed to save.');
+              }
+          }).catch(function() {
+              toggle.checked = !checked;
+              toggle.nextElementSibling.textContent = checked ? 'On' : 'Off';
+              showResult('error', 'Network error.');
+          });
+    });
+})();
+</script>

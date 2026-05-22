@@ -221,15 +221,25 @@ class DeveloperController extends Controller
             return;
         }
 
-        // Read input values (checkboxes only send when checked).
-        $developer = isset($_POST['developer_developer']) ? '1' : '0';
-        $debugVal  = isset($_POST['developer_debug']) ? '1' : '0';
-        $devConsole = isset($_POST['developer_dev_console']) ? '1' : '0';
+        // Map POST field names to DB keys.
+        $map = [
+            'developer_developer'   => 'developer.developer',
+            'developer_debug'       => 'developer.debug',
+            'developer_dev_console' => 'developer.dev_console',
+        ];
 
-        // Persist each setting.
-        $svc->set('developer.developer', $developer);
-        $svc->set('developer.debug', $debugVal);
-        $svc->set('developer.dev_console', $devConsole);
+        $savedKeys = [];
+        foreach ($map as $postKey => $dbKey) {
+            if (isset($_POST[$postKey])) {
+                $val = '1';
+            } elseif (array_key_exists($postKey, $_POST)) {
+                $val = '0';
+            } else {
+                continue; // Not submitted — skip this key.
+            }
+            $svc->set($dbKey, $val);
+            $savedKeys[] = $dbKey;
+        }
 
         // Audit log.
         try {
@@ -244,8 +254,13 @@ class DeveloperController extends Controller
             // Intentionally swallowed.
         }
 
+        $message = 'Developer settings saved: ' . implode(', ', $savedKeys);
+        if (empty($savedKeys)) {
+            $message = 'No settings changed.';
+        }
+
         header('Content-Type: application/json');
-        echo json_encode(['ok' => true, 'message' => 'Developer settings saved.']);
+        echo json_encode(['ok' => true, 'message' => $message]);
         exit;
     }
 
