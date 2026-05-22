@@ -1,126 +1,108 @@
 <?php
 /**
- * Tests: Developer controller and tools page — config flags as toggles.
+ * Tests: /admin/developer tools page layout and config flags.
  *
  * Verifies:
- * - tools.php renders Developer Mode as read-only status badge
- * - Debug Mode and Dev Console render as disabled toggle switches
- * - Toggles reflect actual resolved config values
- * - No DB persistence, no SystemSettingService usage
- * - No AJAX endpoint, no form submission
- * - config/local.php / .env values render correctly
+ * - Page title present
+ * - Simplified info alert ("Developer mode is active.")
+ * - File-backed warning alert present
+ * - Developer Mode NOT rendered as a card
+ * - Debug Mode and Dev Console as disabled toggles in a 2-col row
+ * - No form, no fetch, no AJAX, no DB artifacts
+ * - Config values render correctly
+ * - Scaffold cards unchanged
  */
 
 require __DIR__ . '/bootstrap.php';
 require __DIR__ . '/assert.php';
 reset_counters();
 
-// ===== Helper: render tools.php in controller scope =====
+// ===== Helper: render tools.php =====
 function render_tools($appConfig): string
 {
     ob_start();
     include __DIR__ . '/../app/Views/admin/developer/tools.php';
-    $output = ob_get_clean();
-    return $output;
+    return ob_get_clean();
 }
 
-// ===== TEST: Developer Mode shown as read-only badge =====
-echo "= TEST: Developer Mode = read-only badge =\n";
-$appConfig = ['developer' => true, 'debug' => true, 'dev_console' => true];
-$output = render_tools($appConfig);
-assert_true(strpos($output, 'Developer Mode') !== false, 'Developer Mode label present');
-assert_true(strpos($output, 'bg-success') !== false, 'On badge present');
-assert_true(strpos($output, 'true') !== false, 'true value present');
-echo "PASS\n";
-
-// ===== TEST: Debug Mode rendered as disabled toggle =====
-echo "= TEST: Debug Mode = disabled toggle =\n";
+// ===== TEST: Page title =====
+echo "= TEST: Page title =\n";
 $appConfig = ['debug' => true, 'dev_console' => true];
 $output = render_tools($appConfig);
-assert_true(strpos($output, 'toggle_debug') !== false, 'debug toggle ID present');
-assert_true(strpos($output, 'role="switch"') !== false, 'form-switch role present');
-assert_true(strpos($output, 'disabled') !== false, 'disabled attribute present');
-assert_true(strpos($output, 'On') !== false, 'On label present');
+assert_true(strpos($output, '<h2 class="mb-3">Developer Tools</h2>') !== false, 'page title present');
 echo "PASS\n";
 
-// ===== TEST: Dev Console rendered as disabled toggle =====
-echo "= TEST: Dev Console = disabled toggle =\n";
-$appConfig = ['dev_console' => true];
-$output = render_tools($appConfig);
-assert_true(strpos($output, 'toggle_dev_console') !== false, 'dev_console toggle ID present');
-assert_true(strpos($output, 'role="switch"') !== false, 'form-switch role present');
-assert_true(strpos($output, 'disabled') !== false, 'disabled attribute present');
-assert_true(strpos($output, 'On') !== false, 'On label present');
+// ===== TEST: Simplified info alert =====
+echo "= TEST: Info alert =\n";
+assert_true(strpos($output, 'alert-info mb-4') !== false, 'info alert class present');
+assert_true(strpos($output, 'Developer mode is active.') !== false, 'simplified message present');
+assert_false(strpos($output, 'APP_DEBUG') !== false && strpos($output, 'production deployments') !== false,
+    'no mention of APP_DEBUG or production in info alert');
 echo "PASS\n";
 
-// ===== TEST: Toggles reflect false values when config=false =====
-echo "= TEST: false values render as Off =\n";
+// ===== TEST: File-backed warning alert =====
+echo "= TEST: File-backed warning alert =\n";
+assert_true(strpos($output, 'alert-warning mb-4') !== false, 'warning alert present');
+assert_true(strpos($output, 'file-backed values') !== false, 'mentions file-backed');
+assert_true(strpos($output, '.env') !== false, 'mentions .env');
+assert_true(strpos($output, 'config/local.php') !== false, 'mentions config/local.php');
+assert_true(strpos($output, 'bi-info-circle') !== false, 'info icon present');
+echo "PASS\n";
+
+// ===== TEST: Developer Mode NOT rendered =====
+echo "= TEST: No Developer Mode card =\n";
+assert_true(strpos($output, 'Developer Mode') === false, 'no Developer Mode section');
+assert_true(strpos($output, 'APP_DEVELOPER') === false, 'no APP_DEVELOPER reference');
+echo "PASS\n";
+
+// ===== TEST: Debug Mode card in row =====
+echo "= TEST: Debug Mode in row =\n";
+assert_true(strpos($output, '<div class="row g-3 mb-3">') !== false, 'row g-3 container present');
+assert_true(strpos($output, '<div class="col-md-6">') !== false, 'col-md-6 column present');
+assert_true(strpos($output, '<h5 class="card-title mb-2">Debug Mode</h5>') !== false, 'Debug Mode card title');
+assert_true(strpos($output, 'toggle_debug') !== false, 'debug toggle ID');
+assert_true(strpos($output, 'disabled') !== false, 'disabled attribute');
+assert_true(strpos($output, 'form-check form-switch') !== false, 'Bootstrap switch class');
+echo "PASS\n";
+
+// ===== TEST: Dev Console card in row =====
+echo "= TEST: Dev Console in row =\n";
+assert_true(strpos($output, '<h5 class="card-title mb-2">Dev Console</h5>') !== false, 'Dev Console card title');
+assert_true(strpos($output, 'toggle_dev_console') !== false, 'dev_console toggle ID');
+echo "PASS\n";
+
+// ===== TEST: Guidance inside card body =====
+echo "= TEST: Guidance inside card =\n";
+assert_true(strpos($output, 'bi-lock-fill') !== false, 'lock icon in guidance');
+assert_true(strpos($output, 'To change') !== false, 'To change text');
+// Check that guidance alert is inside the card's second card-body
+assert_true(strpos($output, '<div class="card-body pt-0">') !== false, 'guidance in pt-0 card-body');
+echo "PASS\n";
+
+// ===== TEST: false values render as Off =====
+echo "= TEST: false → Off =\n";
 $appConfig = ['debug' => false, 'dev_console' => false];
 $output = render_tools($appConfig);
-assert_true(strpos($output, 'Off') !== false, 'Off label present for false values');
-// Toggles with false should not have "checked"
-$debugPos = strpos($output, 'toggle_debug');
-$consolePos = strpos($output, 'toggle_dev_console');
-assert_true($debugPos !== false, 'debug toggle present');
-assert_true($consolePos !== false, 'dev_console toggle present');
-$debugSection = substr($output, $debugPos, 250);
-$consoleSection = substr($output, $consolePos, 250);
-assert_true(strpos($debugSection, 'checked') === false, 'debug toggle not checked when false');
-assert_true(strpos($consoleSection, 'checked') === false, 'dev_console toggle not checked when false');
+assert_true(strpos($output, 'Off') !== false, 'Off present for false');
 echo "PASS\n";
 
-// ===== TEST: No form inputs or AJAX (no persistence) =====
-echo "= TEST: No persistence mechanism =\n";
-$appConfig = ['developer' => true, 'debug' => true, 'dev_console' => true];
+// ===== TEST: true values render as On =====
+echo "= TEST: true → On =\n";
+$appConfig = ['debug' => true, 'dev_console' => true];
 $output = render_tools($appConfig);
-assert_true(strpos($output, 'getElementById') === false, 'no JS getElementById');
-assert_true(strpos($output, 'fetch(') === false, 'no JS fetch');
-assert_true(strpos($output, 'FormData') === false, 'no FormData');
-assert_true(strpos($output, 'role="switch"') !== false, 'has disabled toggles instead');
+assert_true(strpos($output, 'On') !== false, 'On present for true');
 echo "PASS\n";
 
-// ===== TEST: No DB or SystemSettingService in DeveloperController =====
-echo "= TEST: No DB usage in DeveloperController =\n";
-$ctrlContent = file_get_contents(__DIR__ . '/../app/Controllers/Admin/DeveloperController.php');
-assert_true(strpos($ctrlContent, 'SystemSettingService') === false, 'no SystemSettingService');
-assert_true(strpos($ctrlContent, 'SystemSettingRepository') === false, 'no SystemSettingRepository');
-assert_true(strpos($ctrlContent, 'ajaxSaveSettings') === false, 'no ajaxSaveSettings method');
-assert_true(strpos($ctrlContent, 'registerDeveloperSection') === false, 'no registerDeveloperSection');
-echo "PASS\n";
-
-// ===== TEST: No POST /admin/developer/settings route =====
-echo "= TEST: No POST route for developer settings =\n";
-$routesContent = file_get_contents(__DIR__ . '/../routes/web.php');
-assert_true(strpos($routesContent, "post('/admin/developer/settings'") === false, 'no POST /admin/developer/settings route');
-echo "PASS\n";
-
-// ===== TEST: Config pipeline renders correctly — all true =====
-echo "= TEST: All true → all On =\n";
-$appConfig = ['developer' => true, 'debug' => true, 'dev_console' => true];
-$output = render_tools($appConfig);
-assert_true(strpos($output, 'Developer Mode') !== false, 'developer present');
-assert_true(strpos($output, 'Debug Mode') !== false, 'debug present');
-assert_true(strpos($output, 'Dev Console') !== false, 'dev_console present');
-assert_true(strpos($output, 'On') !== false, 'all On');
-echo "PASS\n";
-
-// ===== TEST: All false → all Off =====
-echo "= TEST: All false → all Off =\n";
-$appConfig = ['developer' => false, 'debug' => false, 'dev_console' => false];
-$output = render_tools($appConfig);
-assert_true(strpos($output, 'Off') !== false, 'all Off');
-echo "PASS\n";
-
-// ===== TEST: Nested config['app'] also works =====
+// ===== TEST: Nested config['app'] works =====
 echo "= TEST: Nested config['app'] =\n";
-$nestedConfig = ['app' => ['developer' => true, 'debug' => true, 'dev_console' => true]];
+$nestedConfig = ['app' => ['debug' => true, 'dev_console' => true]];
 $appConfig = is_array($nestedConfig['app'] ?? null) ? $nestedConfig['app'] : $nestedConfig;
 $output = render_tools($appConfig);
-assert_true(strpos($output, 'On') !== false, 'On badges present');
+assert_true(strpos($output, 'On') !== false, 'On badges with nested config');
 echo "PASS\n";
 
-// ===== TEST: Missing keys → false defaults =====
-echo "= TEST: Missing keys → Off defaults =\n";
+// ===== TEST: Missing keys → Off =====
+echo "= TEST: Missing keys → Off =\n";
 $appConfig = [];
 $output = render_tools($appConfig);
 assert_true(strpos($output, 'Off') !== false, 'defaults to Off');
@@ -128,25 +110,39 @@ echo "PASS\n";
 
 // ===== TEST: Dev Console warning when disabled =====
 echo "= TEST: dev_console=false → warning =\n";
-$appConfig = ['developer' => true, 'debug' => true, 'dev_console' => false];
+$appConfig = ['debug' => true, 'dev_console' => false];
 $output = render_tools($appConfig);
-assert_true(strpos($output, 'alert-warning') !== false, 'warning banner present');
+assert_true(strpos($output, 'alert-warning') !== false, 'warning present');
+assert_true(strpos($output, 'Dev Console is disabled') !== false, 'mentions disabled');
 echo "PASS\n";
 
-// ===== TEST: Dev Console guidance mentions file change steps =====
-echo "= TEST: Guidance includes file change steps =\n";
-$appConfig = ['dev_console' => false];
+// ===== TEST: No JS, no fetch, no AJAX, no form =====
+echo "= TEST: No JS/AJAX/form artifacts =\n";
+$appConfig = ['debug' => true, 'dev_console' => true];
 $output = render_tools($appConfig);
-assert_true(strpos($output, 'APP_DEV_CONSOLE') !== false, 'mentions env var');
-assert_true(strpos($output, 'config/local.php') !== false || strpos($output, 'local.php') !== false, 'mentions config/local.php');
+assert_false(strpos($output, 'getElementById') !== false, 'no JS getElementById');
+assert_false(strpos($output, 'fetch(') !== false, 'no JS fetch');
+assert_false(strpos($output, 'FormData') !== false, 'no FormData');
+assert_false(strpos($output, 'role="switch"') === false, 'has disabled toggles');
 echo "PASS\n";
 
-// ===== TEST: Scaffold page still renders =====
-echo "= TEST: Scaffold page HTML renders =\n";
-$scaffoldPath = __DIR__ . '/../app/Views/admin/developer/scaffold.php';
-assert_true(file_exists($scaffoldPath), 'scaffold.php exists');
-$scaffoldContent = file_get_contents($scaffoldPath);
-assert_true(strpos($scaffoldContent, 'Scaffold Generator') !== false, 'scaffold title present');
+// ===== TEST: No DB artifacts =====
+echo "= TEST: No DB artifacts =\n";
+$ctrlContent = file_get_contents(__DIR__ . '/../app/Controllers/Admin/DeveloperController.php');
+assert_true(strpos($ctrlContent, 'SystemSettingService') === false, 'no SystemSettingService');
+assert_true(strpos($ctrlContent, 'ajaxSaveSettings') === false, 'no ajaxSaveSettings');
+$routesContent = file_get_contents(__DIR__ . '/../routes/web.php');
+assert_true(strpos($routesContent, "post('/admin/developer/settings'") === false, 'no POST route');
+echo "PASS\n";
+
+// ===== TEST: Scaffold cards unchanged =====
+echo "= TEST: Scaffold cards present =\n";
+$appConfig = ['debug' => true, 'dev_console' => true];
+$output = render_tools($appConfig);
+assert_true(strpos($output, 'Scaffold Generator') !== false, 'Scaffold Generator present');
+assert_true(strpos($output, 'Copy Example Code') !== false, 'Copy Example Code present');
+assert_true(strpos($output, 'Validate Manifests') !== false, 'Validate Manifests present');
+assert_true(strpos($output, 'btn btn-sm btn-primary') !== false, 'Open Generator button present');
 echo "PASS\n";
 
 echo "\n=== ALL DEVTOOLS CONTROLLER TESTS PASSED ===\n";
