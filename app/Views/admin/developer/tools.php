@@ -14,14 +14,72 @@
     </div>
 </div>
 
-<!-- Dev Tools Offcanvas Toggle -->
+<!-- Feature Flags Status -->
+<div class="card mb-4">
+    <div class="card-body">
+        <h5 class="card-title mb-3">Feature Flags</h5>
+        <div class="table-responsive">
+            <table class="table table-sm mb-0">
+                <thead>
+                    <tr>
+                        <th>Feature</th>
+                        <th>Environment Variable</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Developer Mode</td>
+                        <td><code>APP_DEVELOPER</code></td>
+                        <td>
+                            <span class="badge <?= (isset($appConfig['developer']) && $appConfig['developer']) ? 'bg-success' : 'bg-danger' ?>">
+                                <?= (isset($appConfig['developer']) && $appConfig['developer']) ? 'On' : 'Off' ?>
+                            </span>
+                            <span class="ms-2 text-muted small">→ <?= (isset($appConfig['developer']) && $appConfig['developer']) ? 'true' : 'false' ?></span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>Debug Mode</td>
+                        <td><code>APP_DEBUG</code></td>
+                        <td>
+                            <span class="badge <?= (isset($appConfig['debug']) && $appConfig['debug']) ? 'bg-success' : 'bg-danger' ?>">
+                                <?= (isset($appConfig['debug']) && $appConfig['debug']) ? 'On' : 'Off' ?>
+                            </span>
+                            <span class="ms-2 text-muted small">→ <?= (isset($appConfig['debug']) && $appConfig['debug']) ? 'true' : 'false' ?></span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>Dev Console</td>
+                        <td><code>APP_DEV_CONSOLE</code></td>
+                        <td>
+                            <span class="badge <?= (isset($appConfig['dev_console']) && $appConfig['dev_console']) ? 'bg-success' : 'bg-danger' ?>">
+                                <?= (isset($appConfig['dev_console']) && $appConfig['dev_console']) ? 'On' : 'Off' ?>
+                            </span>
+                            <span class="ms-2 text-muted small">→ <?= (isset($appConfig['dev_console']) && $appConfig['dev_console']) ? 'true' : 'false' ?></span>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Console Enable Note -->
+<?php if (!isset($appConfig['dev_console']) || !$appConfig['dev_console']): ?>
+<div class="alert alert-warning mb-4" role="alert">
+    <i class="bi bi-info-circle me-2"></i>
+    The Dev Tools Console is disabled. To enable it, set <code>APP_DEV_CONSOLE=true</code> in your <code>.env</code> file (development) or server environment (production), then restart your web server.
+</div>
+<?php endif; ?>
+
+<!-- Floating Console Button -->
 <div class="card mb-4">
     <div class="card-body d-flex align-items-center justify-content-between">
         <div>
-            <h5 class="card-title mb-1">Dev Tools Console</h5>
-            <p class="text-muted small mb-0">Inspect request context, container state, and view variables.</p>
+            <h5 class="card-title mb-1">Floating Dev Console</h5>
+            <p class="text-muted small mb-0">A floating wrench button appears on the right edge of the screen when Dev Console is enabled.</p>
         </div>
-        <a class="btn btn-outline-primary"
+        <a class="btn btn-outline-secondary"
            data-bs-toggle="offcanvas"
            href="#dev-tools-offcanvas"
            role="button"

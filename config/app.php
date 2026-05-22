@@ -19,4 +19,5 @@ return [
     'url'       => (getenv('APP_URL')        ?: 'http://localhost'),
     'installed' => (bool) filter_var(getenv('APP_INSTALLED') ?: 'false', FILTER_VALIDATE_BOOLEAN),
     'developer' => (bool) filter_var(getenv('APP_DEVELOPER')  ?: 'false', FILTER_VALIDATE_BOOLEAN),
+    'dev_console' => (bool) filter_var(getenv('APP_DEV_CONSOLE') ?: 'true', FILTER_VALIDATE_BOOLEAN),
 ];

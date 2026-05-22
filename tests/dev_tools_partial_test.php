@@ -6,8 +6,8 @@
  * - No errors/exceptions when $config is missing
  * - No errors/exceptions when $config has no 'app' key
  * - No errors/exceptions with minimal valid config (debug=developer=true)
- * - Returns early (no output) when debug/developer are false
- * - Partial output includes expected HTML when debug/developer are true
+ * - Returns early (no output) when debug/developer/dev_console are not all true
+ * - Partial output includes expected HTML when debug/developer/dev_console are true
  * - Partial resolves $config from scope correctly (controller pattern)
  */
 
@@ -60,7 +60,7 @@ echo "PASS\n";
 
 // ===== TEST: Partial with full config including 'app' =====
 echo "= TEST: Partial with full \$config['app'] =\n";
-$config = ['app' => ['developer' => true, 'debug' => true], 'name' => 'Test'];
+$config = ['app' => ['developer' => true, 'debug' => true, 'dev_console' => true], 'name' => 'Test'];
 $__devVars = ['test_var' => 'test_value'];
 ob_start();
 include $partialPath;
@@ -73,7 +73,7 @@ echo "PASS\n";
 // ===== TEST: Partial with appConfig directly (no $config) =====
 echo "= TEST: Partial with \$appConfig but no \$config =\n";
 unset($config);
-$appConfig = ['developer' => true, 'debug' => true];
+$appConfig = ['developer' => true, 'debug' => true, 'dev_console' => true];
 $__devVars = ['test_var' => 'test_value'];
 ob_start();
 include $partialPath;
@@ -86,7 +86,7 @@ echo "PASS\n";
 // ===== TEST: Partial renders no PHP notices/warnings at any error level =====
 echo "= TEST: No notices/warnings at E_ALL =\n";
 $oldLevel = error_reporting(E_ALL);
-$config = ['app' => ['developer' => true, 'debug' => true]];
+$config = ['app' => ['developer' => true, 'debug' => true, 'dev_console' => true]];
 $__devVars = ['str' => 'hello', 'arr' => ['x' => 1], 'obj' => new stdClass(), 'nul' => null];
 ob_start();
 $errBefore = error_get_last();
@@ -100,7 +100,7 @@ unset($__devVars);
 
 // ===== TEST: Partial with admin permission (isAdmin should be true) =====
 echo "= TEST: Partial works with admin user data =\n";
-$config = ['app' => ['developer' => true, 'debug' => true]];
+$config = ['app' => ['developer' => true, 'debug' => true, 'dev_console' => true]];
 $__devVars = [
     'currentUser' => ['id' => 1, 'username' => 'admin', 'display_name' => 'Admin User', 'email' => 'admin@test.com'],
     'currentUserPermissions' => ['admin', 'users.view'],
@@ -123,6 +123,74 @@ $output = ob_get_clean();
 assert_true(strpos($output, 'Developer Tools') !== false, 'panel HTML present with admin data');
 assert_true(strpos($output, 'admin') !== false, 'admin username rendered');
 assert_true(strpos($output, 'Admin User') !== false, 'display name rendered');
+echo "PASS\n";
+
+// ===== TEST: 3-way boolean combinations =====
+echo "= TEST: Dev tools visibility — all 3 boolean combinations =\n";
+$partialPath3way = realpath(__DIR__ . '/../app/Views/partials/dev-tools-offcanvas.php');
+
+// All 3 true → should render
+$appConfig = ['developer' => true, 'debug' => true, 'dev_console' => true];
+ob_start();
+include $partialPath3way;
+$output = ob_get_clean();
+assert_true(strpos($output, 'Developer Tools') !== false, 'all 3 true → renders');
+echo "PASS\n";
+
+// dev_console false → no output
+$appConfig = ['developer' => true, 'debug' => true, 'dev_console' => false];
+ob_start();
+include $partialPath3way;
+$output = ob_get_clean();
+assert_equal('', $output, 'dev_console=false → no output');
+echo "PASS\n";
+
+// dev_console true, developer false → no output
+$appConfig = ['developer' => false, 'debug' => true, 'dev_console' => true];
+ob_start();
+include $partialPath3way;
+$output = ob_get_clean();
+assert_equal('', $output, 'developer=false → no output');
+echo "PASS\n";
+
+// dev_console true, debug false → no output
+$appConfig = ['developer' => true, 'debug' => false, 'dev_console' => true];
+ob_start();
+include $partialPath3way;
+$output = ob_get_clean();
+assert_equal('', $output, 'debug=false → no output');
+echo "PASS\n";
+
+// developer true, debug false, dev_console false → no output
+$appConfig = ['developer' => true, 'debug' => false, 'dev_console' => false];
+ob_start();
+include $partialPath3way;
+$output = ob_get_clean();
+assert_equal('', $output, 'debug=false, dev_console=false → no output');
+echo "PASS\n";
+
+// developer false, debug true, dev_console false → no output
+$appConfig = ['developer' => false, 'debug' => true, 'dev_console' => false];
+ob_start();
+include $partialPath3way;
+$output = ob_get_clean();
+assert_equal('', $output, 'developer=false, dev_console=false → no output');
+echo "PASS\n";
+
+// developer false, debug false, dev_console true → no output
+$appConfig = ['developer' => false, 'debug' => false, 'dev_console' => true];
+ob_start();
+include $partialPath3way;
+$output = ob_get_clean();
+assert_equal('', $output, 'developer=false, debug=false → no output');
+echo "PASS\n";
+
+// all false → no output
+$appConfig = ['developer' => false, 'debug' => false, 'dev_console' => false];
+ob_start();
+include $partialPath3way;
+$output = ob_get_clean();
+assert_equal('', $output, 'all false → no output');
 echo "PASS\n";
 
 echo "\n=== ALL TESTS PASSED ===\n";

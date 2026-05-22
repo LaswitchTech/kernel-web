@@ -2,8 +2,12 @@
 /**
  * Developer Tools — floating offcanvas.
  *
- * Only rendered when BOTH config['app']['developer'] and config['app']['debug']
- * are true. Sensitive values are masked automatically.
+ * Rendered only when ALL THREE are true:
+ *   1. appConfig['developer']
+ *   2. appConfig['debug']
+ *   3. appConfig['dev_console']
+ *
+ * Sensitive values are masked automatically.
  * Variables are captured server-side via get_defined_vars() and sanitized
  * before being passed to JS for rendering and filtering.
  *
@@ -20,11 +24,12 @@ if (!isset($appConfig) || !is_array($appConfig)) {
     return;
 }
 
-$devEnabled   = (bool) ($appConfig['developer'] ?? false);
-$debugEnabled = (bool) ($appConfig['debug'] ?? false);
+$devEnabled    = (bool) ($appConfig['developer'] ?? false);
+$debugEnabled  = (bool) ($appConfig['debug'] ?? false);
+$consoleEnabled = (bool) ($appConfig['dev_console'] ?? false);
 
-// Only suppress dev tools when BOTH developer and debug are false.
-if (!$devEnabled && !$debugEnabled) {
+// Only render when ALL THREE flags are true.
+if (!$devEnabled || !$debugEnabled || !$consoleEnabled) {
     return;
 }
 
