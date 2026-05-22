@@ -8,9 +8,13 @@
  * before being passed to JS for rendering and filtering.
  */
 
-$appConfig  = ($config['app'] ?? $config) ?? [];
-$devEnabled = (bool) ($appConfig['developer'] ?? false);
-$debugEnabled = (bool) ($appConfig['debug'] ?? $appConfig['debug'] ?? false);
+/* ── Defensive config resolution (may not exist in all layouts) ───── */
+$_config   = ($config ?? $appConfig ?? []) ?? [];
+$appConfig = $_config['app'] ?? ($_config);
+unset($_config);
+
+$devEnabled  = (bool) ($appConfig['developer'] ?? false);
+$debugEnabled = (bool) ($appConfig['debug'] ?? false);
 
 if (!$devEnabled || !$debugEnabled) {
     return;
@@ -32,6 +36,7 @@ $devVars = array_diff_key($devVars, array_flip($devExclude));
 
 /* ── Strict helpers ─────────────────────────────────────── */
 
+if (!function_exists('devTypeLabel')) {
 function devTypeLabel(mixed $val): string {
     if (is_array($val))   return 'array';
     if (is_object($val))  return 'object';
@@ -43,7 +48,9 @@ function devTypeLabel(mixed $val): string {
     if (is_resource($val)) return 'resource';
     return 'unknown';
 }
+}
 
+if (!function_exists('devScalarDisplay')) {
 function devScalarDisplay(mixed $val, int $maxLen): string {
     if (is_bool($val))   return $val ? 'true' : 'false';
     if ($val === null)   return 'null';
@@ -52,6 +59,7 @@ function devScalarDisplay(mixed $val, int $maxLen): string {
         return substr($s, 0, $maxLen) . '… (' . strlen($s) . ' chars)';
     }
     return htmlspecialchars($s, ENT_QUOTES, 'UTF-8');
+}
 }
 
 /**
@@ -68,6 +76,7 @@ function devScalarDisplay(mixed $val, int $maxLen): string {
  *    'masked'    => ?bool   (true if this node is a masked value)
  *  ]
  */
+if (!function_exists('devSanitize')) {
 function devSanitize(mixed $val, int $depth = 0, int $maxDepth = 5, int $maxItems = 6, int $maxStrLen = 200): array {
     static $sensitivePatterns = null;
     if ($sensitivePatterns === null) {
@@ -179,6 +188,7 @@ function devSanitize(mixed $val, int $depth = 0, int $maxDepth = 5, int $maxItem
         'truncated' => null, 'masked' => false,
     ];
 }
+}
 
 $devSanitized = [];
 foreach ($devVars as $_k => $_v) {
@@ -188,19 +198,24 @@ foreach ($devVars as $_k => $_v) {
 /* ── Path helpers for unique collapse IDs ────────────────── */
 
 // Encode a path segment into a valid HTML ID fragment
+if (!function_exists('devIdSegment')) {
 function devIdSegment(string $seg): string {
     return strtolower(preg_replace('/[^a-zA-Z0-9]/', '_', $seg));
 }
+}
 
 // Generate a unique collapse ID from the variable path
+if (!function_exists('devCollapseId')) {
 function devCollapseId(string $varPath, string $childKey): string {
     return 'dev-var-' . $varPath . '-' . devIdSegment($childKey);
+}
 }
 
 /**
  * Render a nested expandable node (recursive).
  * Outputs HTML rows for the child and its descendants.
  */
+if (!function_exists('devRenderNestedNode')) {
 function devRenderNestedNode(string $detailKey, array $childMeta, string $parentPath, int $level, int $initialBatch = 5): void {
     $childType  = $childMeta['type'];
     $hasChildren = ($childType === 'array' || $childType === 'object') && !empty($childMeta['children']);
@@ -299,10 +314,12 @@ function devRenderNestedNode(string $detailKey, array $childMeta, string $parent
         echo '</tr>' . "\n";
     }
 }
+}
 
 /**
  * Render detail rows for top-level children (inside the expanded variable).
  */
+if (!function_exists('devRenderTopLevelChildren')) {
 function devRenderTopLevelChildren(array $children, string $varId, int $initialBatch = 5): void {
     $childCount = count($children);
     $visibleCount = min($initialBatch, $childCount);
@@ -331,6 +348,7 @@ function devRenderTopLevelChildren(array $children, string $varId, int $initialB
         echo '  </td>' . "\n";
         echo '</tr>' . "\n";
     }
+}
 }
 
 ?>
