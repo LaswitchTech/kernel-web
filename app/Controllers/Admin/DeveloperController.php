@@ -28,6 +28,21 @@ class DeveloperController extends Controller
         // Derive $appConfig the same way ViewGlobals does (flat or nested config).
         $appConfig = is_array($config['app'] ?? null) ? $config['app'] : $config;
 
+        // Override app config with DB-stored developer settings (if any).
+        // DB is the highest-priority layer for runtime-toggled settings.
+        $svc = new SystemSettingService(
+            new SystemSettingRepository($this->container->get('db'))
+        );
+        if ($svc->get('developer.developer') !== null) {
+            $appConfig['developer'] = $svc->getBool('developer.developer', $appConfig['developer'] ?? false);
+        }
+        if ($svc->get('developer.debug') !== null) {
+            $appConfig['debug'] = $svc->getBool('developer.debug', $appConfig['debug'] ?? false);
+        }
+        if ($svc->get('developer.dev_console') !== null) {
+            $appConfig['dev_console'] = $svc->getBool('developer.dev_console', $appConfig['dev_console'] ?? false);
+        }
+
         // Check if debug mode is enabled.
         // config['app']['debug'] mirrors config/app.php 'debug' key.
         $debugConfig = $config['app']['debug'] ?? $config['debug'] ?? false;
@@ -246,9 +261,7 @@ class DeveloperController extends Controller
             $actorId = (int) ($principal['user']['id'] ?? 0);
             (new \App\Models\AuditLogRepository($this->container->get('db')))
                 ->log($actorId, 'developer.settings_update', 'developer_settings', 0, [
-                    'developer' => $developer,
-                    'debug' => $debugVal,
-                    'dev_console' => $devConsole,
+                    'keys_saved' => $savedKeys,
                 ]);
         } catch (\Throwable $e) {
             // Intentionally swallowed.
