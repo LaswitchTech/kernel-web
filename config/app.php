@@ -11,13 +11,43 @@
  * These values can also be overridden via config/local.php:
  *   return ['app' => ['debug' => false]];
  */
+
+/**
+ * Read an env var via Env::get() (which reads from the .env store),
+ * falling back to $default when absent.
+ */
+if (!function_exists('env')) {
+    function env(string $key, mixed $default = null): mixed
+    {
+        $val = \App\Core\Env::get($key);
+        return $val !== null ? $val : $default;
+    }
+}
+
+/**
+ * Read an env var as a boolean.
+ *
+ * Truthy strings: 'true', '1', 'yes', 'on' (case-insensitive).
+ * Everything else (including absent keys) uses $default.
+ */
+if (!function_exists('env_bool')) {
+    function env_bool(string $key, bool $default = false): bool
+    {
+        $val = \App\Core\Env::get($key);
+        if ($val === null) {
+            return $default;
+        }
+        return in_array(strtolower((string) $val), ['true', '1', 'yes', 'on'], true);
+    }
+}
+
 return [
-    'name'      => (getenv('APP_NAME')      ?: 'Kernel-Web'),
-    'version'   => (getenv('APP_VERSION')   ?: 'dev'),
-    'env'       => (getenv('APP_ENV')        ?: 'development'),
-    'debug'     => (bool) filter_var(getenv('APP_DEBUG')      ?: 'true',  FILTER_VALIDATE_BOOLEAN),
-    'url'       => (getenv('APP_URL')        ?: 'http://localhost'),
-    'installed' => (bool) filter_var(getenv('APP_INSTALLED') ?: 'false', FILTER_VALIDATE_BOOLEAN),
-    'developer' => (bool) filter_var(getenv('APP_DEVELOPER')  ?: 'false', FILTER_VALIDATE_BOOLEAN),
-    'dev_console' => (bool) filter_var(getenv('APP_DEV_CONSOLE') ?: 'true', FILTER_VALIDATE_BOOLEAN),
+    'name'          => (string) env('APP_NAME', 'Kernel-Web'),
+    'version'       => (string) env('APP_VERSION', 'dev'),
+    'env'           => (string) env('APP_ENV', 'development'),
+    'debug'         => env_bool('APP_DEBUG', true),
+    'url'           => (string) env('APP_URL', 'http://localhost'),
+    'installed'     => env_bool('APP_INSTALLED', false),
+    'developer'     => env_bool('APP_DEVELOPER', false),
+    'dev_console'   => env_bool('APP_DEV_CONSOLE', true),
 ];
