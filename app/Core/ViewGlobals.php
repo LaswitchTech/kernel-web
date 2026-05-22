@@ -255,6 +255,11 @@ class ViewGlobals
             $scopeVars['appName'] = 'Kernel-Web';
         }
 
+        // Ensure $appConfig always exists so dev-tools guard doesn't fail.
+        if (!isset($scopeVars['appConfig']) || !is_array($scopeVars['appConfig'])) {
+            $scopeVars['appConfig'] = [];
+        }
+
         return array_merge($userVars, $scopeVars);
     }
 

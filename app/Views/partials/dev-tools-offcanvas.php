@@ -23,7 +23,8 @@ if (!isset($appConfig) || !is_array($appConfig)) {
 $devEnabled   = (bool) ($appConfig['developer'] ?? false);
 $debugEnabled = (bool) ($appConfig['debug'] ?? false);
 
-if (!$devEnabled || !$debugEnabled) {
+// Only suppress dev tools when BOTH developer and debug are false.
+if (!$devEnabled && !$debugEnabled) {
     return;
 }
 

@@ -24,8 +24,13 @@
                                 : '<span class="text-muted fst-italic">system</span>');
 
                         $meta    = json_decode($row['meta'] ?? '{}', true) ?: [];
+                        // Safe scalar rendering — arrays/objects become JSON preview, others become string.
                         $summary = implode(', ', array_map(
-                            fn($k, $v) => htmlspecialchars($k) . '=' . htmlspecialchars((string) (is_bool($v) ? ($v ? 'true' : 'false') : $v)),
+                            fn($k, $v) => htmlspecialchars($k) . '=' . htmlspecialchars(
+                                is_array($v) || is_object($v)
+                                    ? substr(json_encode($v, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE), 0, 80)
+                                    : (is_bool($v) ? ($v ? 'true' : 'false') : (string) $v)
+                            ),
                             array_keys($meta),
                             array_values($meta)
                         ));

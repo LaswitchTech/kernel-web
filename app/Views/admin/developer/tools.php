@@ -14,6 +14,24 @@
     </div>
 </div>
 
+<!-- Dev Tools Offcanvas Toggle -->
+<div class="card mb-4">
+    <div class="card-body d-flex align-items-center justify-content-between">
+        <div>
+            <h5 class="card-title mb-1">Dev Tools Console</h5>
+            <p class="text-muted small mb-0">Inspect request context, container state, and view variables.</p>
+        </div>
+        <a class="btn btn-outline-primary"
+           data-bs-toggle="offcanvas"
+           href="#dev-tools-offcanvas"
+           role="button"
+           aria-controls="#dev-tools-offcanvas"
+           title="Open Developer Tools Console">
+            <i class="bi bi-terminal"></i> Open Console
+        </a>
+    </div>
+</div>
+
 <div class="row g-3 mb-4">
     <!-- Scaffold Generator -->
     <div class="col-md-6 col-xl-4">
