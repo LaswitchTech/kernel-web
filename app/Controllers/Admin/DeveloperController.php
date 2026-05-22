@@ -1,10 +1,6 @@
-<?php
-namespace App\Controllers\Admin;
+<?php namespace App\Controllers\Admin;
 
 use App\Core\Controller;
-use App\Core\SettingsRegistry;
-use App\Services\SystemSettingService;
-use App\Models\SystemSettingRepository;
 
 /**
  * Developer Tools admin controller — reads-only tools page.
@@ -16,8 +12,6 @@ class DeveloperController extends Controller
 {
     public function tools(array $params = []): void
     {
-        $this->registerDeveloperSection();
-
         $principal = $this->container->get('principal');
         $user      = $principal['user'];
         $perms     = $principal['permissions'];
@@ -26,22 +20,9 @@ class DeveloperController extends Controller
         $viewsPath = __DIR__ . '/../../Views';
 
         // Derive $appConfig the same way ViewGlobals does (flat or nested config).
+        // config/app.php (env-driven) is the base. config/local.php overrides it.
+        // There is no DB-backed override layer for these config flags.
         $appConfig = is_array($config['app'] ?? null) ? $config['app'] : $config;
-
-        // Override app config with DB-stored developer settings (if any).
-        // DB is the highest-priority layer for runtime-toggled settings.
-        $svc = new SystemSettingService(
-            new SystemSettingRepository($this->container->get('db'))
-        );
-        if ($svc->get('developer.developer') !== null) {
-            $appConfig['developer'] = $svc->getBool('developer.developer', $appConfig['developer'] ?? false);
-        }
-        if ($svc->get('developer.debug') !== null) {
-            $appConfig['debug'] = $svc->getBool('developer.debug', $appConfig['debug'] ?? false);
-        }
-        if ($svc->get('developer.dev_console') !== null) {
-            $appConfig['dev_console'] = $svc->getBool('developer.dev_console', $appConfig['dev_console'] ?? false);
-        }
 
         // Check if debug mode is enabled.
         // config['app']['debug'] mirrors config/app.php 'debug' key.
@@ -126,155 +107,6 @@ class DeveloperController extends Controller
     private function handle404(): void
     {
         \App\Core\ErrorPage::render(404, 'The developer tools page is not available in production mode.');
-    }
-
-    /**
-     * Register the developer settings section if not already registered.
-     */
-    private function registerDeveloperSection(): void
-    {
-        if (SettingsRegistry::getSection('developer') !== null) {
-            return;
-        }
-
-        SettingsRegistry::addSection([
-            'id'       => 'developer',
-            'label'    => 'Developer Settings',
-            'column'   => 'left',
-            'order'    => 5,
-            'permission' => null,
-            'keys'     => ['developer.developer', 'developer.debug', 'developer.dev_console'],
-            'render'   => function (array $context): string {
-                $settings = $context['settings'] ?? [];
-                $errors   = $context['errors'] ?? [];
-
-                $developerChecked   = ($settings['developer.developer'] ?? false) ? 'checked' : '';
-                $debugChecked       = ($settings['developer.debug'] ?? false) ? 'checked' : '';
-                $devConsoleChecked  = ($settings['developer.dev_console'] ?? false) ? 'checked' : '';
-
-                $ec = function(string $key) use ($errors): string {
-                    return isset($errors[$key]) ? 'is-invalid' : '';
-                };
-
-                return '<div class="mb-3">'
-                    . '<label class="form-label small fw-semibold">Developer Mode</label>'
-                    . '<div class="form-check form-switch mb-1">'
-                    . '<input class="form-check-input ' . $ec('developer.developer') . '" type="checkbox" role="switch" name="developer_developer" id="developer_developer" ' . $developerChecked . '>'
-                    . '<label class="form-check-label small" for="developer_developer">Enable developer features across the application</label>'
-                    . '</div>'
-                    . '<div class="form-text">Controls visibility of Developer section, scaffold generator, and debug-gated features.</div>'
-                    . '<div class="invalid-feedback">' . htmlspecialchars($errors['developer.developer'] ?? '') . '</div>'
-                    . '</div>'
-                    . '<div class="mb-3">'
-                    . '<label class="form-label small fw-semibold">Debug Mode</label>'
-                    . '<div class="form-check form-switch mb-1">'
-                    . '<input class="form-check-input ' . $ec('developer.debug') . '" type="checkbox" role="switch" name="developer_debug" id="developer_debug" ' . $debugChecked . '>'
-                    . '<label class="form-check-label small" for="developer_debug">Enable debug mode (error details, stack traces)</label>'
-                    . '</div>'
-                    . '<div class="invalid-feedback">' . htmlspecialchars($errors['developer.debug'] ?? '') . '</div>'
-                    . '</div>'
-                    . '<div class="mb-0">'
-                    . '<label class="form-label small fw-semibold">Dev Console</label>'
-                    . '<div class="form-check form-switch mb-1">'
-                    . '<input class="form-check-input ' . $ec('developer.dev_console') . '" type="checkbox" role="switch" name="developer_dev_console" id="developer_dev_console" ' . $devConsoleChecked . '>'
-                    . '<label class="form-check-label small" for="developer_dev_console">Enable floating developer console (offcanvas)</label>'
-                    . '</div>'
-                    . '<div class="form-text">Controls whether the floating dev console button and panel render on the site.</div>'
-                    . '<div class="invalid-feedback">' . htmlspecialchars($errors['developer.dev_console'] ?? '') . '</div>'
-                    . '</div>';
-            },
-            'validate' => function (array $input): array {
-                $errors = [];
-                foreach (['developer.developer', 'developer.debug', 'developer.dev_console'] as $key) {
-                    if (!array_key_exists($key, $input)) {
-                        $errors[$key] = 'This field is required.';
-                    }
-                }
-                return $errors;
-            },
-            'save'   => function (array $input, SystemSettingService $svc): void {
-                foreach (['developer.developer', 'developer.debug', 'developer.dev_console'] as $key) {
-                    if (isset($input[$key])) {
-                        $svc->set($key, $input[$key]);
-                    }
-                }
-            },
-            'source' => 'core',
-        ]);
-    }
-
-    // ------
-    // AJAX POST /admin/developer/settings — Save debug/dev_console toggles
-    // ------
-
-    public function ajaxSaveSettings(array $params = []): void
-    {
-        $this->registerDeveloperSection();
-
-        $principal = $this->container->get('principal');
-        $config    = $this->container->get('config');
-        $viewsPath = __DIR__ . '/../../Views';
-
-        // Check debug mode.
-        $debugConfig = $config['app']['debug'] ?? $config['debug'] ?? false;
-        $debug       = (bool) filter_var($debugConfig, FILTER_VALIDATE_BOOLEAN);
-
-        if (!$debug) {
-            http_response_code(404);
-            $this->handle404();
-            return;
-        }
-
-        $svc = new SystemSettingService(
-            new SystemSettingRepository($this->container->get('db'))
-        );
-
-        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            http_response_code(405);
-            header('Content-Type: application/json');
-            echo json_encode(['ok' => false, 'error' => 'Method not allowed']);
-            return;
-        }
-
-        // Map POST field names to DB keys.
-        $map = [
-            'developer_developer'   => 'developer.developer',
-            'developer_debug'       => 'developer.debug',
-            'developer_dev_console' => 'developer.dev_console',
-        ];
-
-        $savedKeys = [];
-        foreach ($map as $postKey => $dbKey) {
-            if (isset($_POST[$postKey])) {
-                $val = '1';
-            } elseif (array_key_exists($postKey, $_POST)) {
-                $val = '0';
-            } else {
-                continue; // Not submitted — skip this key.
-            }
-            $svc->set($dbKey, $val);
-            $savedKeys[] = $dbKey;
-        }
-
-        // Audit log.
-        try {
-            $actorId = (int) ($principal['user']['id'] ?? 0);
-            (new \App\Models\AuditLogRepository($this->container->get('db')))
-                ->log($actorId, 'developer.settings_update', 'developer_settings', 0, [
-                    'keys_saved' => $savedKeys,
-                ]);
-        } catch (\Throwable $e) {
-            // Intentionally swallowed.
-        }
-
-        $message = 'Developer settings saved: ' . implode(', ', $savedKeys);
-        if (empty($savedKeys)) {
-            $message = 'No settings changed.';
-        }
-
-        header('Content-Type: application/json');
-        echo json_encode(['ok' => true, 'message' => $message]);
-        exit;
     }
 
     // ------

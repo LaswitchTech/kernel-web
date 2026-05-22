@@ -14,91 +14,67 @@
     </div>
 </div>
 
-<!-- Developer Settings Toggles -->
-<form id="developer-settings-form">
-    <div class="card mb-4">
-        <div class="card-body">
-            <h5 class="card-title mb-3">Developer Settings</h5>
-            <div id="dev-settings-result" class="mb-3"></div>
-            <div class="mb-3">
-                <label class="form-label small fw-semibold">Developer Mode</label>
-                <div class="form-check form-switch mb-1">
-                    <input class="form-check-input" type="checkbox" role="switch"
-                           name="developer_developer" id="toggle_developer"
-                           <?= (isset($appConfig['developer']) && $appConfig['developer']) ? 'checked' : '' ?>>
-                    <label class="form-check-label small" for="toggle_developer">
-                        Enable developer features across the application
-                    </label>
-                </div>
-                <div class="form-text">Controls visibility of Developer section, scaffold generator, and debug-gated features.</div>
-            </div>
-            <div class="mb-3">
-                <label class="form-label small fw-semibold">Debug Mode</label>
-                <div class="form-check form-switch mb-1">
-                    <input class="form-check-input" type="checkbox" role="switch"
-                           name="developer_debug" id="toggle_debug"
-                           <?= (isset($appConfig['debug']) && $appConfig['debug']) ? 'checked' : '' ?>>
-                    <label class="form-check-label small" for="toggle_debug">
-                        Enable debug mode (error details, stack traces)
-                    </label>
-                </div>
-            </div>
-            <div class="mb-0">
-                <label class="form-label small fw-semibold">Dev Console</label>
-                <div class="form-check form-switch mb-1">
-                    <input class="form-check-input" type="checkbox" role="switch"
-                           name="developer_dev_console" id="toggle_dev_console"
-                           <?= (isset($appConfig['dev_console']) && $appConfig['dev_console']) ? 'checked' : '' ?>>
-                    <label class="form-check-label small" for="toggle_dev_console">
-                        Enable floating developer console (offcanvas)
-                    </label>
-                </div>
-                <div class="form-text">Controls whether the floating dev console button and panel render on the site.</div>
-            </div>
+<!-- Feature Flags Status -->
+<div class="card mb-4">
+    <div class="card-body">
+        <h5 class="card-title mb-3">Feature Flags</h5>
+        <div class="table-responsive">
+            <table class="table table-sm mb-0">
+                <thead>
+                    <tr>
+                        <th>Feature</th>
+                        <th>Environment Variable</th>
+                        <th>Source</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Developer Mode</td>
+                        <td><code>APP_DEVELOPER</code></td>
+                        <td><code>config/local.php</code></td>
+                        <td>
+                            <span class="badge <?= (isset($appConfig['developer']) && $appConfig['developer']) ? 'bg-success' : 'bg-danger' ?>">
+                                <?= (isset($appConfig['developer']) && $appConfig['developer']) ? 'On' : 'Off' ?>
+                            </span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>Debug Mode</td>
+                        <td><code>APP_DEBUG</code></td>
+                        <td><code>config/app.php</code> (env-driven)</td>
+                        <td>
+                            <span class="badge <?= (isset($appConfig['debug']) && $appConfig['debug']) ? 'bg-success' : 'bg-danger' ?>">
+                                <?= (isset($appConfig['debug']) && $appConfig['debug']) ? 'On' : 'Off' ?>
+                            </span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>Dev Console</td>
+                        <td><code>APP_DEV_CONSOLE</code></td>
+                        <td><code>config/app.php</code> (env-driven)</td>
+                        <td>
+                            <span class="badge <?= (isset($appConfig['dev_console']) && $appConfig['dev_console']) ? 'bg-success' : 'bg-danger' ?>">
+                                <?= (isset($appConfig['dev_console']) && $appConfig['dev_console']) ? 'On' : 'Off' ?>
+                            </span>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
         </div>
     </div>
-</form>
-<script>
-(function() {
-    var form = document.getElementById('developer-settings-form');
-    var result = document.getElementById('dev-settings-result');
-    var toggles = form.querySelectorAll('input[type="checkbox"]');
+</div>
 
-    function showResult(type, message) {
-        var cls = type === 'success' ? 'alert-success' : 'alert-danger';
-        result.innerHTML = '<div class="alert ' + cls + ' alert-dismissible small mb-0">' +
-            message +
-            '<button type="button" class="btn-close btn-close-sm float-end" data-bs-dismiss="alert" aria-label="Close"></button></div>';
-    }
-
-    form.addEventListener('change', function(e) {
-        var data = new FormData(form);
-        // Unchecked checkboxes submit nothing — set to '0' explicitly.
-        data.set('developer_developer', toggles[0].checked ? '1' : '0');
-        data.set('developer_debug', toggles[1].checked ? '1' : '0');
-        data.set('developer_dev_console', toggles[2].checked ? '1' : '0');
-
-        fetch('/admin/developer/settings', {
-            method: 'POST',
-            body: data
-        }).then(function(resp) { return resp.json(); })
-          .then(function(json) {
-              if (json.ok) {
-                  showResult('success', json.message);
-              } else {
-                  showResult('error', json.error || 'Failed to save settings.');
-              }
-          }).catch(function() {
-              showResult('error', 'Network error. Check your connection.');
-          });
-    });
-})();
-</script>
+<div class="alert alert-warning mb-4" role="alert">
+    <i class="bi bi-info-circle me-2"></i>
+    These flags are <strong>file-backed</strong> configuration values. Change them in <code>config/local.php</code> or via <code>APP_DEBUG</code> / <code>APP_DEV_CONSOLE</code> environment variables.
+    Reload the page after saving to see the new state.
+</div>
 
 <?php if (!isset($appConfig['dev_console']) || !$appConfig['dev_console']): ?>
 <div class="alert alert-warning mb-4" role="alert">
     <i class="bi bi-info-circle me-2"></i>
-    The Dev Console is disabled. Toggle it above or set <code>APP_DEV_CONSOLE=true</code> in your <code>.env</code> file.
+    The Dev Console is disabled. Set <code>APP_DEV_CONSOLE=true</code> in your <code>.env</code> file or <code>config/local.php</code>.
 </div>
 <?php endif; ?>
 
