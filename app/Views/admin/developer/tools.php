@@ -72,24 +72,6 @@
 </div>
 <?php endif; ?>
 
-<!-- Floating Console Button -->
-<div class="card mb-4">
-    <div class="card-body d-flex align-items-center justify-content-between">
-        <div>
-            <h5 class="card-title mb-1">Floating Dev Console</h5>
-            <p class="text-muted small mb-0">A floating wrench button appears on the right edge of the screen when Dev Console is enabled.</p>
-        </div>
-        <a class="btn btn-outline-secondary"
-           data-bs-toggle="offcanvas"
-           href="#dev-tools-offcanvas"
-           role="button"
-           aria-controls="#dev-tools-offcanvas"
-           title="Open Developer Tools Console">
-            <i class="bi bi-terminal"></i> Open Console
-        </a>
-    </div>
-</div>
-
 <div class="row g-3 mb-4">
     <!-- Scaffold Generator -->
     <div class="col-md-6 col-xl-4">

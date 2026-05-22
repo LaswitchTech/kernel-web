@@ -97,6 +97,7 @@ See DESIGN.md § "Global View Context Design" for the full design.
 - [ ] **Populate user menu from global context** — User menu uses $currentUserDisplayName/$currentUserEmail/$currentUserPermissions (already uses these; verify they are populated)
 - [ ] **Add Variables.md documentation** — Document always-available variables/objects for future developers
 - [ ] **Rename /signin → /auth/login and /signup → /auth/register** — Standardize auth route naming, preserve redirects/aliases
+- [ ] **Audit and integrate debug logging with Audit Log** — Audit APP_DEBUG-gated log statements, ensure 2FA login/setup flows log to Audit Log, and route debug-flagged messages into the audit trail
 - [ ] **Add APP_DEBUG logging** — Route debug flags through the logging system, especially for 2FA login/setup flows
 - [ ] **Add recovery codes for TOTP** — Already implemented (10 recovery codes) — verify UI completeness
 - [ ] **Add global 2FA enable/disable and enforce settings** — Per-user 2FA toggle + system-wide enforcement

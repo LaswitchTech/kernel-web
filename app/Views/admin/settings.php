@@ -59,6 +59,38 @@
         </div>
     </div>
 
+    <!-- Developer Mode -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <span class="fw-semibold small">Developer Mode</span>
+        </div>
+        <div class="card-body">
+            <div class="d-flex align-items-center justify-content-between">
+                <div>
+                    <p class="mb-1 fw-semibold small">Developer Mode</p>
+                    <p class="text-muted small mb-0">
+                        Enables developer tools, scaffold generator, and debug-gated features across the application.
+                    </p>
+                </div>
+                <div class="text-end">
+                    <span class="badge <?= (isset($appConfig['developer']) && $appConfig['developer']) ? 'bg-success' : 'bg-danger' ?>">
+                        <?= (isset($appConfig['developer']) && $appConfig['developer']) ? 'On' : 'Off' ?>
+                    </span>
+                    <span class="ms-2 small text-muted">
+                        (<?= isset($appConfig['developer']) && $appConfig['developer'] ? 'true' : 'false' ?>)
+                    </span>
+                </div>
+            </div>
+            <div class="alert alert-info mt-3 mb-0 small" role="alert">
+                <i class="bi bi-info-circle me-1"></i>
+                Developer Mode is configured via environment variable <code>APP_DEVELOPER</code> in <code>.env</code> or <code>config/local.php</code>.
+                <pre class="mb-0 mt-1"><code>APP_DEVELOPER=true</code></pre>
+                <p class="mb-0 mt-1">To override locally, add to <code>config/local.php</code>:</p>
+                <pre class="mb-0"><code>return ['app' => ['developer' => true]];</code></pre>
+            </div>
+        </div>
+    </div>
+
     <!-- Plugin sections -->
     <?php foreach ($sections as $section): ?>
         <div class="card mb-4">

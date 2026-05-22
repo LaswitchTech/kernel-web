@@ -2,10 +2,11 @@
 /**
  * Developer Tools — floating offcanvas.
  *
- * Rendered only when ALL THREE are true:
- *   1. appConfig['developer']
- *   2. appConfig['debug']
- *   3. appConfig['dev_console']
+ * Rendered only when both are true:
+ *   1. appConfig['debug']
+ *   2. appConfig['dev_console']
+ *
+ * Note: Developer Mode is managed separately on /admin/settings.
  *
  * Sensitive values are masked automatically.
  * Variables are captured server-side via get_defined_vars() and sanitized
@@ -24,12 +25,11 @@ if (!isset($appConfig) || !is_array($appConfig)) {
     return;
 }
 
-$devEnabled    = (bool) ($appConfig['developer'] ?? false);
-$debugEnabled  = (bool) ($appConfig['debug'] ?? false);
+$debugEnabled   = (bool) ($appConfig['debug'] ?? false);
 $consoleEnabled = (bool) ($appConfig['dev_console'] ?? false);
 
-// Only render when ALL THREE flags are true.
-if (!$devEnabled || !$debugEnabled || !$consoleEnabled) {
+// Only render when both flags are true.
+if (!$debugEnabled || !$consoleEnabled) {
     return;
 }
 
