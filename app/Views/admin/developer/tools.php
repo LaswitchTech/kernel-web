@@ -14,67 +14,96 @@
     </div>
 </div>
 
-<!-- Feature Flags Status -->
+<!-- Config Flags — file-backed (no persistence) -->
 <div class="card mb-4">
     <div class="card-body">
-        <h5 class="card-title mb-3">Feature Flags</h5>
-        <div class="table-responsive">
-            <table class="table table-sm mb-0">
-                <thead>
-                    <tr>
-                        <th>Feature</th>
-                        <th>Environment Variable</th>
-                        <th>Source</th>
-                        <th>Status</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td>Developer Mode</td>
-                        <td><code>APP_DEVELOPER</code></td>
-                        <td><code>config/local.php</code></td>
-                        <td>
-                            <span class="badge <?= (isset($appConfig['developer']) && $appConfig['developer']) ? 'bg-success' : 'bg-danger' ?>">
-                                <?= (isset($appConfig['developer']) && $appConfig['developer']) ? 'On' : 'Off' ?>
-                            </span>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td>Debug Mode</td>
-                        <td><code>APP_DEBUG</code></td>
-                        <td><code>config/app.php</code> (env-driven)</td>
-                        <td>
-                            <span class="badge <?= (isset($appConfig['debug']) && $appConfig['debug']) ? 'bg-success' : 'bg-danger' ?>">
-                                <?= (isset($appConfig['debug']) && $appConfig['debug']) ? 'On' : 'Off' ?>
-                            </span>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td>Dev Console</td>
-                        <td><code>APP_DEV_CONSOLE</code></td>
-                        <td><code>config/app.php</code> (env-driven)</td>
-                        <td>
-                            <span class="badge <?= (isset($appConfig['dev_console']) && $appConfig['dev_console']) ? 'bg-success' : 'bg-danger' ?>">
-                                <?= (isset($appConfig['dev_console']) && $appConfig['dev_console']) ? 'On' : 'Off' ?>
-                            </span>
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
+        <h5 class="card-title mb-3">Developer Config Flags</h5>
+        <div class="alert alert-warning small mb-0" role="alert">
+            <i class="bi bi-info-circle me-1"></i>
+            These are <strong>file-backed configuration</strong> values — not stored in the database.
+            Change them via <code>.env</code> variables or <code>config/local.php</code> overrides.
         </div>
     </div>
 </div>
 
-<div class="alert alert-warning mb-4" role="alert">
-    <i class="bi bi-info-circle me-2"></i>
-    These flags are <strong>file-backed</strong> configuration values. Change them in <code>config/local.php</code> or via <code>APP_DEBUG</code> / <code>APP_DEV_CONSOLE</code> environment variables.
-    Reload the page after saving to see the new state.
+<!-- Developer Mode (read-only status) -->
+<div class="card mb-3">
+    <div class="card-body d-flex align-items-center justify-content-between">
+        <div>
+            <p class="mb-1 fw-semibold small">Developer Mode</p>
+            <p class="text-muted small mb-0">Enables developer tools, scaffold generator, and debug-gated features.</p>
+        </div>
+        <div>
+            <span class="badge <?= (isset($appConfig['developer']) && $appConfig['developer']) ? 'bg-success' : 'bg-danger' ?>">
+                <?= (isset($appConfig['developer']) && $appConfig['developer']) ? 'On' : 'Off' ?>
+            </span>
+            <span class="ms-2 small text-muted">→ <?= isset($appConfig['developer']) && $appConfig['developer'] ? 'true' : 'false' ?></span>
+        </div>
+    </div>
+</div>
+
+<!-- Debug Mode (read-only display, file-backed) -->
+<div class="card mb-3">
+    <div class="card-body d-flex align-items-center justify-content-between">
+        <div>
+            <p class="mb-1 fw-semibold small">Debug Mode</p>
+            <p class="text-muted small mb-0">Enable debug mode (error details, stack traces)</p>
+        </div>
+        <div>
+            <div class="form-check form-switch mb-0">
+                <input class="form-check-input" type="checkbox" role="switch"
+                       id="toggle_debug"
+                       <?= (isset($appConfig['debug']) && $appConfig['debug']) ? 'checked' : '' ?>
+                       disabled>
+                <label class="form-check-label small" for="toggle_debug">
+                    <?= (isset($appConfig['debug']) && $appConfig['debug']) ? 'On' : 'Off' ?>
+                </label>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="ps-4 mb-4">
+    <div class="alert alert-info small mb-0" role="alert">
+        <i class="bi bi-lock-fill me-1"></i>
+        To change: set <code>APP_DEBUG=true</code> in <code>.env</code> or
+        add <code>'debug' => true</code> to <code>config/local.php</code> → <code>['app' => ['debug' => true]]</code>.
+        Reload the page after saving.
+    </div>
+</div>
+
+<!-- Dev Console (read-only display, file-backed) -->
+<div class="card mb-3">
+    <div class="card-body d-flex align-items-center justify-content-between">
+        <div>
+            <p class="mb-1 fw-semibold small">Dev Console</p>
+            <p class="text-muted small mb-0">Enable floating developer console (offcanvas)</p>
+        </div>
+        <div>
+            <div class="form-check form-switch mb-0">
+                <input class="form-check-input" type="checkbox" role="switch"
+                       id="toggle_dev_console"
+                       <?= (isset($appConfig['dev_console']) && $appConfig['dev_console']) ? 'checked' : '' ?>
+                       disabled>
+                <label class="form-check-label small" for="toggle_dev_console">
+                    <?= (isset($appConfig['dev_console']) && $appConfig['dev_console']) ? 'On' : 'Off' ?>
+                </label>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="ps-4 mb-4">
+    <div class="alert alert-info small mb-0" role="alert">
+        <i class="bi bi-lock-fill me-1"></i>
+        To change: set <code>APP_DEV_CONSOLE=true</code> in <code>.env</code> or
+        add <code>'dev_console' => true</code> to <code>config/local.php</code> → <code>['app' => ['dev_console' => true]]</code>.
+        Reload the page after saving.
+    </div>
 </div>
 
 <?php if (!isset($appConfig['dev_console']) || !$appConfig['dev_console']): ?>
 <div class="alert alert-warning mb-4" role="alert">
     <i class="bi bi-info-circle me-2"></i>
-    The Dev Console is disabled. Set <code>APP_DEV_CONSOLE=true</code> in your <code>.env</code> file or <code>config/local.php</code>.
+    The Dev Console is disabled. Toggle it above (requires file change) or set <code>APP_DEV_CONSOLE=true</code>.
 </div>
 <?php endif; ?>
 
