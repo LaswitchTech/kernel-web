@@ -47,7 +47,7 @@
     <?php echo \App\Core\HookRegistry::render('layout.head'); ?>
 </head>
 <body>
-<?php use App\Core\ViewGlobals; $__devScope = get_defined_vars(); $__globals = ViewGlobals::varsFromScope(null, $__devScope); extract($__globals); $__devScope = null; ?>
+<?php use App\Core\ViewGlobals; $__devScope = get_defined_vars(); $__auth = array_key_exists('auth', $__devScope) && $__devScope['auth'] !== null ? $__devScope['auth'] : (array_key_exists('Auth', $__devScope) && $__devScope['Auth'] !== null ? $__devScope['Auth'] : null); $__globals = ViewGlobals::varsFromScope($__auth, $__devScope); extract($__globals); $__devScope = null; unset($__auth); ?>
 <?= $content ?>
 
 <?php echo \App\Core\HookRegistry::render('layout.body.end'); ?>

@@ -9,9 +9,17 @@
  */
 
 /* ── Defensive config resolution (may not exist in all layouts) ───── */
-$_config   = ($config ?? $appConfig ?? []) ?? [];
-$appConfig = $_config['app'] ?? ($_config);
-unset($_config);
+/* Ensure $config is an array we can safely read from. */
+$hasConfig = isset($config) && is_array($config);
+$configArr = $hasConfig ? $config : [];
+$appConfig = [];
+
+/* Derive $appConfig from $config['app'] or from $appConfig if provided directly. */
+if ($hasConfig && array_key_exists('app', $config)) {
+    $appConfig = is_array($config['app']) ? $config['app'] : [];
+} elseif (isset($appConfig) && is_array($appConfig)) {
+    $appConfig = $appConfig;
+}
 
 $devEnabled  = (bool) ($appConfig['developer'] ?? false);
 $debugEnabled = (bool) ($appConfig['debug'] ?? false);

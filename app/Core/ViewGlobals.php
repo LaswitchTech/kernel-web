@@ -5,82 +5,58 @@ namespace App\Core;
 /**
  * Extract standardized user detail variables from available sources.
  *
- * Resolution order:
- *   1. explicit authenticated user array (first param)
- *   2. $principal['user'] / $principal['permissions'] from scope
- *   3. legacy $user / $permissions from scope
- *   4. AuthService::user() (second param)
- *   5. guest defaults
+ * Resolution order (varsFromScope):
+ *   1. $scope['user'] — legacy $user variable
+ *   2. $scope['principal']['user'] — controller principal
+ *   3. $scope['currentUser'] — already-set variable
+ *   4. AuthService::user() — fallback (second param)
+ *   5. Guest defaults
+ *
+ * Permissions resolution:
+ *   1. $scope['permissions']
+ *   2. $scope['principal']['permissions']
+ *   3. Empty array
  */
 class ViewGlobals
 {
     /**
-     * @param object|null $auth Optional AuthService for fallback.
-     * @param array|null $user Optional pre-fetched authenticated user record.
-     * @return array<string, mixed> View variables to extract into layout scope.
+     * Legacy entry point — resolves from globals or AuthService.
+     * Kept for compatibility but varsFromScope() is the preferred entry.
      */
     public static function vars($auth = null, ?array $user = null): array
     {
-        // Use the user if provided.
         if ($user !== null) {
             $resolvedUser = $user;
-        }
-
-        // Fall through: we will resolve from scope variables and/or AuthService.
-        if (!isset($resolvedUser)) {
-            // Check $principal from scope (controller pattern: ['user' => ..., 'permissions' => ...]).
-            $principal = ($GLOBALS['principal'] ?? null);
-            if ($principal !== null && is_array($principal) && isset($principal['user'])) {
-                $resolvedUser = $principal['user'];
-            } elseif (isset($user) && $user !== null) {
-                // This catches the legacy $user variable from layout scope
-                // via explicit global — but since we're in a namespace,
-                // we'll handle it below with get_defined_vars.
-                $resolvedUser = $user;
-            } else {
-                // Fallback: try AuthService.
-                $resolvedUser = null;
-                if ($auth !== null) {
-                    try {
-                        $resolvedUser = $auth->user();
-                    } catch (\Throwable $e) {
-                        $resolvedUser = null;
-                    }
+        } else {
+            $resolvedUser = null;
+            if ($auth !== null) {
+                try {
+                    $resolvedUser = $auth->user();
+                } catch (\Throwable $e) {
+                    $resolvedUser = null;
                 }
             }
-        } else {
-            // $resolvedUser was set above, but we still need permissions.
-            // permissions resolution is handled after globals/locals check.
         }
 
-        // If no user was found, resolvedUser stays unset — fall through to guest defaults.
         if (!isset($resolvedUser)) {
             return self::guestDefaults();
         }
 
-        return self::userToVars($resolvedUser, $auth ?? null);
+        return self::userToVars($resolvedUser, []);
     }
 
     /**
-     * Resolve user variables from available scope variables.
+     * Resolve user variables from an array of scope variables (get_defined_vars result).
      *
      * This is the main entry point when called from layouts where $user, $principal,
      * $permissions may already exist in the local scope (set by controllers).
-     *
-     * @param object|null $auth Optional AuthService fallback.
-     * @param array<string, mixed> $scope Variables from get_defined_vars() at layout call site.
-     * @return array<string, mixed> View variables.
      */
     public static function varsFromScope($auth, array $scope): array
     {
         $resolvedUser = null;
-        $permissions = [];
+        $permissions  = [];
 
-        // Resolution order for user:
-        // 1. explicit 'user' key (legacy $user)
-        // 2. $principal['user']
-        // 3. $currentUser (already set)
-        // 4. AuthService::user()
+        // Resolution order for user.
         if (isset($scope['user']) && is_array($scope['user']) && isset($scope['user']['id'])) {
             $resolvedUser = $scope['user'];
         } elseif (isset($scope['principal']) && is_array($scope['principal']) && isset($scope['principal']['user'])) {
@@ -95,7 +71,7 @@ class ViewGlobals
             }
         }
 
-        // Permissions resolution:
+        // Permissions resolution.
         if (isset($scope['permissions']) && is_array($scope['permissions'])) {
             $permissions = $scope['permissions'];
         } elseif (isset($scope['principal']) && is_array($scope['principal']) && isset($scope['principal']['permissions'])) {
@@ -112,9 +88,9 @@ class ViewGlobals
     /**
      * Convert a user record to the standardized variable set.
      */
-    private static function userToVars(array $user, object|array|null $authOrPerms): array
+    private static function userToVars(array $user, array $permissions): array
     {
-        $username = (string) ($user['username'] ?? '');
+        $username   = (string) ($user['username'] ?? '');
         $displayName = '';
 
         // Prefer display_name, then name, then username, then email.
@@ -132,37 +108,21 @@ class ViewGlobals
             $displayName = (string) ($user['email'] ?? '');
         }
 
-        $email = (string) ($user['email'] ?? '');
-        $id = (int) ($user['id'] ?? 0);
-
-        $userPermissions = [];
-        $isAdmin = false;
-
-        if (is_array($authOrPerms)) {
-            $userPermissions = $authOrPerms;
-            $isAdmin = in_array('admin', $userPermissions, true)
-                || in_array('admin.access', $userPermissions, true);
-        } elseif (is_object($authOrPerms)) {
-            try {
-                // Try to get permissions from AuthService via principal or provider
-                $userPermissions = [];
-                $isAdmin = false;
-            } catch (\Throwable $e) {
-                $userPermissions = [];
-                $isAdmin = false;
-            }
-        }
+        $email   = (string) ($user['email'] ?? '');
+        $id      = (int) ($user['id'] ?? 0);
+        $isAdmin = in_array('admin', $permissions, true)
+                || in_array('admin.access', $permissions, true);
 
         return [
-            'currentUser'            => $user,
-            'currentUserId'          => $id,
-            'currentUsername'        => $username,
-            'currentUserEmail'       => $email,
-            'currentUserDisplayName' => $displayName,
-            'currentUserGroups'      => null,
+            'currentUser'             => $user,
+            'currentUserId'           => $id,
+            'currentUsername'         => $username,
+            'currentUserEmail'        => $email,
+            'currentUserDisplayName'  => $displayName,
+            'currentUserGroups'       => null,
             'currentUserPrimaryGroup' => null,
-            'currentUserPermissions' => $userPermissions,
-            'currentUserIsAdmin'     => $isAdmin,
+            'currentUserPermissions'  => $permissions,
+            'currentUserIsAdmin'      => $isAdmin,
         ];
     }
 
