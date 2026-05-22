@@ -152,8 +152,12 @@ class ViewGlobals
             $config = array_merge($config, $scope['config']);
         }
 
-        // Derive $appConfig from $config['app']
-        $appConfig = is_array($config['app'] ?? null) ? $config['app'] : [];
+        // Derive $appConfig from $config['app'] (nested config).
+        // Fall back to $config itself for flat configs (e.g. config/app.php
+        // loaded via Config::load('app') returns a flat array).
+        $appConfig = is_array($config['app'] ?? null)
+            ? $config['app']
+            : $config;
 
         // Resolve $appName (scope overrides container)
         $appName = ($scope['appName'] ?? '') !== ''
