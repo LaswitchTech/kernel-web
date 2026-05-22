@@ -20,6 +20,9 @@ class DeveloperController extends Controller
         $config    = $this->container->get('config');
         $viewsPath = __DIR__ . '/../../Views';
 
+        // Derive $appConfig the same way ViewGlobals does (flat or nested config).
+        $appConfig = is_array($config['app'] ?? null) ? $config['app'] : $config;
+
         // Check if debug mode is enabled.
         // config['app']['debug'] mirrors config/app.php 'debug' key.
         $debugConfig = $config['app']['debug'] ?? $config['debug'] ?? false;
