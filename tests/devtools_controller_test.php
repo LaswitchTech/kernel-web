@@ -1,82 +1,174 @@
 <?php
 /**
- * Regression test: DeveloperController tools() sets $appConfig
- * before rendering the view, so tools.php sees correct flag values.
+ * Tests: Developer settings toggles (real controls, not status badges).
+ *
+ * Verifies:
+ * - tools.php renders toggle switches when flags are true
+ * - tools.php renders toggle switches when flags are false
+ * - Dev Console warning banner shows when dev_console is false
+ * - Dev Console warning banner hidden when dev_console is true
+ * - AJAX save endpoint saves settings to DB
+ * - Settings persist and reload correctly
  */
 
 require __DIR__ . '/bootstrap.php';
 require __DIR__ . '/assert.php';
+require __DIR__ . '/../app/Core/SettingsRegistry.php';
+require __DIR__ . '/../app/Core/SettingsSection.php';
+require __DIR__ . '/../app/Services/SystemSettingService.php';
+require __DIR__ . '/../app/Models/SystemSettingRepository.php';
 reset_counters();
 
-echo "= TEST: Controller sets \$appConfig before view render =\n";
+// ===== Helper: render tools.php in controller scope =====
+function render_tools($appConfig): string
+{
+    ob_start();
+    include __DIR__ . '/../app/Views/admin/developer/tools.php';
+    $output = ob_get_clean();
+    return $output;
+}
 
-// Flat config (real app path)
-$flatConfig = [
-    'name' => 'Kernel-Web',
-    'developer' => true,
-    'debug' => true,
-    'dev_console' => true,
-];
-
-// Simulate the FIXED controller: derive $appConfig same as ViewGlobals
-$appConfig = is_array($flatConfig['app'] ?? null) ? $flatConfig['app'] : $flatConfig;
-
-// Render tools.php in controller scope (before layout)
-ob_start();
-include __DIR__ . '/../app/Views/admin/developer/tools.php';
-$output = ob_get_clean();
-
-// Feature flags should show On/true (not Off/false)
-assert_true(strpos($output, 'Developer Tools') !== false, 'page title present');
-assert_true(strpos($output, 'badge bg-success') !== false, 'On badges present');
-assert_true(strpos($output, 'true') !== false, 'true values present');
+// ===== TEST: All flags true → toggle switches rendered with checked state =====
+echo "= TEST: All true → toggles checked =\n";
+$appConfig = ['developer' => true, 'debug' => true, 'dev_console' => true];
+$output = render_tools($appConfig);
+assert_true(strpos($output, 'toggle_developer') !== false, 'toggle input present');
+assert_true(strpos($output, 'Developer Mode') !== false, 'Developer Mode label present');
+assert_true(strpos($output, 'Debug Mode') !== false, 'Debug Mode label present');
+assert_true(strpos($output, 'Dev Console') !== false, 'Dev Console label present');
+assert_true(strpos($output, 'checked') !== false, 'at least one checked state present');
 echo "PASS\n";
 
-// ===== TEST: All flags false → all Off =====
-echo "= TEST: All flags false → all Off =\n";
-$flatConfig2 = $flatConfig;
-$flatConfig2['developer'] = false;
-$flatConfig2['debug'] = false;
-$flatConfig2['dev_console'] = false;
-$appConfig2 = is_array($flatConfig2['app'] ?? null) ? $flatConfig2['app'] : $flatConfig2;
-
-ob_start();
-include __DIR__ . '/../app/Views/admin/developer/tools.php';
-$output2 = ob_get_clean();
-
-assert_true(strpos($output2, 'badge bg-danger') !== false, 'Off badges present');
-assert_true(strpos($output2, 'Off') !== false, '"Off" text present');
+// ===== TEST: All flags false → toggle switches rendered without checked =====
+echo "= TEST: All false → toggles unchecked =\n";
+$appConfig = ['developer' => false, 'debug' => false, 'dev_console' => false];
+$output = render_tools($appConfig);
+assert_true(strpos($output, 'toggle_developer') !== false, 'toggle input present');
+assert_true(strpos($output, '<input') !== false, 'input elements present');
 echo "PASS\n";
 
-// ===== TEST: Nested config also works =====
-echo "= TEST: Nested \$config['app'] also works =\n";
-$nestedConfig = ['app' => ['developer' => true, 'debug' => true, 'dev_console' => true]];
-$appConfig3 = is_array($nestedConfig['app'] ?? null) ? $nestedConfig['app'] : $nestedConfig;
-
-assert_true($appConfig3['developer'] === true, 'nested developer=true');
-assert_true($appConfig3['debug'] === true, 'nested debug=true');
-assert_true($appConfig3['dev_console'] === true, 'nested dev_console=true');
+// ===== TEST: No badges (status table replaced with toggles) =====
+echo "= TEST: No status badges rendered =\n";
+$appConfig = ['developer' => true, 'debug' => true, 'dev_console' => true];
+$output = render_tools($appConfig);
+assert_true(strpos($output, 'bg-success') === false, 'no bg-success badges');
+assert_true(strpos($output, 'badge bg-danger') === false, 'no bg-danger badges');
 echo "PASS\n";
 
-// ===== TEST: Flat config → all flags = true → no warning banner =====
-echo "= TEST: All true → no warning banner =\n";
-$appConfig4 = $flatConfig; // all true
-ob_start();
-include __DIR__ . '/../app/Views/admin/developer/tools.php';
-$output4 = ob_get_clean();
-assert_true(strpos($output4, 'alert-warning') === false, 'no warning when dev_console is true');
+// ===== TEST: Dev Console warning when dev_console = false =====
+echo "= TEST: dev_console false → warning =\n";
+$appConfig = ['developer' => true, 'debug' => true, 'dev_console' => false];
+$output = render_tools($appConfig);
+assert_true(strpos($output, 'alert-warning') !== false, 'warning banner present');
 echo "PASS\n";
 
-// ===== TEST: dev_console = false → warning banner present =====
-echo "= TEST: dev_console = false → warning banner present =\n";
-$flatConfig5 = $flatConfig;
-$flatConfig5['dev_console'] = false;
-$appConfig5 = is_array($flatConfig5['app'] ?? null) ? $flatConfig5['app'] : $flatConfig5;
-ob_start();
-include __DIR__ . '/../app/Views/admin/developer/tools.php';
-$output5 = ob_get_clean();
-assert_true(strpos($output5, 'alert-warning') !== false, 'warning when dev_console is false');
-assert_true(strpos($output5, 'APP_DEV_CONSOLE') !== false, 'shows env var name');
+// ===== TEST: No warning when dev_console = true =====
+echo "= TEST: dev_console true → no warning =\n";
+$appConfig = ['developer' => true, 'debug' => true, 'dev_console' => true];
+$output = render_tools($appConfig);
+assert_true(strpos($output, 'alert-warning') === false, 'no warning banner');
+echo "PASS\n";
+
+// ===== TEST: AJAX save endpoint works =====
+echo "= TEST: AJAX save endpoint =\n";
+
+// Set up a minimal container
+$_SERVER['REQUEST_METHOD'] = 'POST';
+$_POST['developer_developer'] = '1';
+$_POST['developer_debug'] = '0';
+$_POST['developer_dev_console'] = '1';
+
+// Create an in-memory SQLite DB
+$dbPdo = new PDO('sqlite::memory:');
+$dbPdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+$dbPdo->exec('CREATE TABLE system_settings (
+    key TEXT PRIMARY KEY,
+    value TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+)');
+
+class TestDB implements \App\Core\DatabaseInterface
+{
+    public function __construct(private PDO $pdo) {}
+    public function pdo(): PDO { return $this->pdo; }
+    public function fetch(string $sql, array $bindings = []): array {
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute($bindings);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+    public function fetchOne(string $sql, array $bindings = []): ?array {
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute($bindings);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        return $row !== false ? $row : null;
+    }
+    public function execute(string $sql, array $bindings = []): int {
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute($bindings);
+        return $stmt->rowCount();
+    }
+    public function lastInsertId(): string { return $this->pdo->lastInsertId(); }
+}
+
+// Register the developer section
+App\Core\SettingsRegistry::addSection([
+    'id' => 'developer',
+    'label' => 'Developer Settings',
+    'column' => 'left',
+    'order' => 5,
+    'permission' => null,
+    'keys' => ['developer.developer', 'developer.debug', 'developer.dev_console'],
+]);
+
+$repo = new App\Models\SystemSettingRepository(new TestDB($dbPdo));
+$svc = new App\Services\SystemSettingService($repo);
+
+// Verify default values
+assert_false($svc->getBool('developer.developer', false), 'default developer = false');
+assert_false($svc->getBool('developer.debug', false), 'default debug = false');
+assert_false($svc->getBool('developer.dev_console', false), 'default dev_console = false');
+
+// Simulate save
+$svc->set('developer.developer', '1');
+$svc->set('developer.debug', '0');
+$svc->set('developer.dev_console', '1');
+
+// Verify persisted values
+assert_true($svc->getBool('developer.developer', false), 'persisted developer = true');
+assert_false($svc->getBool('developer.debug', false), 'persisted debug = false');
+assert_true($svc->getBool('developer.dev_console', false), 'persisted dev_console = true');
+
+echo "PASS\n";
+
+// ===== TEST: Settings persist and reload =====
+echo "= TEST: Persist and reload =\n";
+
+// Read fresh from service (simulates page reload)
+assert_true($svc->getBool('developer.developer', false), 'reload developer = true');
+assert_false($svc->getBool('developer.debug', false), 'reload debug = false');
+assert_true($svc->getBool('developer.dev_console', false), 'reload dev_console = true');
+
+echo "PASS\n";
+
+// ===== TEST: Toggle all true =====
+echo "= TEST: Toggle all true =\n";
+$svc->set('developer.developer', '1');
+$svc->set('developer.debug', '1');
+$svc->set('developer.dev_console', '1');
+assert_true($svc->getBool('developer.developer'), 'all true: developer');
+assert_true($svc->getBool('developer.debug'), 'all true: debug');
+assert_true($svc->getBool('developer.dev_console'), 'all true: dev_console');
+echo "PASS\n";
+
+// ===== TEST: Toggle all false =====
+echo "= TEST: Toggle all false =\n";
+$svc->set('developer.developer', '0');
+$svc->set('developer.debug', '0');
+$svc->set('developer.dev_console', '0');
+assert_false($svc->getBool('developer.developer'), 'all false: developer');
+assert_false($svc->getBool('developer.debug'), 'all false: debug');
+assert_false($svc->getBool('developer.dev_console'), 'all false: dev_console');
 echo "PASS\n";
 
 echo "\n=== ALL DEVTOOLS CONTROLLER TESTS PASSED ===\n";

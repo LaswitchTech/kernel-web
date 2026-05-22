@@ -43,9 +43,15 @@ class SystemSettingsController extends Controller
 
         $service = $this->service();
 
+        // Register developer section so toggle renders in /admin/settings.
+        $this->registerDeveloperSection();
+
         $settings = [
-            'app_name' => $service->getString('app.name'),
-            'app_url'  => $service->getString('app.url'),
+            'app_name'        => $service->getString('app.name'),
+            'app_url'         => $service->getString('app.url'),
+            'developer.developer' => $service->getBool('developer.developer', false),
+            'developer.debug'     => $service->getBool('developer.debug', false),
+            'developer.dev_console' => $service->getBool('developer.dev_console', false),
         ];
 
         $sections = SettingsRegistry::getSections($permissions);
@@ -91,6 +97,17 @@ class SystemSettingsController extends Controller
                 if (isset($_POST[$field])) {
                     $input[$key] = trim($_POST[$field] ?? '');
                 }
+            }
+        }
+
+        // Developer section keys (core, no plugin prefix).
+        $developerKeys = ['developer.developer', 'developer.debug', 'developer.dev_console'];
+        $developerInput = [];
+        foreach ($developerKeys as $key) {
+            $field = str_replace('.', '_', 'developer.' . substr($key, strlen('developer.') + 1));
+            // Developer section uses developer_developer / developer_debug / developer_dev_console.
+            if (isset($_POST[$field])) {
+                $developerInput[$key] = '1';
             }
         }
 
@@ -147,6 +164,13 @@ class SystemSettingsController extends Controller
         // Persist core
         $service->set('app.name', $input['app.name']);
         $service->set('app.url',  rtrim($input['app.url'], '/'));
+
+        // Persist developer section if registered.
+        if (isset($developerInput['developer.developer']) || isset($developerInput['developer.debug']) || isset($developerInput['developer.dev_console'])) {
+            if (SettingsRegistry::getSection('developer') !== null) {
+                SettingsRegistry::saveSection('developer', $developerInput, $service);
+            }
+        }
 
         // Persist plugin sections
         foreach ($pluginSections as $section) {
@@ -256,5 +280,80 @@ class SystemSettingsController extends Controller
     private function flash(string $type, string $message): void
     {
         $_SESSION['admin_flash'] = ['type' => $type, 'message' => $message];
+    }
+
+    /**
+     * Register the developer settings section if not already registered.
+     */
+    private function registerDeveloperSection(): void
+    {
+        if (SettingsRegistry::getSection('developer') !== null) {
+            return;
+        }
+
+        SettingsRegistry::addSection([
+            'id'       => 'developer',
+            'label'    => 'Developer Settings',
+            'column'   => 'left',
+            'order'    => 5,
+            'permission' => null,
+            'keys'     => ['developer.developer', 'developer.debug', 'developer.dev_console'],
+            'render'   => function (array $context): string {
+                $settings = $context['settings'] ?? [];
+                $errors   = $context['errors'] ?? [];
+
+                $developerChecked   = ($settings['developer.developer'] ?? false) ? 'checked' : '';
+                $debugChecked       = ($settings['developer.debug'] ?? false) ? 'checked' : '';
+                $devConsoleChecked  = ($settings['developer.dev_console'] ?? false) ? 'checked' : '';
+
+                $ec = function(string $key) use ($errors): string {
+                    return isset($errors[$key]) ? 'is-invalid' : '';
+                };
+
+                return '<div class="mb-3">'
+                    . '<label class="form-label small fw-semibold">Developer Mode</label>'
+                    . '<div class="form-check form-switch mb-1">'
+                    . '<input class="form-check-input ' . $ec('developer.developer') . '" type="checkbox" role="switch" name="developer_developer" id="developer_developer" ' . $developerChecked . '>'
+                    . '<label class="form-check-label small" for="developer_developer">Enable developer features across the application</label>'
+                    . '</div>'
+                    . '<div class="form-text">Controls visibility of Developer section, scaffold generator, and debug-gated features.</div>'
+                    . '<div class="invalid-feedback">' . htmlspecialchars($errors['developer.developer'] ?? '') . '</div>'
+                    . '</div>'
+                    . '<div class="mb-3">'
+                    . '<label class="form-label small fw-semibold">Debug Mode</label>'
+                    . '<div class="form-check form-switch mb-1">'
+                    . '<input class="form-check-input ' . $ec('developer.debug') . '" type="checkbox" role="switch" name="developer_debug" id="developer_debug" ' . $debugChecked . '>'
+                    . '<label class="form-check-label small" for="developer_debug">Enable debug mode (error details, stack traces)</label>'
+                    . '</div>'
+                    . '<div class="invalid-feedback">' . htmlspecialchars($errors['developer.debug'] ?? '') . '</div>'
+                    . '</div>'
+                    . '<div class="mb-0">'
+                    . '<label class="form-label small fw-semibold">Dev Console</label>'
+                    . '<div class="form-check form-switch mb-1">'
+                    . '<input class="form-check-input ' . $ec('developer.dev_console') . '" type="checkbox" role="switch" name="developer_dev_console" id="developer_dev_console" ' . $devConsoleChecked . '>'
+                    . '<label class="form-check-label small" for="developer_dev_console">Enable floating developer console (offcanvas)</label>'
+                    . '</div>'
+                    . '<div class="form-text">Controls whether the floating dev console button and panel render on the site.</div>'
+                    . '<div class="invalid-feedback">' . htmlspecialchars($errors['developer.dev_console'] ?? '') . '</div>'
+                    . '</div>';
+            },
+            'validate' => function (array $input): array {
+                $errors = [];
+                foreach (['developer.developer', 'developer.debug', 'developer.dev_console'] as $key) {
+                    if (!array_key_exists($key, $input)) {
+                        $errors[$key] = 'This field is required.';
+                    }
+                }
+                return $errors;
+            },
+            'save'   => function (array $input, SystemSettingService $svc): void {
+                foreach (['developer.developer', 'developer.debug', 'developer.dev_console'] as $key) {
+                    if (isset($input[$key])) {
+                        $svc->set($key, $input[$key]);
+                    }
+                }
+            },
+            'source' => 'core',
+        ]);
     }
 }
