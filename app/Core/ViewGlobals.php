@@ -3,25 +3,134 @@
 namespace App\Core;
 
 /**
- * Extract standardized user detail variables from available sources.
+ * Extract standardized user detail variables and global context.
  *
- * Resolution order (varsFromScope):
- *   1. $scope['user'] — legacy $user variable
- *   2. $scope['principal']['user'] — controller principal
- *   3. $scope['currentUser'] — already-set variable
- *   4. AuthService::user() — fallback (second param)
- *   5. Guest defaults
+ * The primary entry point is `contextFromContainer()` — it resolves ALL globals
+ * from the DI container (guaranteed) + local scope (backward compat).
  *
- * Permissions resolution:
- *   1. $scope['permissions']
- *   2. $scope['principal']['permissions']
- *   3. Empty array
+ * `varsFromScope()` is legacy — it only resolves from get_defined_vars() and
+ * is fragile because controllers do not consistently set $config, $auth, $user
+ * in the layout scope. It is preserved for backward compatibility during migration.
+ *
+ * Resolution order (contextFromContainer):
+ *   1. Container → AuthService → principal → scope user → guest defaults
+ *   2. Container → config → scope config → guest defaults
+ *   3. Container → principal permissions → scope permissions → empty array
  */
 class ViewGlobals
 {
+    // ── Primary entry: guaranteed context from container ────────────────
+
+    /**
+     * Resolve ALL globals from the DI container + local scope.
+     *
+     * This is the single entry point for layouts. Every layout calls this
+     * at the top of <body> to guarantee all globals regardless of controller.
+     *
+     * @param \App\Core\Container $container DI container (set in index.php)
+     * @param array $scope get_defined_vars() from the layout scope
+     * @return array Extractable set of globals
+     */
+    public static function contextFromContainer(Container $container, array $scope): array
+    {
+        // ── Resolve $auth (may not be bound in tests) ─────────────
+        $auth = null;
+        if ($container->has('auth') && $container->get('auth') instanceof \App\Auth\AuthService) {
+            $auth = $container->get('auth');
+        }
+
+        // ── Resolve $config (may not be bound in tests) ────────
+        $config = [];
+        if ($container->has('config')) {
+            $c = $container->get('config');
+            if (is_array($c)) {
+                $config = $c;
+            }
+        }
+
+        // ── Resolve $principal (if already set by middleware) ──────
+        $principal = null;
+        if (isset($scope['principal']) && is_array($scope['principal'])) {
+            $principal = $scope['principal'];
+        }
+
+        // ── Resolve user from container or scope ───────────────────
+        $resolvedUser = null;
+        $permissions  = [];
+
+        // 1. Container principal (set by WebAuth/SessionAuth middleware)
+        if (isset($principal)) {
+            if (isset($principal['user']) && is_array($principal['user'])) {
+                $resolvedUser = $principal['user'];
+            }
+            if (isset($principal['permissions']) && is_array($principal['permissions'])) {
+                $permissions = $principal['permissions'];
+            }
+        }
+
+        // 2. Scope fallback (legacy controller-set variables)
+        if ($resolvedUser === null) {
+            if (isset($scope['user']) && is_array($scope['user']) && isset($scope['user']['id'])) {
+                $resolvedUser = $scope['user'];
+            } elseif (isset($scope['principal']) && is_array($scope['principal']) && isset($scope['principal']['user'])) {
+                $resolvedUser = $scope['principal']['user'];
+            } elseif (isset($scope['currentUser']) && is_array($scope['currentUser'])) {
+                $resolvedUser = $scope['currentUser'];
+            }
+        }
+
+        if ($permissions === [] && isset($scope['permissions']) && is_array($scope['permissions'])) {
+            $permissions = $scope['permissions'];
+        }
+
+        // 3. AuthService fallback
+        if ($resolvedUser === null && $auth !== null) {
+            try {
+                $resolvedUser = $auth->user();
+            } catch (\Throwable $e) {
+                $resolvedUser = null;
+            }
+        }
+
+        // ── Build globals ──────────────────────────────────────────
+        $userVars = ($resolvedUser !== null)
+            ? self::userToVars($resolvedUser, $permissions)
+            : self::guestDefaults();
+
+        // Merge scope variables into $config (controller-set overrides container)
+        if (isset($scope['config']) && is_array($scope['config'])) {
+            $config = array_merge($config, $scope['config']);
+        }
+
+        // Derive $appConfig from $config['app']
+        $appConfig = is_array($config['app'] ?? null) ? $config['app'] : [];
+
+        // Resolve $appName (scope overrides container)
+        $appName = ($scope['appName'] ?? '') !== ''
+            ? (string) $scope['appName']
+            : (($config['name'] ?? '') !== '' ? (string) $config['name'] : 'Kernel-Web');
+
+        return array_merge(
+            $userVars,
+            [
+                '__container'       => $container,
+                '__auth'            => $auth,
+                '__principal'       => $principal,
+                'Auth'              => $auth,
+                'auth'              => $auth,
+                'Config'            => $config,
+                'config'            => $config,
+                'appConfig'         => $appConfig,
+                'appName'           => $appName,
+                'principal'         => $principal,
+            ]
+        );
+    }
+
+    // ── Legacy entry points (backward compat during migration) ─────────
+
     /**
      * Legacy entry point — resolves from globals or AuthService.
-     * Kept for compatibility but varsFromScope() is the preferred entry.
      */
     public static function vars($auth = null, ?array $user = null): array
     {
@@ -46,10 +155,10 @@ class ViewGlobals
     }
 
     /**
-     * Resolve user variables from an array of scope variables (get_defined_vars result).
+     * Legacy: resolve from scope only (fragile — controllers may not set
+     * $config, $auth, or $user in the layout scope).
      *
-     * This is the main entry point when called from layouts where $user, $principal,
-     * $permissions may already exist in the local scope (set by controllers).
+     * Use contextFromContainer() instead.
      */
     public static function varsFromScope($auth, array $scope): array
     {
@@ -84,6 +193,8 @@ class ViewGlobals
 
         return self::userToVars($resolvedUser, $permissions);
     }
+
+    // ── Internal helpers ───────────────────────────────────────────────
 
     /**
      * Convert a user record to the standardized variable set.

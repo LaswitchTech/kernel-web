@@ -2,26 +2,25 @@
 /**
  * Developer Tools — floating offcanvas.
  *
- * Only rendered when BOTH $app['developer'] and $app['debug'] are true.
- * Sensitive values are masked automatically.
+ * Only rendered when BOTH config['app']['developer'] and config['app']['debug']
+ * are true. Sensitive values are masked automatically.
  * Variables are captured server-side via get_defined_vars() and sanitized
  * before being passed to JS for rendering and filtering.
+ *
+ * $appConfig is guaranteed by the Global View Context (ViewGlobals::contextFromContainer).
  */
 
-/* ── Defensive config resolution (may not exist in all layouts) ───── */
-/* Ensure $config is an array we can safely read from. */
-$hasConfig = isset($config) && is_array($config);
-$configArr = $hasConfig ? $config : [];
-$appConfig = [];
-
-/* Derive $appConfig from $config['app'] or from $appConfig if provided directly. */
-if ($hasConfig && array_key_exists('app', $config)) {
-    $appConfig = is_array($config['app']) ? $config['app'] : [];
-} elseif (isset($appConfig) && is_array($appConfig)) {
-    $appConfig = $appConfig;
+/* Assert context is available — if missing, it's a pipeline bug. */
+if (!isset($appConfig) || !is_array($appConfig)) {
+    trigger_error(
+        'Developer Tools: $appConfig is missing — Global View Context did not provide it. '
+        . 'This is a context pipeline bug, not a dev-tools bug.',
+        E_USER_WARNING
+    );
+    return;
 }
 
-$devEnabled  = (bool) ($appConfig['developer'] ?? false);
+$devEnabled   = (bool) ($appConfig['developer'] ?? false);
 $debugEnabled = (bool) ($appConfig['debug'] ?? false);
 
 if (!$devEnabled || !$debugEnabled) {
