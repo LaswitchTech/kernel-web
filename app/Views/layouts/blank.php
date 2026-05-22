@@ -47,7 +47,7 @@
     <?php echo \App\Core\HookRegistry::render('layout.head'); ?>
 </head>
 <body>
-<?php use App\Core\ViewGlobals; $__devScope = get_defined_vars(); $__container = $__devScope['this'] instanceof \App\Core\Container ? $__devScope['this'] : null; $__globals = $__container ? ViewGlobals::contextFromContainer($__container, $__devScope) : ViewGlobals::varsFromScope(null, $__devScope); extract($__globals); $__devScope = null; unset($__container, $__devScope); ?>
+<?php use App\Core\ViewGlobals; $__devScope = get_defined_vars(); $__globals = ViewGlobals::contextFromScope($__devScope); extract($__globals); $__devScope = null; unset($__devScope); ?>
 <?= $content ?>
 
 <?php echo \App\Core\HookRegistry::render('layout.body.end'); ?>

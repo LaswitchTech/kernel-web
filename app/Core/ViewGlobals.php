@@ -19,6 +19,56 @@ namespace App\Core;
  */
 class ViewGlobals
 {
+    // ── Layout entry point: safely resolve container from scope ────
+
+    /**
+     * Resolve all globals from the scope alone, trying multiple container sources.
+     *
+     * This is the layout entry point. It safely resolves the container from:
+     * 1. $scope['container'] — if controller sets it directly
+     * 2. $scope['this']->container — if the controller is passed as $this
+     * 3. $GLOBALS['container'] — if set globally
+     * 4. Falls back to varsFromScope() when no container is found
+     *
+     * @param array $scope get_defined_vars() from the layout scope
+     * @return array Extractable set of globals
+     */
+    public static function contextFromScope(array $scope): array
+    {
+        $container = null;
+
+        // 1. Direct container key in scope
+        if (array_key_exists('container', $scope) && $scope['container'] instanceof Container) {
+            $container = $scope['container'];
+        }
+
+        // 2. Controller's container property ($this)
+        if ($container === null && array_key_exists('this', $scope) && is_object($scope['this'])) {
+            if ($scope['this'] instanceof Container) {
+                $container = $scope['this'];
+            } elseif (isset($scope['this']->container) && $scope['this']->container instanceof Container) {
+                $container = $scope['this']->container;
+            }
+        }
+
+        // 3. Global $container
+        if ($container === null && isset($GLOBALS['container']) && $GLOBALS['container'] instanceof Container) {
+            $container = $GLOBALS['container'];
+        }
+
+        // 4. Fallback — no container available
+        if ($container === null) {
+            // Extract auth from scope if present for legacy compat
+            $auth = null;
+            if (array_key_exists('auth', $scope) && $scope['auth'] instanceof \App\Auth\AuthService) {
+                $auth = $scope['auth'];
+            }
+            return self::varsFromScope($auth, $scope);
+        }
+
+        return self::contextFromContainer($container, $scope);
+    }
+
     // ── Primary entry: guaranteed context from container ────────────────
 
     /**
@@ -187,11 +237,25 @@ class ViewGlobals
             $permissions = $scope['principal']['permissions'];
         }
 
-        if ($resolvedUser === null) {
-            return self::guestDefaults();
+        $userVars = ($resolvedUser !== null)
+            ? self::userToVars($resolvedUser, $permissions)
+            : self::guestDefaults();
+
+        // Merge scope variables so layout-level vars (appName, Config, etc.)
+        // are always available in the extracted context.
+        $scopeVars = [];
+        foreach ($scope as $k => $v) {
+            if (!is_object($v) && !is_resource($v)) {
+                $scopeVars[$k] = $v;
+            }
         }
 
-        return self::userToVars($resolvedUser, $permissions);
+        // Ensure $appName always has a default.
+        if (($scopeVars['appName'] ?? '') === '') {
+            $scopeVars['appName'] = 'Kernel-Web';
+        }
+
+        return array_merge($userVars, $scopeVars);
     }
 
     // ── Internal helpers ───────────────────────────────────────────────
