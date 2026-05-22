@@ -1538,6 +1538,146 @@ The admin landing page shows:
 
 ---
 
+## Global View Context Design
+
+### Problem
+
+Controllers set `$principal`, `$permissions`, `$appName`, `$displayName` etc. in local scope via `ctx()`, but these values are **not consistently available** to layouts and partials. Key gaps:
+
+- `$config` is set by controllers locally (from container) but never extracted into the layout scope
+- `$auth` / `AuthService` is in the container, never in view scope
+- `$user` is set by some controllers but not all
+- `ViewGlobals::varsFromScope()` captures `$principal` and `$permissions` from `get_defined_vars()`, but relies on `$config` being in scope for dev-tools and other partials
+- Defensive fallbacks in partials silently return on missing globals, masking the real problem
+
+The core framework (`/Users/louis/Projects/LaswitchTech/core/src/Bootstrap.php`) solves this with **global objects**:
+
+```php
+global $CONFIG, $AUTH, $REQUEST, $OUTPUT, $DATABASE, $STYLE, $BUILDER,
+        $HELPER, $MODEL, $CSRF, $LOG, $NET, $SMS, $SMTP, $IMAP,
+        $UUID, $ENCRYPTION, $SLS, $INSTALLER, $ROUTER, $API, $CLI;
+```
+
+Each layout template accesses these as instance properties: `$this->Config`, `$this->Auth`, `$this->Request`, etc. (in the old core), or as global variables. This is a **centralized, guaranteed** pattern — every template gets the same objects.
+
+### Design: Global View Context Layer
+
+Kernel-Web needs a **single entry point at the top of every layout** that guarantees all views and partials receive the same baseline context. This replaces the scattered `ViewGlobals::varsFromScope()` approach.
+
+#### Global Objects (inspired by core framework)
+
+| Object | Class | Purpose |
+|--------|-------|---------|
+| `$Kernel` | KernelContext | Kernel-level services: container, plugin registry, hook registry |
+| `$Auth` | AuthService / null | Authentication and authorization service (null when guest) |
+| `$Config` | array (merged) | Unified config: app, auth, mail, db, debug flags |
+| `$Layout` | LayoutContext | Layout/view helpers and state: title, activeSection, breadcrumbs, displayName |
+| `$Router` | RequestContext | Routing info: URI, method, params, query |
+| `$User` | array\|null | Logged-in user data, guest-safe. Always an array with `id`, `username`, `email`, `display_name`, `is_active` or `null`. |
+| `$Permissions` | array | User's permissions (empty array when guest) |
+| `$Helper` | array | Internal helpers and extension/plugin helpers registry |
+
+#### Global Variables (derived from objects)
+
+| Variable | Type | Source | Description |
+|----------|------|--------|-------------|
+| `currentUserId` | int | `$User` | User ID (0 when guest) |
+| `currentUsername` | string | `$User` | Username |
+| `currentUserEmail` | string | `$User` | Email |
+| `currentUserDisplayName` | string | `$User` | display_name → name → username → email chain |
+| `currentUserPermissions` | array | `$Permissions` | Permission names |
+| `currentUserIsAdmin` | bool | `$Permissions` | admin or admin.access check |
+| `appName` | string | `$Config` | Application name |
+| `appConfig` | array | `$Config['app']` | App-level config |
+| `pageTitle` | string | `$Layout` | Page title |
+| `breadcrumbs` | array | `$Layout` | Breadcrumb data |
+| `flash` | array\|null | Session | Flash message data |
+
+#### Resolution Order (same as current ViewGlobals for backward compat)
+
+**User resolution:**
+1. `$scope['user']` — legacy `$user` variable
+2. `$scope['principal']['user']` — controller principal
+3. `$scope['currentUser']` — already-set variable
+4. `$Auth->user()` — AuthService fallback
+5. Guest defaults
+
+**Permissions resolution:**
+1. `$scope['permissions']` — legacy `$permissions` variable
+2. `$scope['principal']['permissions']` — controller principal
+3. Empty array
+
+#### Layout Entry Point Pattern
+
+Every layout begins with a single guaranteed-context block:
+
+```php
+<?php
+// ── Guaranteed Global View Context ──
+use App\Core\{ViewGlobals, KernelContext, LayoutContext};
+
+$__ctx = get_defined_vars();
+
+// Resolve $Auth from container (set in public/index.php)
+$__auth = ($$__ctx['container'] ?? null)?->get('auth') ?? null;
+
+// Extract all globals in one call
+$__globals = ViewGlobals::globalContext($__auth, $__ctx);
+extract($__globals);
+?>
+```
+
+`ViewGlobals::globalContext()` returns the full set of global objects and variables in one call. Every layout uses the same pattern.
+
+#### Layout `$Layout` State
+
+Each layout sets `$Layout` before including the view:
+
+```php
+$Layout = new LayoutContext([
+    'title' => $pageTitle,
+    'activeSection' => $activeSection ?? null,
+    'breadcrumbs' => $breadcrumbs ?? [],
+    'displayName' => $displayName ?? null,
+]);
+```
+
+#### Kernel `$Kernel` State
+
+Available at `$Kernel` — provides access to container, plugins, hooks:
+
+```php
+$Kernel = new KernelContext($container);
+// $Kernel->container() — access DI container
+// $Kernel->plugins() — plugin registry
+// $Kernel->hooks() — hook registry
+```
+
+### Why This Fixes the Bugs
+
+1. **dev-tools disappeared**: `$config` / `$Config` is now always available as a global (merged from container), no more missing config
+2. **User menu breaks**: `$currentUserDisplayName`, `$currentUserEmail`, `$currentUserPermissions` are always populated from the guaranteed context
+3. **$config not available**: `$Config` is resolved from container at the top of every layout
+4. **No more scattered fallbacks**: Partial should not need to defensively check for every variable — the context layer guarantees them
+5. **Consistent across controllers**: Every controller route goes through the same layout entry point
+
+### Migration from Current Approach
+
+- `ViewGlobals::varsFromScope()` is preserved for backward compatibility but deprecated in favor of `ViewGlobals::globalContext()`
+- Controllers continue to set `$principal`, `$permissions`, `$config` via `ctx()` — these flow into `globalContext()` via `get_defined_vars()`
+- Partial files (user-menu, dev-tools) access globals directly: `$Config`, `$Auth`, `$User`, `$currentUserDisplayName`, etc.
+- No controller changes required — the fix is at the layout layer
+
+### Design Rules
+
+1. **No partial should silently return when a global is missing** — the context layer guarantees globals. If a partial encounters a missing global, that's a context bug to fix, not a partial bug to work around.
+2. **All layouts use the same entry point pattern** — no custom scope resolution per layout
+3. **Guest-safe always** — `$User` is always a valid array (with safe defaults) or null; `$Permissions` is always an array
+4. **Container is the source of truth** — `$Auth` comes from container, `$Config` comes from container; never re-resolve from session
+5. **`$Helper` is lazy** — helper objects are instantiated on first access, not eagerly loaded
+
+---
+
 ## Design Evolution Rule
 
 Whenever a structural or architectural change is made:

@@ -229,6 +229,14 @@ When introducing or modifying code:
 - Keep user-facing errors simple
 - Keep developer-facing logs actionable
 
+## Global View Context Rule
+
+**Never hide missing globals by silently returning from partials.**
+
+If a partial encounters a missing global variable (e.g. `$Config`, `$Auth`, `$currentUserDisplayName`), that is a **context pipeline bug** — not a partial bug. The fix belongs at the layout entry point, not in defensive `isset()` checks that silently pass.
+
+See `DESIGN.md` § "Global View Context Design" for the intended architecture. The goal is a single guaranteed context layer at the top of every layout that provides all globals to all views/partials. Never patch around a missing global with fallbacks or silent returns.
+
 ---
 
 ## Dependency Rules

@@ -30,3 +30,44 @@
   - We should also add compatibility to the database management system for PostgreSQL and MySQL, in addition to SQLite. This would allow users to choose the database system that best suits their needs and preferences. We can achieve this by implementing a database abstraction layer that supports multiple database systems, allowing us to easily switch between them without modifying the core codebase.
 - Testing:
   - We should test all existing CRUD operations such as users, groups, permissions, tokens, etc.
+
+---
+
+## Debugging Notes — Global View Context
+
+### 2026-05-22: Global View Context Architecture Issue
+
+**Symptoms:**
+- Dev tools offcanvas disappeared on some views
+- User menu breaks on pages like /admin/permissions
+- $config, $user, and current user variables not consistently available
+
+**Root Cause Analysis:**
+
+The controller → view → layout pipeline is broken:
+
+1. Controllers set `$principal`, `$permissions`, `$appName`, `$displayName` in local scope via `ctx()` (e.g. `PermissionController::ctx()`)
+2. Controllers do **not** set `$config`, `$user`, or `$auth` in the layout scope
+3. Controllers read `$config` from the container (local variable) but never extract it to the view
+4. `$auth` (AuthService) is in the container but never in the view scope
+5. `ViewGlobals::varsFromScope()` at the top of each layout captures `get_defined_vars()` — this includes `$principal` and `$permissions` from the controller, but NOT `$config`
+6. Partial files (user-menu, dev-tools) access globals like `$currentUserDisplayName` (from ViewGlobals) and `$config`/$appConfig (from dev-tools) — but `$config` was never set in scope
+7. Defensive fallbacks in partials (silent `return`, `isset()` checks) mask the real issue
+
+**The old core framework's approach** (`/Users/louis/Projects/LaswitchTech/core/src/Bootstrap.php`):
+
+- Bootstrap declares all global objects in `Default` array with scope constraints
+- Each object is instantiated as a global variable (`global $CONFIG`, `global $AUTH`, etc.)
+- Layout templates access these as instance properties (`$this->Config`, `$this->Auth`, `$this->Request`)
+- **Every template gets the same objects, guaranteed**
+
+**Design direction:** Create a single guaranteed context entry point at the top of every layout that returns all global objects + derived variables in one call. See DESIGN.md § "Global View Context Design" for the full design.
+
+### Lessons Learned
+
+1. **Never add defensive silent returns to partials** — they hide the real architecture bug. If a variable is missing, it should throw or log, not silently pass.
+2. **The context pipeline (controller → view → layout) is fragile** — variables leak or drop out at each boundary. A guaranteed context layer at the layout entry point is the only reliable solution.
+3. **Container bindings ≠ view scope** — `$container->get('config')` works in controllers, but the layout scope is a completely different PHP variable scope. Values in the container do not auto-flow to views.
+4. **`get_defined_vars()` is a band-aid, not a design** — it works when controllers happen to set the right variables, but it's non-deterministic and hard to reason about.
+5. **Global objects are the right pattern here** — the old core framework proved this. Every layout accesses `$CONFIG`, `$AUTH`, `$REQUEST` etc. as guaranteed globals. No resolution order, no fallback chains, no missing variables.
+6. **ViewGlobals::varsFromScope() is a patch** — it was designed to work around the missing globals by peeking at scope. It should be replaced by a proper `globalContext()` that resolves from the container directly.

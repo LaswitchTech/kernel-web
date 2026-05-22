@@ -70,6 +70,55 @@ Core infrastructure improvements that unlock future feature work.
 
 ---
 
+## Phase 2b: Global View Context & User Experience
+
+Foundational view context layer that currently causes bugs across the app. All items in this section share the same root cause: controllers do not consistently expose globals to layouts/partials, and ViewGlobals is a band-aid rather than a proper context layer.
+
+### Root Cause
+
+Controllers set `$principal`, `$permissions`, `$appName`, `$displayName` in local scope via `ctx()`, but `$config`, `$auth`, and `$user` are never guaranteed in the layout scope. The layout entry point (`ViewGlobals::varsFromScope()`) captures what's available but cannot fabricate what doesn't exist. Partial files then add defensive fallbacks that silently return on missing data, masking the real architecture issue.
+
+### Implementation Plan
+
+See DESIGN.md § "Global View Context Design" for the full design.
+
+**Order of operations:**
+1. Create `ViewGlobals::globalContext($auth, $scope)` that returns all global objects + variables in one call
+2. Create `KernelContext` and `LayoutContext` helper classes
+3. Standardize layout entry point across all 3 layouts (panel, app, blank)
+4. Verify all controllers pass required data via `ctx()` or container access
+5. Remove defensive silent returns from partials (use globals directly)
+6. Update docs/Variables.md to document the intended global contract
+
+### Phase 2b Issues (to be created)
+
+- [ ] **Fix global view context** — Create guaranteed context layer so $config/$Auth/$User variables are available everywhere
+- [ ] **Restore dev tools offcanvas** — Make dev tools appear consistently across all layouts (follows from global context fix)
+- [ ] **Populate user menu from global context** — User menu uses $currentUserDisplayName/$currentUserEmail/$currentUserPermissions (already uses these; verify they are populated)
+- [ ] **Add Variables.md documentation** — Document always-available variables/objects for future developers
+- [ ] **Rename /signin → /auth/login and /signup → /auth/register** — Standardize auth route naming, preserve redirects/aliases
+- [ ] **Add APP_DEBUG logging** — Route debug flags through the logging system, especially for 2FA login/setup flows
+- [ ] **Add recovery codes for TOTP** — Already implemented (10 recovery codes) — verify UI completeness
+- [ ] **Add global 2FA enable/disable and enforce settings** — Per-user 2FA toggle + system-wide enforcement
+- [ ] **Make 2FA methods extensible** — TOTP (current), SMS, Email. Plugin interface for future auth methods.
+- [ ] **Disable 2FA for users with no selected method** — If a user has 2FA enabled but no method selected, auto-disable
+- [ ] **Add optional 2FA setup prompt after login** — 30-day skip logic, stored in user preferences
+- [ ] **Preserve last opened profile modal tab** — Store active tab in sessionStorage, refresh only that tab on re-open
+- [ ] **Fix card-header border-radius to match card radius** — CSS consistency
+- [ ] **Design universal config-saving system** — Form input names mapped into config/local.php (e.g., `app.name` → `$config['app']['name']`)
+- [ ] **Send real test email** — Test email button actually sends via the selected mailer transport
+- [ ] **Move SMTP settings into Mailer settings** — Selectable mailer provider (mail(), SMTP), provider-based settings
+- [ ] **Make SMS settings provider-based** — Extensible via plugins (Telico, Twilio, etc.)
+- [ ] **Add application logo upload/selection** — Admin setting + global application across all layouts
+- [ ] **Add mailer queue/history admin page** — .eml access, server response logs
+- [ ] **Add SMS queue/history admin page** — Provider response logs, delivery status
+- [ ] **Fix organization creation from profile tab** — Currently broken, needs investigation
+- [ ] **Add organization type JSON field** — Extensible org roles beyond basic type discriminator
+- [ ] **Add organization subsidiaries/corporate structure** — Parent-child org relationships
+- [ ] **Add repository disclaimer** — Include note that software was written with Louis + Claude Code + Qwen 3.6
+
+---
+
 ## Phase 3: Mid-Term
 
 Features that depend on Phase 2 foundations being in place.
