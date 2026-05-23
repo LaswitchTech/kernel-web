@@ -36,13 +36,14 @@
                         ));
                         if ($summary === '') $summary = '—';
                     ?>
-                    <tr>
+                    <tr class="<?= str_starts_with($row['action'], 'debug.') ? 'table-info-subtle' : '' ?>">
                         <td class="text-muted small" style="white-space:nowrap;">
                             <?= htmlspecialchars($row['created_at']) ?>
                         </td>
                         <td><?= $actor ?></td>
                         <td>
                             <code class="text-body"><?= htmlspecialchars($row['action']) ?></code>
+                            <?= str_starts_with($row['action'], 'debug.') ? '<span class="badge bg-info-subtle text-info ms-1" style="font-size:.7em">debug</span>' : '' ?>
                         </td>
                         <td class="text-muted small" style="white-space:nowrap;">
                             <?= htmlspecialchars($row['entity_type']) ?>

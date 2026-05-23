@@ -6,6 +6,7 @@ use App\Auth\AuthService;
 use App\Auth\EmailVerificationService;
 use App\Auth\TwoFactorService;
 use App\Core\Controller;
+use App\Services\DebugAuditLogger;
 
 class AuthController extends Controller
 {
@@ -76,6 +77,7 @@ class AuthController extends Controller
 
         // If user has 2FA enabled, redirect to 2FA form (pending state stored in AuthService)
         if ($auth->hasTwoFactorEnabled($user['id'])) {
+            DebugAuditLogger::auth($user['id'], 'login.2fa_required', ['username' => $user['username']]);
             $this->json(['user' => $user, 'two_factor_required' => true]);
             return;
         }
@@ -788,6 +790,8 @@ class AuthController extends Controller
             $this->json(['error' => 'Account is not active.'], 401);
             return;
         }
+
+        DebugAuditLogger::auth($userId, 'login.2fa_verified', ['type' => $type]);
 
         $remember = (bool) $this->input('remember', '0');
         $auth->completeTwoFactor($remember);

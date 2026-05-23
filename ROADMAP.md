@@ -97,8 +97,8 @@ See DESIGN.md § "Global View Context Design" for the full design.
 - [ ] **Populate user menu from global context** — User menu uses $currentUserDisplayName/$currentUserEmail/$currentUserPermissions (already uses these; verify they are populated)
 - [ ] **Add Variables.md documentation** — Document always-available variables/objects for future developers
 - [ ] **Rename /signin → /auth/login and /signup → /auth/register** — Standardize auth route naming, preserve redirects/aliases
-- [ ] **Audit and integrate debug logging with Audit Log** — Audit APP_DEBUG-gated log statements, ensure 2FA login/setup flows log to Audit Log, and route debug-flagged messages into the audit trail
-- [ ] **Add APP_DEBUG logging** — Route debug flags through the logging system, especially for 2FA login/setup flows
+- [x] **Audit and integrate debug logging with Audit Log** — `DebugAuditLogger` service (APP_DEBUG-gated), writes to admin_audit_log with sanitized payloads, visual debug badge in /admin/audit
+- [x] **Add APP_DEBUG logging** — `DebugAuditLogger` wired to container; 2FA login/setup call sites added; call `DebugAuditLogger::auth()` for app-category logging, `::config()` for config, `::plugin()` for plugins, `::route()` for routes
 - [ ] **Add recovery codes for TOTP** — Already implemented (10 recovery codes) — verify UI completeness
 - [ ] **Add global 2FA enable/disable and enforce settings** — Per-user 2FA toggle + system-wide enforcement
 - [ ] **Make 2FA methods extensible** — TOTP (current), SMS, Email. Plugin interface for future auth methods.
@@ -205,6 +205,7 @@ These are planned or requested but are out of scope for the current development 
 | SMTP/Telico settings | Fixed | Bootstrap hooks now register correctly — plugin autoloader updated to handle `Plugins\` namespace (used by SMTP/Telico plugins). Both plugins enabled by default (plugin.json). SMTP manifest semver fix ("8.1" → ">=8.1.0"), SMTP and Telico settings visibility fixed (permission => null). Settings appear in /admin/settings. |
 | Profile Modal org creation | Fixed | JSON body parsing now reads `php://input` instead of `$_POST` for application/json requests. Regression test added (profile_organizations_test.php, 27 assertions). |
 | 2FA Profile tab | Fixed | Full setup/enable/disable UI rendered via ProfileModal section callback. Tab button added to profile-modal.php with data attributes. Lazy-loaded from /api/profile/sections/two-factor on first activation. |
+| Debug logging | Implemented | `DebugAuditLogger` service (APP_DEBUG-gated), writes to admin_audit_log, sanitized payloads, visual debug badge in /admin/audit, 2FA call sites wired |
 | OAuth | Deferred | See Deferred section |
 | Licensing | Deferred | See Deferred section |
 | Registration | Implemented | Config-gated (disabled by default), email verification integration, 55 assertions — see tests/registration_test.php |

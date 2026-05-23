@@ -1402,6 +1402,26 @@ When enabled, the following tools may be available:
 - Developer tools should be gated behind `extensions.manage` or a dedicated `dev.tools` permission
 - No developer tool should perform destructive operations without confirmation
 
+### Debug Logging
+
+When debug mode is enabled, the `DebugAuditLogger` service captures developer diagnostics into the `admin_audit_log` table.
+
+**Service:** `App\Services\DebugAuditLogger` — registered in the container via `public/index.php` after config is loaded.
+
+**API:**
+- `DebugAuditLogger::auth($userId, $action, $meta)` — auth category (e.g., `login.2fa_required`)
+- `DebugAuditLogger::config($userId, $action, $meta)` — config category
+- `DebugAuditLogger::plugin($userId, $action, $meta)` — plugin category
+- `DebugAuditLogger::route($userId, $action, $meta)` — route category
+- `DebugAuditLogger::generic($userId, $action, $meta)` — custom category
+
+**Security:**
+- All sensitive keys are redacted: password, passwd, secret, token, key, cookie, authorization, csrf, session, recovery
+- Large payloads (>2000 bytes) are truncated with a `_truncated` flag
+- Debug entries have `entity_type = 'debug'` and `entity_id = 0`
+
+**UI:** Debug entries in `/admin/audit` are visually distinguished with a `table-info-subtle` row background and a "debug" badge.
+
 ---
 
 ## Scaffold Generator Design

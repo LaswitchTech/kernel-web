@@ -183,6 +183,10 @@ $container = new Container();
 $container->set('config', $appCfg);
 $container->set('logger', $logger);
 
+// Debug audit logger — APP_DEBUG-gated writes to admin_audit_log table.
+require_once __DIR__ . '/../app/Services/DebugAuditLogger.php';
+$container->set('debug_logger', new \App\Services\DebugAuditLogger($appCfg, $container));
+
 // Database
 $dbConfig = Config::load('database');
 

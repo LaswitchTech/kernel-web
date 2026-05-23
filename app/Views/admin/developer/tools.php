@@ -7,7 +7,7 @@
 
 <h2 class="mb-3">Developer Tools</h2>
 <div class="alert alert-info mb-4" role="alert">
-    Developer mode is active.
+    <i class="bi bi-terminal me-2"></i>Developer mode is active.
 </div>
 
 <div class="alert alert-warning mb-4" role="alert">
@@ -21,7 +21,10 @@
     <div class="col-md-6">
         <div class="card">
             <div class="card-body">
-                <h5 class="card-title mb-2">Debug Mode</h5>
+                <div class="d-flex align-items-center mb-2">
+                    <i class="bi bi-bug fs-4 me-2 text-primary"></i>
+                    <h5 class="card-title mb-0">Debug Mode</h5>
+                </div>
                 <p class="card-text text-muted small mb-3">Enable debug mode (error details, stack traces)</p>
                 <div class="form-check form-switch mb-0">
                     <input class="form-check-input" type="checkbox" role="switch"
@@ -48,7 +51,10 @@
     <div class="col-md-6">
         <div class="card">
             <div class="card-body">
-                <h5 class="card-title mb-2">Dev Console</h5>
+                <div class="d-flex align-items-center mb-2">
+                    <i class="bi bi-terminal fs-4 me-2 text-primary"></i>
+                    <h5 class="card-title mb-0">Dev Console</h5>
+                </div>
                 <p class="card-text text-muted small mb-3">Enable floating developer console (offcanvas)</p>
                 <div class="form-check form-switch mb-0">
                     <input class="form-check-input" type="checkbox" role="switch"

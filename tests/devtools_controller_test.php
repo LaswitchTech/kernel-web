@@ -36,6 +36,7 @@ echo "PASS\n";
 echo "= TEST: Info alert =\n";
 assert_true(strpos($output, 'alert-info mb-4') !== false, 'info alert class present');
 assert_true(strpos($output, 'Developer mode is active.') !== false, 'simplified message present');
+assert_true(strpos($output, 'bi bi-terminal') !== false, 'terminal icon in info alert');
 assert_false(strpos($output, 'APP_DEBUG') !== false && strpos($output, 'production deployments') !== false,
     'no mention of APP_DEBUG or production in info alert');
 echo "PASS\n";
@@ -59,7 +60,9 @@ echo "PASS\n";
 echo "= TEST: Debug Mode in row =\n";
 assert_true(strpos($output, '<div class="row g-3 mb-3">') !== false, 'row g-3 container present');
 assert_true(strpos($output, '<div class="col-md-6">') !== false, 'col-md-6 column present');
-assert_true(strpos($output, '<h5 class="card-title mb-2">Debug Mode</h5>') !== false, 'Debug Mode card title');
+assert_true(strpos($output, 'Debug Mode') !== false, 'Debug Mode card title');
+assert_true(strpos($output, 'bi bi-bug') !== false, 'bug icon in Debug Mode card');
+assert_true(strpos($output, 'text-primary') !== false, 'primary color on icon');
 assert_true(strpos($output, 'toggle_debug') !== false, 'debug toggle ID');
 assert_true(strpos($output, 'disabled') !== false, 'disabled attribute');
 assert_true(strpos($output, 'form-check form-switch') !== false, 'Bootstrap switch class');
@@ -67,7 +70,8 @@ echo "PASS\n";
 
 // ===== TEST: Dev Console card in row =====
 echo "= TEST: Dev Console in row =\n";
-assert_true(strpos($output, '<h5 class="card-title mb-2">Dev Console</h5>') !== false, 'Dev Console card title');
+assert_true(strpos($output, 'Dev Console') !== false, 'Dev Console card title');
+assert_true(strpos($output, 'bi bi-terminal') !== false, 'terminal icon in Dev Console card');
 assert_true(strpos($output, 'toggle_dev_console') !== false, 'dev_console toggle ID');
 echo "PASS\n";
 
