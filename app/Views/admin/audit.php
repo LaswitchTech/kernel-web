@@ -1,7 +1,14 @@
 <div class="card">
-    <div class="card-header d-flex align-items-center justify-content-between">
-        <span class="fw-semibold small">Audit Log</span>
-        <span class="text-muted small">Last <?= count($auditRows) ?> entries</span>
+    <div class="card-header">
+        <div class="d-flex align-items-center justify-content-between">
+            <span class="fw-semibold small">Audit Log</span>
+            <div class="btn-group btn-group-sm" role="group" aria-label="Filter audit log">
+                <a href="/admin/audit?type=all" class="btn btn-outline-secondary <?= $auditType === 'all' ? 'active' : '' ?>">All</a>
+                <a href="/admin/audit?type=audit" class="btn btn-outline-secondary <?= $auditType === 'audit' ? 'active' : '' ?>">Audit</a>
+                <a href="/admin/audit?type=debug" class="btn btn-outline-secondary <?= $auditType === 'debug' ? 'active' : '' ?>">Debug</a>
+            </div>
+        </div>
+        <div class="text-muted small mt-1">Last <?= count($auditRows) ?> entries</div>
     </div>
     <div class="card-body p-0">
         <div class="table-responsive">

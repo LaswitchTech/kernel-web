@@ -64,12 +64,25 @@ class AuditLogRepository
      * actor account has been deleted (FOREIGN KEY ON DELETE SET NULL).
      *
      * @param  int   $limit  Max rows to return (default 500).
+     * @param  string $type  Filter: 'all' (default), 'debug', 'audit'.
      * @return array<int, array>
      */
-    public function findRecent(int $limit = 500): array
+    public function findRecent(int $limit = 500, string $type = 'all'): array
     {
-        return $this->db->fetch(
-            'SELECT
+        $whereClause = '';
+        $bindings    = [];
+
+        if ($type === 'debug') {
+            $whereClause = 'WHERE a.entity_type = ?';
+            $bindings    = ['debug'];
+        } elseif ($type === 'audit') {
+            $whereClause = 'WHERE a.entity_type != ?';
+            $bindings    = ['debug'];
+        }
+
+        $bindings[] = $limit;
+
+        $sql = "SELECT
                 a.id,
                 a.user_id,
                 a.action,
@@ -81,9 +94,10 @@ class AuditLogRepository
                 u.username     AS actor_username
              FROM admin_audit_log a
              LEFT JOIN users u ON u.id = a.user_id
+             {$whereClause}
              ORDER BY a.created_at DESC, a.id DESC
-             LIMIT ?',
-            [$limit]
-        );
+             LIMIT ?";
+
+        return $this->db->fetch($sql, $bindings);
     }
 }

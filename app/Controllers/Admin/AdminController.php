@@ -132,7 +132,12 @@ class AdminController extends Controller
         $perms     = $principal['permissions'];
 
         $db        = $this->container->get('db');
-        $auditRows = (new AuditLogRepository($db))->findRecent(500);
+        $type      = trim((string) ($_GET['type'] ?? 'all'));
+        $validTypes = ['all', 'debug', 'audit'];
+        if (!in_array($type, $validTypes, true)) {
+            $type = 'all';
+        }
+        $auditRows = (new AuditLogRepository($db))->findRecent(500, $type);
 
         $config    = $this->container->get('config');
         $viewsPath = __DIR__ . '/../../Views';
@@ -142,6 +147,7 @@ class AdminController extends Controller
         $appName       = $config['name'] ?? 'Kernel-Web';
         $displayName   = $user['display_name'] ?? $user['username'];
         $permissions   = $perms;
+        $auditType     = $type;
 
         $breadcrumbs = [
             ['label' => 'Administration', 'url' => '/admin'],
