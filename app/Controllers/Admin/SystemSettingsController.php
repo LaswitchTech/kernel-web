@@ -42,16 +42,18 @@ class SystemSettingsController extends Controller
         [$viewsPath, $appName, $displayName, $permissions] = $this->ctx();
 
         $service = $this->service();
+        $config   = $this->container->get('config');
 
         // Register developer section so toggle renders in /admin/settings.
         $this->registerDeveloperSection();
 
         $settings = [
-            'app_name'        => $service->getString('app.name'),
-            'app_url'         => $service->getString('app.url'),
-            'developer.developer' => $service->getBool('developer.developer', false),
-            'developer.debug'     => $service->getBool('developer.debug', false),
-            'developer.dev_console' => $service->getBool('developer.dev_console', false),
+            'app_name'                 => $service->getString('app.name'),
+            'app_url'                  => $service->getString('app.url'),
+            'developer.developer'      => $service->getBool('developer.developer', false),
+            'developer.debug'          => $service->getBool('developer.debug', false),
+            'developer.dev_console'    => $service->getBool('developer.dev_console', false),
+            'auth.two_factor.enforced' => ($config['auth']['two_factor']['enforced'] ?? false) === true,
         ];
 
         $sections = SettingsRegistry::getSections($permissions);

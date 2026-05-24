@@ -26,4 +26,8 @@ return [
         'auto_login'               => true,
         'redirect'                 => '/',
     ],
+
+    'two_factor' => [
+        'enforced' => false,
+    ],
 ];

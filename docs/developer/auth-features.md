@@ -416,6 +416,7 @@ Add a second authentication factor to login. **TOTP (RFC 6238)** — compatible 
   4. On success, complete session as normal
 - **Profile Modal integration** — 2FA settings in the Profile Modal (new tab or section)
 - **Admin override** — admin can reset a user's 2FA (revoke secret + recovery codes)
+- **System-wide enforcement** (new) — file-backed config key `auth.two_factor.enforced` in `config/auth.php` (default: `false`). When `true`, `SessionAuth` middleware redirects users with 2FA enabled who haven't completed the challenge to `/auth/2fa`. Pending 2FA login state bypasses the redirect to reach the challenge form. Configurable via `config/local.php`. Read-only status shown in `/admin/settings`.
 
 ### Migration
 

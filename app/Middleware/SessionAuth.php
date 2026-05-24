@@ -53,6 +53,16 @@ class SessionAuth implements MiddlewareInterface
         $gate        = $this->container->get('gate');
         $permissions = $gate->permissionsForUser($user['id']);
 
+        // System-wide 2FA enforcement: if enabled, users with 2FA must have
+        // completed the 2FA challenge (full session). Pending 2FA access is
+        // allowed to reach /auth/2fa.
+        $enforced = ($this->container->get('config')['auth']['two_factor']['enforced'] ?? false) === true;
+        if ($enforced && $auth->hasTwoFactorEnabled($user['id']) && !$auth->hasPendingTwoFactorAccess()) {
+            http_response_code(302);
+            header('Location: /auth/2fa');
+            return;
+        }
+
         $this->container->set('principal', [
             'user'        => $user,
             'auth_method' => 'session',

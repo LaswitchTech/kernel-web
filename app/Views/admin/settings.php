@@ -130,6 +130,33 @@
         </div>
     </div>
 
+    <!-- 2FA Enforcement (read-only) -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <span class="fw-semibold small">Two-Factor Authentication</span>
+        </div>
+        <div class="card-body">
+            <div class="d-flex align-items-center justify-content-between mb-3">
+                <div>
+                    <p class="mb-1 fw-semibold small">System-wide 2FA Enforcement</p>
+                    <p class="text-muted small mb-0">
+                        When enabled, users with 2FA enabled must complete the 2FA challenge on each login.
+                        Without it, they are redirected to the 2FA form after login, blocking access to the application.
+                    </p>
+                </div>
+                <div>
+                    <span class="badge bg-<?= ($settings['auth.two_factor.enforced'] ?? false) ? 'success' : 'secondary' ?> fs-6">
+                        <?= ($settings['auth.two_factor.enforced'] ?? false) ? 'On' : 'Off' ?>
+                    </span>
+                </div>
+            </div>
+            <div class="form-text">
+                Controlled by the file-backed config key <code>auth.two_factor.enforced</code>.
+                Set via <code>config/local.php</code> — not available as a toggle here.
+            </div>
+        </div>
+    </div>
+
 </div><!-- /.g-4 -->
 
 <div class="mt-4">

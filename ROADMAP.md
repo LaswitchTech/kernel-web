@@ -91,7 +91,7 @@ The global view context was the root cause of bugs across the app. This has been
 - [x] **Add audit log type filtering** — `?type=all|debug|audit` query param on /admin/audit; button-group filter UI
 - [x] **Add repository disclaimer** — Development status added to README.md, CLAUDE.md, DESIGN.md
 - [x] **Add recovery codes for TOTP** — 10 recovery codes generated, toggle UI in /auth/2fa and Profile Modal
-- [P2] **Add global 2FA enable/disable and enforce settings** — Per-user 2FA toggle exists; system-wide enforcement missing
+- [x] **Add global 2FA enable/disable and enforce settings** — File-backed config key `auth.two_factor.enforced`, middleware enforcement in SessionAuth, read-only status in /admin/settings, 10 assertions
 - [P3] **Make 2FA methods extensible** — TOTP (current); SMS/Email would need a plugin interface
 - [P3] **Disable 2FA for users with no selected method** — Defensive guard
 - [P4] **Add optional 2FA setup prompt after login** — 30-day skip logic in user preferences
