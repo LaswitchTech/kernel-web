@@ -97,7 +97,7 @@ The global view context was the root cause of bugs across the app. This has been
 - [P4] **Add optional 2FA setup prompt after login** — 30-day skip logic in user preferences
 - [P4] **Preserve last opened profile modal tab** — sessionStorage persistence; currently always refreshes all tabs
 - [P3] **Fix card-header border-radius to match card radius** — CSS consistency
-- [P2] **Design universal config-saving system** — Form input names mapped into config/local.php
+- [x] **Design universal config-saving system** — ConfigOverrideService writes to config/local.php via dot-notation keys, atomic file writes, boolean/string normalization, 41 assertions
 - [P2] **Send real test email** — Test email button exists in SMTP settings but verify it actually sends
 - [P3] **Move SMTP settings into Mailer settings** — Selectable mailer provider (mail(), SMTP), provider-based settings
 - [P3] **Make SMS settings provider-based** — Extensible via plugins (Telico, Twilio, etc.)
@@ -150,8 +150,8 @@ Major architectural additions requiring significant infrastructure.
 
 These are the highest-impact items that should be addressed next:
 
-1. **P2: System-wide 2FA enforcement** — Per-user toggle exists but no global enforcement switch
-2. **P2: Universal config-saving system** — Current settings save is hardcoded; needs extensible form→config mapping
+1. **P2: System-wide 2FA enforcement** — Per-user toggle exists but no global enforcement switch ✅ DONE
+2. **P2: Universal config-saving system** — ConfigOverrideService foundation ✅ DONE
 3. **P2: Multi-tenant data scoping** — Organization-level query filtering middleware (unlocks proper SaaS mode)
 4. **P2: Kernel update system** — Version check exists; needs download and apply workflow
 5. **P3: Make 2FA methods extensible** — TOTP-only currently; plugin interface for SMS/Email methods

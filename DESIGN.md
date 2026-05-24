@@ -1735,3 +1735,17 @@ Implemented: `admin_audit_log` table with append-only rows, `DebugAuditLogger` s
 
 ### Configuration pipeline
 Implemented: `config/app.php` (env-driven) → `config/local.php` (array_replace_recursive) → `.env` → hardcoded defaults. Flat and nested config supported. Debug flags are file-backed, not database-driven. **Not frozen**: config resolution order and key format may change.
+
+### Config override system
+Implemented: `ConfigOverrideService` (`app/Services/ConfigOverrideService.php`) writes admin-driven settings to `config/local.php` using dot-notation keys (e.g. `auth.two_factor.enforced`). All UI-driven overrides MUST write here — never to the database, never to `.env`, never to base config files. Atomic write via temp file + rename. **Not frozen**: write format may change.
+
+### Config precedence reference
+
+| Layer | Purpose | Example key format | Who controls |
+|-------|---------|--------------------|--------------|
+| `config/app.php` | Defaults (committed to VCS) | `app.debug` | Developer (code) |
+| `.env` | Environment/bootstrap values | `APP_DEBUG` | Deployer (env) |
+| `config/local.php` | Instance/admin overrides | `auth.two_factor.enforced` | Admin (UI or manual) |
+| SystemSettingService | DB runtime settings (deprecated in favor of file overrides) | `app.name` | Admin (DB, legacy) |
+
+`config/local.php` overrides `config/app.php` via `array_replace_recursive`. It is generated from the admin settings page and should not be edited by hand except for emergency recovery.
