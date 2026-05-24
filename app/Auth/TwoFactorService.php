@@ -242,8 +242,8 @@ class TwoFactorService
         for ($i = 0; $i < self::RECOVERY_COUNT; $i++) {
             $raw = bin2hex(random_bytes(5)); // 10 hex chars
             $hash = hash('sha256', $raw);
-            $this->repository->createRecoveryCode($userId, $hash);
-            $codes[] = ['code' => $raw, 'codeHash' => $hash, 'id' => (int) $this->repository->getUnusedCodes($userId)[0]['id'] ?? 0];
+            $id = $this->repository->createRecoveryCode($userId, $hash);
+            $codes[] = ['code' => $raw, 'codeHash' => $hash, 'id' => $id];
         }
 
         return $codes;
