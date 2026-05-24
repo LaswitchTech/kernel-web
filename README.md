@@ -247,6 +247,17 @@ This project is distributed under the [GPLv3](LICENSE) license.
 
 ## Status
 
-🚧 Active development — Kernel architecture in progress
+### Development Status
+
+Kernel-Web is **actively under development**. This repository documents a living kernel architecture in progress.
+
+- Breaking changes may occur between commits during this phase.
+- The plugin, theme, and layout APIs are not yet frozen.
+- Authentication, configuration, and routing internals are still evolving.
+- The codebase is functional but not yet considered stable production software.
+
+Production deployments should be evaluated against these facts and used only with an understanding of these risks.
+
+Contributors, testers, and reviewers are welcome. See `CLAUDE.md` and `DESIGN.md` for development guidance.
 
 This repository will evolve into a full application platform over time.

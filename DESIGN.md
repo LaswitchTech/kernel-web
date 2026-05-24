@@ -1714,3 +1714,24 @@ Whenever a structural or architectural change is made:
 - `DESIGN.md` → WHAT we are building
 
 Both must stay aligned.
+
+---
+
+## Project Maturity
+
+Kernel-Web is actively under development. The following subsystems have been implemented but are not yet considered production-stable.
+
+### Plugin system
+Implemented: discovery, manifest validation, lifecycle hooks (install/enable/disable), dependency resolver, update checker, scaffold generator, catalog install workflow. **Not frozen**: manifest fields, hook names, and lifecycle signatures may change.
+
+### Theme system
+Implemented: Bootstrap 5 base, LESS variables, dark/light mode, theme preview page. Dynamic LESS compilation via `/css` route. **Not frozen**: variable names, token structure, and compilation pipeline may change.
+
+### Layouts
+Implemented: `panel.php` (admin), `app.php` (app), `blank.php` (auth). Global View Context stabilized. **Not frozen**: layout regions, hook points, and context variables may change.
+
+### Audit / Debug tooling
+Implemented: `admin_audit_log` table with append-only rows, `DebugAuditLogger` service (APP_DEBUG-gated), debug filter in `/admin/audit`. **Not frozen**: log format and filtering API may change.
+
+### Configuration pipeline
+Implemented: `config/app.php` (env-driven) → `config/local.php` (array_replace_recursive) → `.env` → hardcoded defaults. Flat and nested config supported. Debug flags are file-backed, not database-driven. **Not frozen**: config resolution order and key format may change.

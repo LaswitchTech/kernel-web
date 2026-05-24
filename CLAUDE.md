@@ -293,6 +293,19 @@ Risks / Notes
 
 ---
 
+## Development Stage
+
+Kernel-Web is actively under development. APIs and internals may change between commits.
+
+When contributing to this repository:
+
+- **Prioritize architectural consistency over backward compatibility.** During this phase, refactoring core behavior is expected. Document changes in `DESIGN.md` and `/docs` rather than preserving legacy patterns.
+- **Avoid premature abstraction.** Write the simplest code that solves the immediate problem. Extract helpers only when a pattern repeats three times in a way that cannot reasonably be expressed as inline logic.
+- **Document breaking changes clearly.** If a change modifies public-facing behavior (routes, config keys, plugin hooks, view contracts, or database schema), update `DESIGN.md`, `ROADMAP.md`, and `/docs` as appropriate.
+- **Keep documentation aligned with code.** Stale documentation is worse than none — keep `DESIGN.md` and `ROADMAP.md` as the source of truth for architecture and priorities.
+
+---
+
 ## Current Development Context
 
 The repository has been pulled locally and Apache has been configured for:
