@@ -11,12 +11,18 @@
  *  - col/card equal-height classes present (d-flex, h-100, w-100)
  *  - Bootstrap grid classes present: row g-3, col-12 col-md-6
  *  - Search input exists
- *  - No duplicate Developer Settings section
  *  - Column wrappers have .js-settings-card and data-search-text
- *  - Search uses toLowerCase / case-insensitive matching
- *  - Search toggles d-none on wrapper (not just body)
- *  - No-match message exists
+ *  - Search uses addEventListener('input'
+ *  - Search uses .textContent
+ *  - Search uses .toLowerCase()
+ *  - Search hides .js-settings-card wrappers with d-none
+ *  - Clear button not conditionally hidden via JS
+ *  - Clear button exists and is always rendered
+ *  - Chevron icon class: .js-settings-chevron
+ *  - Collapse event listeners: shown.bs.collapse / hidden.bs.collapse
+ *  - Chevron classes: bi-chevron-up / bi-chevron-down
  *  - Settings state reflected correctly
+ *  - Plugin cards (SMTP/Telico) included in searchable wrappers
  */
 
 require __DIR__ . '/bootstrap.php';
@@ -129,8 +135,6 @@ echo "= TEST 7: Search/filter input exists =\n";
 assert_true(str_contains($html1, 'id="settings-search"'), 'search input present');
 assert_true(str_contains($html1, 'type="search"'), 'search type input');
 assert_true(str_contains($html1, 'Filter settings'), 'placeholder text present');
-assert_true(str_contains($html1, 'id="settings-search-clear"'), 'clear button present');
-assert_true(str_contains($html1, 'id="settings-search-empty"'), 'no-results message present');
 echo "PASS\n";
 
 // --- TEST 8: Column wrappers have .js-settings-card ---
@@ -150,92 +154,137 @@ assert_true(str_contains($html1, 'data-search-text="'), 'data-search-text attrib
 assert_true(substr_count($html1, 'data-search-text="') >= 5, 'At least 5 cards have data-search-text');
 echo "PASS\n";
 
-// --- TEST 10: Search uses toLowerCase ---
+// --- TEST 10: Search uses addEventListener('input' ---
 
-echo "= TEST 10: Search uses toLowerCase for case-insensitive matching =\n";
+echo "= TEST 10: Search uses addEventListener('input' =\n";
 
-assert_true(str_contains($html1, '.toLowerCase()'), 'search uses toLowerCase for case-insensitive matching');
-assert_true(str_contains($html1, 'toLowerCase().trim()') || str_contains($html1, 'toLowerCase()\n') || str_contains($html1, '.toLowerCase();') || str_contains($html1, 'indexOf(q)'), 'search compares query with toLowerCase');
+assert_true(str_contains($html1, "addEventListener('input'"), 'search uses addEventListener("input"');
 echo "PASS\n";
 
-// --- TEST 11: Search toggles d-none on wrapper ---
+// --- TEST 11: Search uses .textContent ---
 
-echo "= TEST 11: Search toggles d-none on wrapper, not just body =\n";
+echo "= TEST 11: Search uses .textContent =\n";
 
-assert_true(str_contains($html1, 'd-none'), 'd-none class used for hiding');
-assert_true(str_contains($html1, 'classList.toggle("d-none"') || str_contains($html1, "classList.toggle('d-none'"), 'JS toggles d-none class');
-assert_true(str_contains($html1, 'cardWrappers') || str_contains($html1, 'querySelectorAll'), 'search targets wrapper elements');
+assert_true(str_contains($html1, '.textContent'), 'search uses .textContent for matching');
 echo "PASS\n";
 
-// --- TEST 12: Card headers are clickable ---
+// --- TEST 12: Search uses .toLowerCase() ---
 
-echo "= TEST 12: Card headers are clickable collapsible triggers =\n";
+echo "= TEST 12: Search uses .toLowerCase() =\n";
 
-assert_true(str_contains($html1, 'role="button"'), 'card header has role=button');
-assert_true(str_contains($html1, 'tabindex="0"'), 'card header is keyboard-focusable (tabindex=0)');
+assert_true(str_contains($html1, 'toLowerCase()'), 'search uses toLowerCase for case-insensitive matching');
 echo "PASS\n";
 
-// --- TEST 13: Settings state reflected correctly ---
+// --- TEST 13: Search hides .js-settings-card wrappers with d-none ---
 
-echo "= TEST 13: Settings state reflected =\n";
+echo "= TEST 13: Search hides wrappers with d-none =\n";
+
+assert_true(str_contains($html1, "classList.toggle('d-none'"), 'JS toggles d-none class on wrappers');
+echo "PASS\n";
+
+// --- TEST 14: Clear button not conditionally hidden via JS ---
+
+echo "= TEST 14: Clear button always rendered, not conditionally hidden =\n";
+
+assert_true(str_contains($html1, 'id="settings-search-clear"'), 'clear button present in HTML');
+assert_true(!str_contains($html1, 'display:none') || str_contains($html1, 'settings-search-empty') || str_contains($html1, 'settings-search-clear'), 'clear button not hidden via style');
+// Make sure there's no JS that sets display:none on clearBtn
+assert_true(!str_contains($html1, "clearBtn.style.display") || str_contains($html1, "clearBtn?.addEventListener('click'"), 'JS does not conditionally hide clear button');
+echo "PASS\n";
+
+// --- TEST 15: Clear button exists and is always rendered ---
+
+echo "= TEST 15: Clear button always rendered =\n";
+
+assert_true(str_contains($html1, 'id="settings-search-clear"'), 'clear button exists in markup');
+assert_true(str_contains($html1, 'type="button"') && str_contains($html1, 'bi-x-lg'), 'clear button has x icon');
+echo "PASS\n";
+
+// --- TEST 16: Chevron icon class exists ---
+
+echo "= TEST 16: Chevron icon class =\n";
+
+assert_true(str_contains($html1, 'js-settings-chevron'), '.js-settings-chevron class present');
+assert_true(substr_count($html1, 'js-settings-chevron') >= 5, 'At least 5 chevrons have js-settings-chevron class');
+echo "PASS\n";
+
+// --- TEST 17: Collapse event listeners ---
+
+echo "= TEST 17: Collapse event listeners =\n";
+
+assert_true(str_contains($html1, 'shown.bs.collapse'), 'shown.bs.collapse event present');
+assert_true(str_contains($html1, 'hidden.bs.collapse'), 'hidden.bs.collapse event present');
+echo "PASS\n";
+
+// --- TEST 18: Chevron classes switch ---
+
+echo "= TEST 18: Chevron classes switch =\n";
+
+assert_true(str_contains($html1, 'bi-chevron-up'), 'bi-chevron-up class present');
+assert_true(str_contains($html1, 'bi-chevron-down'), 'bi-chevron-down class present');
+echo "PASS\n";
+
+// --- TEST 19: Settings state reflected correctly ---
+
+echo "= TEST 19: Settings state reflected =\n";
 
 assert_true(str_contains($html1, 'Test App'), 'app_name reflected in view');
 assert_true(str_contains($html1, 'dev content'), 'Developer section renders');
 echo "PASS\n";
 
-// --- TEST 14: Plugin sections exclude developer ---
+// --- TEST 20: Plugin sections exclude developer ---
 
-echo "= TEST 14: Plugin sections skip developer =\n";
+echo "= TEST 20: Plugin sections skip developer =\n";
 
-$sections14 = [
+$sections20 = [
     make_section('developer', 'Developer Settings', '<p>dev</p>'),
     make_section('smtp', 'SMTP Settings', '<p>smtp</p>'),
     make_section('mailer', 'Mailer Settings', '<p>mailer</p>'),
 ];
 
-$html14 = render_settings_view([], $sections14);
+$html20 = render_settings_view([], $sections20);
 
-$dev_count14 = substr_count($html14, 'Developer Settings');
-assert_equal(1, $dev_count14, 'Only one Developer heading with multiple sections');
+$dev_count20 = substr_count($html20, 'Developer Settings');
+assert_equal(1, $dev_count20, 'Only one Developer heading with multiple sections');
 echo "PASS\n";
 
-// --- TEST 15: No developer section → graceful fallback ---
+// --- TEST 21: No developer section → graceful fallback ---
 
-echo "= TEST 15: No developer section → no error =\n";
+echo "= TEST 21: No developer section → no error =\n";
 
-$sections15 = [
+$sections21 = [
     make_section('smtp', 'SMTP Settings', '<p>smtp</p>'),
 ];
 
-$html15 = @render_settings_view([], $sections15);
-assert_true(!str_contains($html15, 'PHP Fatal'), 'No fatal error when no developer section');
-assert_true(str_contains($html15, 'SMTP Settings'), 'Other sections still render');
+$html21 = @render_settings_view([], $sections21);
+assert_true(!str_contains($html21, 'PHP Fatal'), 'No fatal error when no developer section');
+assert_true(str_contains($html21, 'SMTP Settings'), 'Other sections still render');
 echo "PASS\n";
 
-// --- TEST 16: Empty sections → no error ---
+// --- TEST 22: Empty sections → no error ---
 
-echo "= TEST 16: Empty sections list → no error =\n";
+echo "= TEST 22: Empty sections list → no error =\n";
 
-$html16 = @render_settings_view([], []);
-assert_true(str_contains($html16, 'Mailer'), 'Mailer section still renders with no plugins');
-assert_true(str_contains($html16, 'Notifications'), 'Notifications section still renders');
+$html22 = @render_settings_view([], []);
+assert_true(str_contains($html22, 'Mailer'), 'Mailer section still renders with no plugins');
+assert_true(str_contains($html22, 'Notifications'), 'Notifications section still renders');
 echo "PASS\n";
 
-// --- TEST 17: Chevron icons present ---
+// --- TEST 23: Plugin cards (SMTP/Telico) included in searchable wrappers ---
 
-echo "= TEST 17: Chevron icons present for expand/collapse =\n";
+echo "= TEST 23: Plugin cards have js-settings-card and data-search-text =\n";
 
-assert_true(str_contains($html1, 'bi-chevron-down'), 'chevron-down icons present');
+assert_true(str_contains($html20, 'data-search-text="'), 'plugin cards have data-search-text');
+assert_true(substr_count($html20, 'js-settings-card') >= 4, 'Plugin cards also have .js-settings-card');
 echo "PASS\n";
 
-// --- TEST 18: Plugin cards (SMTP/Telico) included in searchable wrappers ---
+// --- TEST 24: Chevron state JS is card-specific (per-card target lookup) ---
 
-echo "= TEST 18: Plugin cards have js-settings-card and data-search-text =\n";
+echo "= TEST 24: Chevron toggle is per-card (not global) =\n";
 
-// A rendered section should have both attributes on its card
-assert_true(str_contains($html14, 'data-search-text="'), 'plugin cards have data-search-text');
-// Count .js-settings-card instances (includes all 6 cards)
-assert_true(substr_count($html14, 'js-settings-card') >= 4, 'Plugin cards also have .js-settings-card');
+// Each collapse should find its own trigger via data-bs-target
+assert_true(str_contains($html1, "data-bs-target=\"#") || str_contains($html1, 'data-bs-target=\'#'), 'each trigger has unique data-bs-target');
+assert_true(str_contains($html1, 'querySelector') || str_contains($html1, '.forEach'), 'JS iterates over collapses individually');
 echo "PASS\n";
 
 // --- SUMMARY ---

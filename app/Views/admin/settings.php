@@ -16,11 +16,11 @@
                class="form-control"
                placeholder="Filter settings…"
                aria-label="Filter settings">
-        <button class="btn btn-outline-secondary" type="button" id="settings-search-clear" style="display:none">
+        <button class="btn btn-outline-secondary" type="button" id="settings-search-clear">
             <i class="bi bi-x-lg"></i>
         </button>
     </div>
-    <div id="settings-search-empty" class="text-muted small mt-1" style="display:none">
+    <div id="settings-search-empty" class="text-muted small mt-1 d-none">
         No settings match your search.
     </div>
 </div>
@@ -44,9 +44,9 @@
                 <div class="text-muted" style="font-size:11px">Core identity settings for this instance.</div>
             </div>
         </div>
-        <i class="bi bi-chevron-down text-muted text-nowrap"></i>
+        <i class="bi bi-chevron-down js-settings-chevron text-muted text-nowrap"></i>
     </div>
-    <div class="collapse" id="collapse-application">
+    <div class="collapse js-settings-collapse" id="collapse-application">
     <div class="card-body">
 
         <div class="mb-3">
@@ -108,9 +108,9 @@
                 <div class="text-muted" style="font-size:11px">Security-related configuration.</div>
             </div>
         </div>
-        <i class="bi bi-chevron-down text-muted text-nowrap"></i>
+        <i class="bi bi-chevron-down js-settings-chevron text-muted text-nowrap"></i>
     </div>
-    <div class="collapse" id="collapse-authentication">
+    <div class="collapse js-settings-collapse" id="collapse-authentication">
     <div class="card-body">
 
         <div class="d-flex align-items-center justify-content-between">
@@ -168,9 +168,9 @@ $__dev_search__ = strtolower(htmlspecialchars($__dev_label__ . ' ' . strip_tags(
                 <div class="text-muted" style="font-size:11px">Development and debugging features.</div>
             </div>
         </div>
-        <i class="bi bi-chevron-down text-muted text-nowrap"></i>
+        <i class="bi bi-chevron-down js-settings-chevron text-muted text-nowrap"></i>
     </div>
-    <div class="collapse" id="collapse-developer">
+    <div class="collapse js-settings-collapse" id="collapse-developer">
     <div class="card-body">
         <?= $__dev_body__ ?>
     </div>
@@ -201,9 +201,9 @@ $__dev_search__ = strtolower(htmlspecialchars($__dev_label__ . ' ' . strip_tags(
                 <div class="fw-semibold fs-5 mb-0"><?= htmlspecialchars($section->label) ?></div>
             </div>
         </div>
-        <i class="bi bi-chevron-down text-muted text-nowrap"></i>
+        <i class="bi bi-chevron-down js-settings-chevron text-muted text-nowrap"></i>
     </div>
-    <div class="collapse" id="collapse-<?= $safe_id ?>">
+    <div class="collapse js-settings-collapse" id="collapse-<?= $safe_id ?>">
     <div class="card-body">
         <?= $section_body ?>
     </div>
@@ -229,9 +229,9 @@ $__dev_search__ = strtolower(htmlspecialchars($__dev_label__ . ' ' . strip_tags(
                 <div class="text-muted" style="font-size:11px">Mail delivery configuration.</div>
             </div>
         </div>
-        <i class="bi bi-chevron-down text-muted text-nowrap"></i>
+        <i class="bi bi-chevron-down js-settings-chevron text-muted text-nowrap"></i>
     </div>
-    <div class="collapse" id="collapse-mailer">
+    <div class="collapse js-settings-collapse" id="collapse-mailer">
     <div class="card-body">
         <p class="text-muted small mb-0">
             Mail delivery uses PHP's <code>mail()</code> function by default.
@@ -259,9 +259,9 @@ $__dev_search__ = strtolower(htmlspecialchars($__dev_label__ . ' ' . strip_tags(
                 <div class="text-muted" style="font-size:11px">Plugin-managed notification settings.</div>
             </div>
         </div>
-        <i class="bi bi-chevron-down text-muted text-nowrap"></i>
+        <i class="bi bi-chevron-down js-settings-chevron text-muted text-nowrap"></i>
     </div>
-    <div class="collapse" id="collapse-notifications">
+    <div class="collapse js-settings-collapse" id="collapse-notifications">
     <div class="card-body">
         <p class="text-muted small mb-0">
             The notification system is not yet implemented.
@@ -360,37 +360,57 @@ $__dev_search__ = strtolower(htmlspecialchars($__dev_label__ . ' ' . strip_tags(
         setTimeout(function() { container.innerHTML = ''; }, 4000);
     }
 
-    // --- Search / filter (robust) ---
+    // --- Chevron state: toggle bi-chevron-up/down on collapse open/close ---
+    var collapses = document.querySelectorAll('.js-settings-collapse');
+    collapses.forEach(function(collapseEl) {
+        var targetId = collapseEl.id;
+        var trigger = document.querySelector('[data-bs-target="#' + CSS.escape(targetId) + '"]');
+        var icon = trigger ? trigger.querySelector('.js-settings-chevron') : null;
+
+        collapseEl.addEventListener('shown.bs.collapse', function() {
+            icon?.classList.remove('bi-chevron-down');
+            icon?.classList.add('bi-chevron-up');
+        });
+
+        collapseEl.addEventListener('hidden.bs.collapse', function() {
+            icon?.classList.remove('bi-chevron-up');
+            icon?.classList.add('bi-chevron-down');
+        });
+    });
+
+    // --- Search / filter: live on input, case-insensitive, hide wrapper ---
     var searchInput = document.getElementById('settings-search');
-    var clearBtn  = document.getElementById('settings-search-clear');
-    var emptyMsg  = document.getElementById('settings-search-empty');
-    if (!searchInput) return;
+    var clearBtn    = document.getElementById('settings-search-clear');
+    var emptyState  = document.getElementById('settings-search-empty');
+    var allWrappers = Array.from(document.querySelectorAll('.js-settings-card'));
 
-    var cardWrappers = Array.from(document.querySelectorAll('.js-settings-card'));
+    function applySettingsFilter() {
+        var query = (searchInput?.value || '').trim().toLowerCase();
+        var visible = 0;
 
-    function applyFilter() {
-        var q = searchInput.value.toLowerCase().trim();
-        clearBtn.style.display = q.length > 0 ? '' : 'none';
+        allWrappers.forEach(function(wrapper) {
+            var card = wrapper.querySelector('.card');
+            var text = (card?.textContent || '').toLowerCase();
+            var matches = query === '' || text.includes(query);
 
-        var visibleCount = 0;
-        for (var i = 0; i < cardWrappers.length; i++) {
-            var wrapper = cardWrappers[i];
-            var card    = wrapper.querySelector('.card');
-            if (!card) continue;
-            var searchText = (card.getAttribute('data-search-text') || '').toLowerCase();
-            var match = !q || searchText.indexOf(q) !== -1;
-            wrapper.classList.toggle('d-none', !match);
-            if (match) visibleCount++;
+            wrapper.classList.toggle('d-none', !matches);
+            if (matches) visible++;
+        });
+
+        if (emptyState) {
+            emptyState.classList.toggle('d-none', visible !== 0);
         }
-        emptyMsg.style.display = (visibleCount === 0 && q.length > 0) ? '' : 'none';
     }
 
-    searchInput.addEventListener('input', applyFilter);
+    searchInput?.addEventListener('input', applySettingsFilter);
 
-    clearBtn.addEventListener('click', function() {
+    clearBtn?.addEventListener('click', function() {
         searchInput.value = '';
-        applyFilter();
+        applySettingsFilter();
         searchInput.focus();
     });
+
+    // Initial state
+    applySettingsFilter();
 })();
 </script>
