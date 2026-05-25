@@ -42,7 +42,8 @@ class SystemSettingsController extends Controller
     {
         [$viewsPath, $appName, $displayName, $permissions] = $this->ctx();
 
-        $config    = $this->container->get('config');
+        $rawConfig = $this->container->get('config');
+        $config    = $this->resolveAppConfig($rawConfig);
         $override  = new ConfigOverrideService();
         $local     = $override->readLocal();
 
@@ -50,20 +51,15 @@ class SystemSettingsController extends Controller
         $this->registerDeveloperSection();
 
         $settings = [
-            'app_name'                 => ($config['app']['name'] ?? 'Kernel-Web') !== ''
-                                          ? (string) $config['app']['name']
-                                          : 'Kernel-Web',
-            'app_url'                  => ($config['app']['url'] ?? '') !== ''
-                                          ? (string) $config['app']['url']
-                                          : 'http://localhost',
+            'app_name'                 => $config['name'] ?? 'Kernel-Web',
+            'app_url'                  => $config['url'] ?? 'http://localhost',
             'developer.developer'      => ($local['developer']['developer'] ?? false) === true
-                                          || ($config['developer']['developer'] ?? false) === true,
+                                          || ($config['developer'] ?? false) === true,
             'developer.debug'          => ($local['developer']['debug'] ?? false) === true
-                                          || ($config['developer']['debug'] ?? false) === true,
+                                          || ($config['debug'] ?? false) === true,
             'developer.dev_console'    => ($local['developer']['dev_console'] ?? false) === true
-                                          || ($config['developer']['dev_console'] ?? false) === true,
-            'auth.two_factor.enforced' => ($config['auth']['two_factor']['enforced'] ?? false) === true,
-            'flash'                      => $this->popFlash(),
+                                          || ($config['dev_console'] ?? false) === true,
+            'auth.two_factor.enforced' => ($rawConfig['auth']['two_factor']['enforced'] ?? false) === true,
         ];
 
         $sections = SettingsRegistry::getSections($permissions);
@@ -71,6 +67,7 @@ class SystemSettingsController extends Controller
         $pageTitle     = 'Settings';
         $activeSection = '/admin/settings';
         $errors        = [];
+        $flash         = $this->popFlash();
 
         $breadcrumbs = [
             ['label' => 'Administration', 'url' => '/admin'],
@@ -253,8 +250,9 @@ class SystemSettingsController extends Controller
      */
     private function ctx(): array
     {
+        $rawConfig   = $this->container->get('config');
         $principal   = $this->container->get('principal');
-        $config      = $this->container->get('config');
+        $config      = $this->resolveAppConfig($rawConfig);
         $viewsPath   = __DIR__ . '/../../Views';
         $appName     = $config['name'] ?? 'Kernel-Web';
         $displayName = ($principal['user']['display_name'] ?? '') !== ''
@@ -289,6 +287,20 @@ class SystemSettingsController extends Controller
     private function flash(string $type, string $message): void
     {
         $_SESSION['admin_flash'] = ['type' => $type, 'message' => $message];
+    }
+
+    /**
+     * Resolve app config from flat or nested config arrays.
+     *
+     * Config::load('app') returns a flat array (name, url, debug, etc.).
+     * Some callers pass nested config (['app' => [...]]). Handle both.
+     */
+    private function resolveAppConfig(array $config): array
+    {
+        if (is_array($config['app'] ?? null)) {
+            return $config['app'];
+        }
+        return $config;
     }
 
     /**

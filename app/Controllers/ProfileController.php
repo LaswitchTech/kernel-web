@@ -41,6 +41,10 @@ class ProfileController extends Controller
             ? $user['display_name']
             : $user['username'];
 
+        $currentUsername       = $user['username'] ?? '';
+        $currentUserDisplayName = $displayName;
+        $currentUserEmail      = $user['email'] ?? '';
+
         $prefRepo  = new NotificationPreferenceRepository($this->container->get('db'));
         $notifPrefs = $prefRepo->getAllForUser((int) $user['id']);
 

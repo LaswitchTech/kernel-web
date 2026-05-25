@@ -213,6 +213,9 @@ After changes, run whatever validation is available and appropriate, such as:
 - route smoke tests if practical
 - manual browser checks when relevant
 
+**Route smoke test requirement:**
+When routes change, add new routes, or modify controller/view behavior, run `php tests/route_smoke_test.php` (or create it if missing). The suite must test every registered route in both guest and authenticated modes, failing on any 500 status. Add new routes to the suite if they are not already covered.
+
 If no automated checks exist yet, state that clearly in the summary and suggest the next useful validation to add.
 
 Never claim tests passed unless they were actually run.
