@@ -1739,6 +1739,23 @@ Implemented: `config/app.php` (env-driven) → `config/local.php` (array_replace
 ### Config override system
 Implemented: `ConfigOverrideService` (`app/Services/ConfigOverrideService.php`) writes admin-driven settings to `config/local.php` using dot-notation keys (e.g. `auth.two_factor.enforced`). All UI-driven overrides MUST write here — never to the database, never to `.env`, never to base config files. Atomic write via temp file + rename. **Not frozen**: write format may change.
 
+### Configuration vs. Runtime State
+
+All application configuration MUST be file-backed. The database (`system_settings` table) is deprecated for config storage and should only be used for true runtime/user state.
+
+| Category | Storage | Examples | Who writes |
+|----------|---------|----------|------------|
+| Application config | `config/local.php` | `app.name`, `app.url`, `app.debug`, `auth.*`, `mail.*` | Admin (UI → ConfigOverrideService) or manual |
+| Environment values | `.env` | `APP_NAME`, `APP_DEBUG`, `APP_URL` | Deployer |
+| Plugin config (non-sensitive) | `config/local.php` | `smtp.host`, `smtp.port`, `telico.caller_id` | Admin (UI → ConfigOverrideService) |
+| Plugin secrets (sensitive) | Encrypted DB column or `config/local_secrets.php` | `smtp.pass`, `telico.sms_password` | Admin (UI → encrypted storage) |
+| User runtime state | `system_settings` table (per-user) | `app.preferences.theme` | User session / user prefs |
+| Plugin runtime state | `system_settings` table | `notifications.last_sent_at` | Plugin service |
+
+**Rule:** If a setting applies to the entire instance (not per-user) and does not contain secrets, it is CONFIG and must go in `config/local.php`. The `system_settings` table is reserved for per-user runtime state only.
+
+See `/docs/developer/config-override-audit.md` for the full audit.
+
 ### Config precedence reference
 
 | Layer | Purpose | Example key format | Who controls |

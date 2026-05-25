@@ -98,7 +98,8 @@ The global view context was the root cause of bugs across the app. This has been
 - [P4] **Preserve last opened profile modal tab** — sessionStorage persistence; currently always refreshes all tabs
 - [P3] **Fix card-header border-radius to match card radius** — CSS consistency
 - [x] **Design universal config-saving system** — ConfigOverrideService writes to config/local.php via dot-notation keys, atomic file writes, boolean/string normalization, 41 assertions
-- [P2] **Send real test email** — Test email button exists in SMTP settings but verify it actually sends
+- [P2] **Migrate remaining DB-backed config to ConfigOverrideService** — Audit at docs/developer/config-override-audit.md. Migrate: app.name, app.url, developer.*, smtp.* non-sensitive, telico.* non-sensitive from system_settings DB to config/local.php. Sensitive creds → encrypted storage. Remove SystemSettingService.write() path. Update SettingsRegistry to accept ConfigOverrideService or interface.
+- [P3] **Send real test email** — Test email button exists in SMTP settings but verify it actually sends
 - [P3] **Move SMTP settings into Mailer settings** — Selectable mailer provider (mail(), SMTP), provider-based settings
 - [P3] **Make SMS settings provider-based** — Extensible via plugins (Telico, Twilio, etc.)
 - [P4] **Add application logo upload/selection** — Admin setting + global application across all layouts
