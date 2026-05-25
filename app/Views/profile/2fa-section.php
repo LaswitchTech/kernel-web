@@ -361,7 +361,7 @@ $ctx = $ctx ?? [];
         })
         .then(function (r) { return r.json(); })
         .then(function (data) {
-            if (data.success) {
+            if (data.enabled === false || data.success) {
                 enabledEl.classList.add('d-none');
                 disabledEl.classList.remove('d-none');
                 disableEl.classList.add('d-none');

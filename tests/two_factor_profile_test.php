@@ -383,6 +383,171 @@ for ($i = -1; $i <= 1; $i++) {
 }
 
 // ============================================================
+// TEST 9: Disable flow regression tests
+// ============================================================
+
+// -- 9a: Disable with valid current TOTP code (enabled state) ---
+$svc->disable(1);
+$db->execute("UPDATE users SET totp_secret = NULL, totp_enabled_at = NULL, totp_pending_at = NULL, totp_setup_id = NULL WHERE id = 1");
+
+$genSecret = $svc->generateSecret(1);
+$genHex = hex2bin($decodeMethod->invoke($svc, $genSecret));
+$genStep = (int) floor(time() / 30);
+$genHmac = hash_hmac('sha1', pack('N2', 0, $genStep), $genHex, true);
+$genOff = ord($genHmac[19]) & 0x0F;
+$genNum = ((ord($genHmac[$genOff]) & 0x7F) << 24)
+        | ((ord($genHmac[$genOff + 1]) & 0xFF) << 16)
+        | ((ord($genHmac[$genOff + 2]) & 0xFF) << 8)
+        | (ord($genHmac[$genOff + 3]) & 0xFF);
+$genCode = str_pad((string) ($genNum % 1000000), 6, '0', STR_PAD_LEFT);
+
+// Enable with the generated code
+assert_true($svc->verifyTotp(1, $genCode), 'current TOTP verifies');
+$enableResult = $svc->enable(1);
+assert_true($svc->isEnabled(1), '2FA enabled');
+
+// Disable with a fresh valid TOTP code
+$disableSecret = (new TwoFactorRepository($db))->getTotpSecret(1)['totp_secret'];
+$disableHex = hex2bin($decodeMethod->invoke($svc, $disableSecret));
+$disableStep = (int) floor(time() / 30);
+$disableHmac = hash_hmac('sha1', pack('N2', 0, $disableStep), $disableHex, true);
+$disableOff = ord($disableHmac[19]) & 0x0F;
+$disableNum = ((ord($disableHmac[$disableOff]) & 0x7F) << 24)
+            | ((ord($disableHmac[$disableOff + 1]) & 0xFF) << 16)
+            | ((ord($disableHmac[$disableOff + 2]) & 0xFF) << 8)
+            | (ord($disableHmac[$disableOff + 3]) & 0xFF);
+$disableCode = str_pad((string) ($disableNum % 1000000), 6, '0', STR_PAD_LEFT);
+
+assert_true($svc->verifyTotp(1, $disableCode), 'valid TOTP for disable');
+$svc->disable(1);
+assert_false($svc->isEnabled(1), '2FA disabled after disable()');
+
+// -- 9b: Re-enable + disable with ±1 window codes ---
+foreach ([-1, 0, 1] as $offset) {
+    $svc->disable(1);
+    $db->execute("UPDATE users SET totp_secret = NULL, totp_enabled_at = NULL, totp_pending_at = NULL, totp_setup_id = NULL WHERE id = 1");
+    $reSecret = $svc->generateSecret(1);
+    $reHex = hex2bin($decodeMethod->invoke($svc, $reSecret));
+    $reStep = (int) floor(time() / 30);
+    $reHmac = hash_hmac('sha1', pack('N2', 0, $reStep), $reHex, true);
+    $reOff = ord($reHmac[19]) & 0x0F;
+    $reNum = ((ord($reHmac[$reOff]) & 0x7F) << 24)
+           | ((ord($reHmac[$reOff + 1]) & 0xFF) << 16)
+           | ((ord($reHmac[$reOff + 2]) & 0xFF) << 8)
+           | (ord($reHmac[$reOff + 3]) & 0xFF);
+    $reCode = str_pad((string) ($reNum % 1000000), 6, '0', STR_PAD_LEFT);
+
+    // Enable
+    assert_true($svc->verifyTotp(1, $reCode), "enable code verifies (±$offset)");
+    $svc->enable(1);
+    assert_true($svc->isEnabled(1), "2FA enabled (±$offset)");
+
+    // Get fresh code at time (step + $offset)
+    $testStep = $reStep + $offset;
+    $testHmac = hash_hmac('sha1', pack('N2', 0, $testStep), $reHex, true);
+    $testOff = ord($testHmac[19]) & 0x0F;
+    $testNum = ((ord($testHmac[$testOff]) & 0x7F) << 24)
+             | ((ord($testHmac[$testOff + 1]) & 0xFF) << 16)
+             | ((ord($testHmac[$testOff + 2]) & 0xFF) << 8)
+             | (ord($testHmac[$testOff + 3]) & 0xFF);
+    $testCode = str_pad((string) ($testNum % 1000000), 6, '0', STR_PAD_LEFT);
+
+    // Disable with ±1 window code
+    assert_true($svc->verifyTotp(1, $testCode), "disable TOTP code at offset $offset verifies");
+    $svc->disable(1);
+    assert_false($svc->isEnabled(1), "2FA disabled with offset $offset code");
+}
+
+// -- 9c: Disable with recovery code ---
+$svc->disable(1);
+$db->execute("UPDATE users SET totp_secret = NULL, totp_enabled_at = NULL, totp_pending_at = NULL, totp_setup_id = NULL WHERE id = 1");
+
+// Enable without a pending secret (direct enable)
+$directSecret = $svc->generateSecret(1);
+$directHex = hex2bin($decodeMethod->invoke($svc, $directSecret));
+$directStep = (int) floor(time() / 30);
+$directHmac = hash_hmac('sha1', pack('N2', 0, $directStep), $directHex, true);
+$directOff = ord($directHmac[19]) & 0x0F;
+$directNum = ((ord($directHmac[$directOff]) & 0x7F) << 24)
+           | ((ord($directHmac[$directOff + 1]) & 0xFF) << 16)
+           | ((ord($directHmac[$directOff + 2]) & 0xFF) << 8)
+           | (ord($directHmac[$directOff + 3]) & 0xFF);
+$directCode = str_pad((string) ($directNum % 1000000), 6, '0', STR_PAD_LEFT);
+
+assert_true($svc->verifyTotp(1, $directCode), 'enable code verifies');
+$enableResult = $svc->enable(1);
+assert_true($svc->isEnabled(1), '2FA enabled for recovery code test');
+
+$recoveryCodes = $enableResult['recoveryCodes'];
+assert_true(count($recoveryCodes) > 0, 'recovery codes generated');
+
+$rawCode = $recoveryCodes[0]['code'];
+$rawHash = $recoveryCodes[0]['codeHash'];
+
+// First validation succeeds (and consumes the code, since it's single-use)
+$firstValidate = $svc->validateRecoveryCode(1, $rawCode);
+assert_true($firstValidate, 'recovery code validates before use');
+
+// Verify 2FA is still enabled (validateRecoveryCode only consumes, doesn't disable)
+assert_true($svc->isEnabled(1), '2FA still enabled — validateRecoveryCode only consumes the code');
+
+// The controller calls validateRecoveryCode then disable() separately.
+$svc->disable(1);
+assert_false($svc->isEnabled(1), '2FA disabled after disable() call');
+
+// Second validation rejects the already-consumed code
+$secondValidate = $svc->validateRecoveryCode(1, $rawCode);
+assert_false($secondValidate, 'used recovery code rejected on re-check');
+
+// -- 9d: Pending setup disable (no code needed) ---
+$svc->disable(1);
+$db->execute("UPDATE users SET totp_secret = NULL, totp_enabled_at = NULL, totp_pending_at = NULL, totp_setup_id = NULL WHERE id = 1");
+assert_false($svc->hasPendingSetup(1), 'no pending setup after full disable');
+
+$svc->generateSecret(1);
+assert_true($svc->hasPendingSetup(1), 'pending setup after generateSecret');
+
+// HasPendingSetup allows disabling without code
+assert_true($svc->hasPendingSetup(1), 'still pending');
+$svc->disable(1);
+assert_false($svc->hasPendingSetup(1), 'pending cleared after disable');
+assert_false($svc->isEnabled(1), 'not enabled (was only pending)');
+
+// -- 9e: Invalid code after enabled state ---
+$svc->disable(1);
+$db->execute("UPDATE users SET totp_secret = NULL, totp_enabled_at = NULL, totp_pending_at = NULL, totp_setup_id = NULL WHERE id = 1");
+
+$invSecret = $svc->generateSecret(1);
+$invHex = hex2bin($decodeMethod->invoke($svc, $invSecret));
+$invStep = (int) floor(time() / 30);
+$invHmac = hash_hmac('sha1', pack('N2', 0, $invStep), $invHex, true);
+$invOff = ord($invHmac[19]) & 0x0F;
+$invNum = ((ord($invHmac[$invOff]) & 0x7F) << 24)
+        | ((ord($invHmac[$invOff + 1]) & 0xFF) << 16)
+        | ((ord($invHmac[$invOff + 2]) & 0xFF) << 8)
+        | (ord($invHmac[$invOff + 3]) & 0xFF);
+$invCode = str_pad((string) ($invNum % 1000000), 6, '0', STR_PAD_LEFT);
+
+assert_true($svc->verifyTotp(1, $invCode), 'valid code for setup');
+$svc->enable(1);
+assert_true($svc->isEnabled(1), 'enabled');
+
+// Use an obviously wrong code
+assert_false($svc->verifyTotp(1, '000000'), 'garbage code rejected');
+assert_false($svc->validateRecoveryCode(1, '000000'), 'garbage recovery code rejected');
+
+// Outside window must fail
+$tooOldStep = $invStep - 5;
+$tooOldHmac = hash_hmac('sha1', pack('N2', 0, $tooOldStep), $invHex, true);
+$tooOldOff = ord($tooOldHmac[19]) & 0x0F;
+$tooOldNum = ((ord($tooOldHmac[$tooOldOff]) & 0x7F) << 24)
+           | ((ord($tooOldHmac[$tooOldOff + 1]) & 0xFF) << 16)
+           | ((ord($tooOldHmac[$tooOldOff + 2]) & 0xFF) << 8)
+           | (ord($tooOldHmac[$tooOldOff + 3]) & 0xFF);
+$tooOldCode = str_pad((string) ($tooOldNum % 1000000), 6, '0', STR_PAD_LEFT);
+assert_false($svc->verifyTotp(1, $tooOldCode), 'code outside ±1 window rejected');
+
+// ============================================================
 // SUMMARY
 // ============================================================
 
