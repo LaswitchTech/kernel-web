@@ -5,25 +5,26 @@
 </div>
 <?php endif; ?>
 
-<form method="POST" action="/admin/settings" novalidate id="settings-form">
-
-<!-- Search -->
-<div class="mb-3">
-    <div class="input-group input-group-sm" style="max-width:320px">
-        <span class="input-group-text"><i class="bi bi-search"></i></span>
-        <input type="search"
-               id="settings-search"
-               class="form-control"
-               placeholder="Filter settings…"
-               aria-label="Filter settings">
-        <button class="btn btn-outline-secondary" type="button" id="settings-search-clear">
-            <i class="bi bi-x-lg"></i>
-        </button>
-    </div>
-    <div id="settings-search-empty" class="text-muted small mt-1 d-none">
-        No settings match your search.
-    </div>
+<div class="row g-3 mb-3">
+<div class="col-12 col-md-6">
+<div class="input-group input-group-sm" style="max-width:320px">
+    <span class="input-group-text"><i class="bi bi-search"></i></span>
+    <input type="search"
+           id="settings-search"
+           class="form-control"
+           placeholder="Filter settings…"
+           aria-label="Filter settings">
+    <button class="btn btn-outline-secondary" type="button" id="settings-search-clear">
+        <i class="bi bi-x-lg"></i>
+    </button>
 </div>
+<div id="settings-search-empty" class="text-muted small mt-1 d-none">
+    No settings match your search.
+</div>
+</div>
+</div>
+
+<form method="POST" action="/admin/settings" novalidate id="settings-form">
 
 <div class="row g-3">
 
@@ -360,55 +361,89 @@ $__dev_search__ = strtolower(htmlspecialchars($__dev_label__ . ' ' . strip_tags(
         setTimeout(function() { container.innerHTML = ''; }, 4000);
     }
 
-    // --- Chevron state: toggle bi-chevron-up/down on collapse open/close ---
-    var collapses = document.querySelectorAll('.js-settings-collapse');
-    collapses.forEach(function(collapseEl) {
-        var targetId = collapseEl.id;
-        var trigger = document.querySelector('[data-bs-target="#' + CSS.escape(targetId) + '"]');
-        var icon = trigger ? trigger.querySelector('.js-settings-chevron') : null;
+    // --- Chevron helpers ---
+    function updateChevron(collapseEl, isOpen) {
+        if (!collapseEl || !collapseEl.id) return;
+        var selector = '[data-bs-target="#' + collapseEl.id + '"]';
+        var trigger = document.querySelector(selector);
+        if (!trigger) return;
+        var icon = trigger.querySelector('.js-settings-chevron');
+        if (!icon) return;
+        if (isOpen) {
+            icon.classList.remove('bi-chevron-down');
+            icon.classList.add('bi-chevron-up');
+        } else {
+            icon.classList.remove('bi-chevron-up');
+            icon.classList.add('bi-chevron-down');
+        }
+    }
 
-        collapseEl.addEventListener('shown.bs.collapse', function() {
-            icon?.classList.remove('bi-chevron-down');
-            icon?.classList.add('bi-chevron-up');
-        });
-
-        collapseEl.addEventListener('hidden.bs.collapse', function() {
-            icon?.classList.remove('bi-chevron-up');
-            icon?.classList.add('bi-chevron-down');
-        });
+    // --- Chevron: document-level event delegation (not per-element) ---
+    document.addEventListener('shown.bs.collapse', function(event) {
+        updateChevron(event.target, true);
     });
 
-    // --- Search / filter: live on input, case-insensitive, hide wrapper ---
+    document.addEventListener('hidden.bs.collapse', function(event) {
+        updateChevron(event.target, false);
+    });
+
+    // Initialize chevrons based on current state
+    var initialCollapses = Array.prototype.slice.call(document.querySelectorAll('.js-settings-collapse'));
+    initialCollapses.forEach(function(collapseEl) {
+        updateChevron(collapseEl, collapseEl.classList.contains('show'));
+    });
+
+    // --- Search / filter (defensive, no optional chaining, no .includes) ---
     var searchInput = document.getElementById('settings-search');
     var clearBtn    = document.getElementById('settings-search-clear');
     var emptyState  = document.getElementById('settings-search-empty');
-    var allWrappers = Array.from(document.querySelectorAll('.js-settings-card'));
+
+    function getCards() {
+        return Array.prototype.slice.call(document.querySelectorAll('.js-settings-card'));
+    }
 
     function applySettingsFilter() {
-        var query = (searchInput?.value || '').trim().toLowerCase();
-        var visible = 0;
+        if (!searchInput) return;
 
-        allWrappers.forEach(function(wrapper) {
+        var query = searchInput.value.trim().toLowerCase();
+        var visible = 0;
+        var cards = getCards();
+
+        for (var i = 0; i < cards.length; i++) {
+            var wrapper = cards[i];
             var card = wrapper.querySelector('.card');
-            var text = (card?.textContent || '').toLowerCase();
-            var matches = query === '' || text.includes(query);
+            var text = card ? (card.textContent || '').toLowerCase() : '';
+            var matches = query === '' || text.indexOf(query) !== -1;
 
             wrapper.classList.toggle('d-none', !matches);
             if (matches) visible++;
-        });
+        }
 
         if (emptyState) {
             emptyState.classList.toggle('d-none', visible !== 0);
         }
     }
 
-    searchInput?.addEventListener('input', applySettingsFilter);
+    if (searchInput) {
+        searchInput.addEventListener('input', applySettingsFilter);
 
-    clearBtn?.addEventListener('click', function() {
-        searchInput.value = '';
-        applySettingsFilter();
-        searchInput.focus();
-    });
+        // Prevent Enter from submitting the form
+        searchInput.addEventListener('keydown', function(event) {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+            }
+        });
+    }
+
+    if (clearBtn) {
+        clearBtn.addEventListener('click', function(event) {
+            event.preventDefault();
+            if (!searchInput) return;
+            searchInput.value = '';
+            applySettingsFilter();
+            searchInput.focus();
+        });
+    }
 
     // Initial state
     applySettingsFilter();
