@@ -7,10 +7,15 @@
  *  - Only one Developer Settings section (no duplicates)
  *  - Cards render collapsed by default
  *  - Collapse buttons/targets exist with correct IDs
+ *  - Icon and title use larger font-size classes (fs-4 / fs-5)
  *  - col/card equal-height classes present (d-flex, h-100, w-100)
  *  - Bootstrap grid classes present: row g-3, col-12 col-md-6
  *  - Search input exists
  *  - No duplicate Developer Settings section
+ *  - Column wrappers have .js-settings-card and data-search-text
+ *  - Search uses toLowerCase / case-insensitive matching
+ *  - Search toggles d-none on wrapper (not just body)
+ *  - No-match message exists
  *  - Settings state reflected correctly
  */
 
@@ -75,47 +80,51 @@ echo "PASS\n";
 
 echo "= TEST 2: Cards rendered collapsed by default =\n";
 
-// Collapse divs should have aria-expanded="false" (Bootstrap collapsed class)
 assert_true(str_contains($html1, 'collapse"'), 'collapse div class present');
 assert_true(str_contains($html1, 'aria-expanded="false"'), 'cards start collapsed (aria-expanded=false)');
 echo "PASS\n";
 
-// --- TEST 3: Collapse buttons/targets exist ---
+// --- TEST 3: Collapse buttons and targets exist ---
 
 echo "= TEST 3: Collapse buttons and targets exist =\n";
 
-// Application
 assert_true(str_contains($html1, 'data-bs-toggle="collapse"'), 'collapse toggle attribute present');
 assert_true(str_contains($html1, 'data-bs-target="#collapse-application"'), 'Application collapse target present');
 assert_true(str_contains($html1, 'id="collapse-application"'), 'Application collapse body present');
-
-// Authentication
 assert_true(str_contains($html1, 'id="collapse-authentication"'), 'Authentication collapse body present');
 assert_true(str_contains($html1, 'id="collapse-mailer"'), 'Mailer collapse body present');
 assert_true(str_contains($html1, 'id="collapse-notifications"'), 'Notifications collapse body present');
 echo "PASS\n";
 
-// --- TEST 4: Equal-height classes present ---
+// --- TEST 4: Icon and title font-size classes ---
 
-echo "= TEST 4: Equal-height classes present =\n";
+echo "= TEST 4: Icon and title font-size classes =\n";
+
+assert_true(str_contains($html1, 'fs-4 text-primary'), 'icons use fs-4');
+assert_true(str_contains($html1, 'fw-semibold fs-5 mb-0'), 'titles use fs-5');
+echo "PASS\n";
+
+// --- TEST 5: Equal-height classes present ---
+
+echo "= TEST 5: Equal-height classes present =\n";
 
 assert_true(str_contains($html1, 'd-flex'), 'd-flex class present for equal-height rows');
 assert_true(str_contains($html1, 'h-100'), 'h-100 class present for equal-height cards');
 assert_true(str_contains($html1, 'w-100'), 'w-100 class present for full-width cards');
 echo "PASS\n";
 
-// --- TEST 5: Bootstrap grid classes present ---
+// --- TEST 6: Bootstrap grid classes present ---
 
-echo "= TEST 5: Bootstrap grid classes =\n";
+echo "= TEST 6: Bootstrap grid classes =\n";
 
 assert_true(str_contains($html1, 'row g-3'), 'row g-3 class present');
 assert_true(str_contains($html1, 'col-12'), 'col-12 class present');
 assert_true(str_contains($html1, 'col-md-6'), 'col-md-6 class present');
 echo "PASS\n";
 
-// --- TEST 6: Search input exists ---
+// --- TEST 7: Search input exists ---
 
-echo "= TEST 6: Search/filter input exists =\n";
+echo "= TEST 7: Search/filter input exists =\n";
 
 assert_true(str_contains($html1, 'id="settings-search"'), 'search input present');
 assert_true(str_contains($html1, 'type="search"'), 'search type input');
@@ -124,66 +133,109 @@ assert_true(str_contains($html1, 'id="settings-search-clear"'), 'clear button pr
 assert_true(str_contains($html1, 'id="settings-search-empty"'), 'no-results message present');
 echo "PASS\n";
 
-// --- TEST 7: Card headers are clickable ---
+// --- TEST 8: Column wrappers have .js-settings-card ---
 
-echo "= TEST 7: Card headers are clickable collapsible triggers =\n";
+echo "= TEST 8: js-settings-card class on column wrappers =\n";
 
-// Headers should have role="button" and tabindex
+assert_true(str_contains($html1, 'js-settings-card'), '.js-settings-card class present');
+$js_card_count = substr_count($html1, 'js-settings-card');
+assert_true($js_card_count >= 5, 'At least 5 column wrappers have .js-settings-card');
+echo "PASS\n";
+
+// --- TEST 9: data-search-text attributes present ---
+
+echo "= TEST 9: data-search-text attributes present =\n";
+
+assert_true(str_contains($html1, 'data-search-text="'), 'data-search-text attribute present');
+assert_true(substr_count($html1, 'data-search-text="') >= 5, 'At least 5 cards have data-search-text');
+echo "PASS\n";
+
+// --- TEST 10: Search uses toLowerCase ---
+
+echo "= TEST 10: Search uses toLowerCase for case-insensitive matching =\n";
+
+assert_true(str_contains($html1, '.toLowerCase()'), 'search uses toLowerCase for case-insensitive matching');
+assert_true(str_contains($html1, 'toLowerCase().trim()') || str_contains($html1, 'toLowerCase()\n') || str_contains($html1, '.toLowerCase();') || str_contains($html1, 'indexOf(q)'), 'search compares query with toLowerCase');
+echo "PASS\n";
+
+// --- TEST 11: Search toggles d-none on wrapper ---
+
+echo "= TEST 11: Search toggles d-none on wrapper, not just body =\n";
+
+assert_true(str_contains($html1, 'd-none'), 'd-none class used for hiding');
+assert_true(str_contains($html1, 'classList.toggle("d-none"') || str_contains($html1, "classList.toggle('d-none'"), 'JS toggles d-none class');
+assert_true(str_contains($html1, 'cardWrappers') || str_contains($html1, 'querySelectorAll'), 'search targets wrapper elements');
+echo "PASS\n";
+
+// --- TEST 12: Card headers are clickable ---
+
+echo "= TEST 12: Card headers are clickable collapsible triggers =\n";
+
 assert_true(str_contains($html1, 'role="button"'), 'card header has role=button');
 assert_true(str_contains($html1, 'tabindex="0"'), 'card header is keyboard-focusable (tabindex=0)');
 echo "PASS\n";
 
-// --- TEST 8: Settings state reflected correctly ---
+// --- TEST 13: Settings state reflected correctly ---
 
-echo "= TEST 8: Settings state reflected =\n";
+echo "= TEST 13: Settings state reflected =\n";
 
 assert_true(str_contains($html1, 'Test App'), 'app_name reflected in view');
 assert_true(str_contains($html1, 'dev content'), 'Developer section renders');
 echo "PASS\n";
 
-// --- TEST 9: Plugin sections exclude developer ---
+// --- TEST 14: Plugin sections exclude developer ---
 
-echo "= TEST 9: Plugin sections skip developer =\n";
+echo "= TEST 14: Plugin sections skip developer =\n";
 
-$sections9 = [
+$sections14 = [
     make_section('developer', 'Developer Settings', '<p>dev</p>'),
     make_section('smtp', 'SMTP Settings', '<p>smtp</p>'),
     make_section('mailer', 'Mailer Settings', '<p>mailer</p>'),
 ];
 
-$html9 = render_settings_view([], $sections9);
+$html14 = render_settings_view([], $sections14);
 
-$dev_count9 = substr_count($html9, 'Developer Settings');
-assert_equal(1, $dev_count9, 'Only one Developer heading with multiple sections');
+$dev_count14 = substr_count($html14, 'Developer Settings');
+assert_equal(1, $dev_count14, 'Only one Developer heading with multiple sections');
 echo "PASS\n";
 
-// --- TEST 10: No developer section → graceful fallback ---
+// --- TEST 15: No developer section → graceful fallback ---
 
-echo "= TEST 10: No developer section → no error =\n";
+echo "= TEST 15: No developer section → no error =\n";
 
-$sections10 = [
+$sections15 = [
     make_section('smtp', 'SMTP Settings', '<p>smtp</p>'),
 ];
 
-$html10 = @render_settings_view([], $sections10);
-assert_true(!str_contains($html10, 'PHP Fatal'), 'No fatal error when no developer section');
-assert_true(str_contains($html10, 'SMTP Settings'), 'Other sections still render');
+$html15 = @render_settings_view([], $sections15);
+assert_true(!str_contains($html15, 'PHP Fatal'), 'No fatal error when no developer section');
+assert_true(str_contains($html15, 'SMTP Settings'), 'Other sections still render');
 echo "PASS\n";
 
-// --- TEST 11: Empty sections → no error ---
+// --- TEST 16: Empty sections → no error ---
 
-echo "= TEST 11: Empty sections list → no error =\n";
+echo "= TEST 16: Empty sections list → no error =\n";
 
-$html11 = @render_settings_view([], []);
-assert_true(str_contains($html11, 'Mailer'), 'Mailer section still renders with no plugins');
-assert_true(str_contains($html11, 'Notifications'), 'Notifications section still renders');
+$html16 = @render_settings_view([], []);
+assert_true(str_contains($html16, 'Mailer'), 'Mailer section still renders with no plugins');
+assert_true(str_contains($html16, 'Notifications'), 'Notifications section still renders');
 echo "PASS\n";
 
-// --- TEST 12: Collapse chevrons present ---
+// --- TEST 17: Chevron icons present ---
 
-echo "= TEST 12: Chevron icons present for expand/collapse =\n";
+echo "= TEST 17: Chevron icons present for expand/collapse =\n";
 
 assert_true(str_contains($html1, 'bi-chevron-down'), 'chevron-down icons present');
+echo "PASS\n";
+
+// --- TEST 18: Plugin cards (SMTP/Telico) included in searchable wrappers ---
+
+echo "= TEST 18: Plugin cards have js-settings-card and data-search-text =\n";
+
+// A rendered section should have both attributes on its card
+assert_true(str_contains($html14, 'data-search-text="'), 'plugin cards have data-search-text');
+// Count .js-settings-card instances (includes all 6 cards)
+assert_true(substr_count($html14, 'js-settings-card') >= 4, 'Plugin cards also have .js-settings-card');
 echo "PASS\n";
 
 // --- SUMMARY ---

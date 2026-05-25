@@ -28,8 +28,8 @@
 <div class="row g-3">
 
 <!-- Application -->
-<div class="col-12 col-md-6">
-<div class="card mb-4 h-100 w-100" data-section="application">
+<div class="col-12 col-md-6 js-settings-card">
+<div class="card mb-4 h-100 w-100" data-section="application" data-search-text="<?= strtolower(htmlspecialchars('Application Core identity settings for this instance.', ENT_QUOTES)) ?>">
     <div class="card-header d-flex align-items-center justify-content-between py-2"
          role="button"
          data-bs-toggle="collapse"
@@ -38,9 +38,9 @@
          aria-controls="collapse-application"
          tabindex="0">
         <div class="d-flex align-items-center overflow-hidden me-2">
-            <i class="bi bi-gear-wide me-2 fs-5 text-primary text-nowrap"></i>
+            <i class="bi bi-gear-wide me-2 fs-4 text-primary text-nowrap"></i>
             <div class="text-truncate">
-                <div class="fw-semibold small">Application</div>
+                <div class="fw-semibold fs-5 mb-0">Application</div>
                 <div class="text-muted" style="font-size:11px">Core identity settings for this instance.</div>
             </div>
         </div>
@@ -92,8 +92,8 @@
 </div>
 
 <!-- Authentication -->
-<div class="col-12 col-md-6">
-<div class="card mb-4 h-100 w-100" data-section="authentication">
+<div class="col-12 col-md-6 js-settings-card">
+<div class="card mb-4 h-100 w-100" data-section="authentication" data-search-text="<?= strtolower(htmlspecialchars('Authentication Security-related configuration. System-wide 2FA Enforcement Require all users to complete 2FA challenge on login.', ENT_QUOTES)) ?>">
     <div class="card-header d-flex align-items-center justify-content-between py-2"
          role="button"
          data-bs-toggle="collapse"
@@ -102,9 +102,9 @@
          aria-controls="collapse-authentication"
          tabindex="0">
         <div class="d-flex align-items-center overflow-hidden me-2">
-            <i class="bi bi-shield-lock me-2 fs-5 text-primary text-nowrap"></i>
+            <i class="bi bi-shield-lock me-2 fs-4 text-primary text-nowrap"></i>
             <div class="text-truncate">
-                <div class="fw-semibold small">Authentication</div>
+                <div class="fw-semibold fs-5 mb-0">Authentication</div>
                 <div class="text-muted" style="font-size:11px">Security-related configuration.</div>
             </div>
         </div>
@@ -144,12 +144,16 @@
 <!-- Developer (from SettingsRegistry) -->
 <?php
 $__dev_sec__ = null;
+$__dev_label__ = '';
 foreach ($sections as $_sec):
-    if ($_sec->id === 'developer') { $__dev_sec__ = $_sec; break; }
+    if ($_sec->id === 'developer') { $__dev_sec__ = $_sec; $__dev_label__ = $_sec->label; break; }
 endforeach;
-if ($__dev_sec__ !== null): ?>
-<div class="col-12 col-md-6">
-<div class="card mb-4 h-100 w-100" data-section="developer">
+if ($__dev_sec__ !== null):
+$__dev_body__ = $__dev_sec__->renderBody(['errors' => $errors, 'settings' => $settings]);
+$__dev_search__ = strtolower(htmlspecialchars($__dev_label__ . ' ' . strip_tags($__dev_body__), ENT_QUOTES));
+?>
+<div class="col-12 col-md-6 js-settings-card">
+<div class="card mb-4 h-100 w-100" data-section="developer" data-search-text="<?= $__dev_search__ ?>">
     <div class="card-header d-flex align-items-center justify-content-between py-2"
          role="button"
          data-bs-toggle="collapse"
@@ -158,9 +162,9 @@ if ($__dev_sec__ !== null): ?>
          aria-controls="collapse-developer"
          tabindex="0">
         <div class="d-flex align-items-center overflow-hidden me-2">
-            <i class="bi bi-terminal me-2 fs-5 text-primary text-nowrap"></i>
+            <i class="bi bi-terminal me-2 fs-4 text-primary text-nowrap"></i>
             <div class="text-truncate">
-                <div class="fw-semibold small">Developer Settings</div>
+                <div class="fw-semibold fs-5 mb-0"><?= htmlspecialchars($__dev_label__) ?></div>
                 <div class="text-muted" style="font-size:11px">Development and debugging features.</div>
             </div>
         </div>
@@ -168,21 +172,22 @@ if ($__dev_sec__ !== null): ?>
     </div>
     <div class="collapse" id="collapse-developer">
     <div class="card-body">
-        <?= $__dev_sec__->renderBody(['errors' => $errors, 'settings' => $settings]) ?>
+        <?= $__dev_body__ ?>
     </div>
     </div>
 </div>
 </div>
-<?php endif; unset($__dev_sec__); ?>
+<?php endif; unset($__dev_sec__, $__dev_label__, $__dev_body__, $__dev_search__); ?>
 
 <!-- Plugin sections (exclude developer — already rendered above) -->
 <?php foreach ($sections as $section):
     if ($section->id === 'developer') continue;
     $safe_id = preg_replace('/[^a-z0-9_-]/', '_', $section->id);
-    $search_text = htmlspecialchars($section->label) . ' ' . $section->label;
+    $section_body = $section->renderBody(['errors' => $errors, 'settings' => $settings]);
+    $section_search = strtolower(htmlspecialchars($section->label . ' ' . strip_tags($section_body), ENT_QUOTES));
 ?>
-<div class="col-12 col-md-6">
-<div class="card mb-4 h-100 w-100" data-section="<?= $safe_id ?>">
+<div class="col-12 col-md-6 js-settings-card">
+<div class="card mb-4 h-100 w-100" data-section="<?= $safe_id ?>" data-search-text="<?= htmlspecialchars($section_search, ENT_QUOTES) ?>">
     <div class="card-header d-flex align-items-center justify-content-between py-2"
          role="button"
          data-bs-toggle="collapse"
@@ -191,16 +196,16 @@ if ($__dev_sec__ !== null): ?>
          aria-controls="collapse-<?= $safe_id ?>"
          tabindex="0">
         <div class="d-flex align-items-center overflow-hidden me-2">
-            <i class="bi bi-puzzle me-2 fs-5 text-primary text-nowrap"></i>
+            <i class="bi bi-puzzle me-2 fs-4 text-primary text-nowrap"></i>
             <div class="text-truncate">
-                <div class="fw-semibold small"><?= htmlspecialchars($section->label) ?></div>
+                <div class="fw-semibold fs-5 mb-0"><?= htmlspecialchars($section->label) ?></div>
             </div>
         </div>
         <i class="bi bi-chevron-down text-muted text-nowrap"></i>
     </div>
     <div class="collapse" id="collapse-<?= $safe_id ?>">
     <div class="card-body">
-        <?= $section->renderBody(['errors' => $errors, 'settings' => $settings]) ?>
+        <?= $section_body ?>
     </div>
     </div>
 </div>
@@ -208,8 +213,8 @@ if ($__dev_sec__ !== null): ?>
 <?php endforeach; ?>
 
 <!-- Mailer -->
-<div class="col-12 col-md-6">
-<div class="card mb-4 h-100 w-100" data-section="mailer">
+<div class="col-12 col-md-6 js-settings-card">
+<div class="card mb-4 h-100 w-100" data-section="mailer" data-search-text="<?= strtolower(htmlspecialchars('Mailer Mail delivery uses PHP mail function by default. Install the SMTP plugin to configure alternative delivery.', ENT_QUOTES)) ?>">
     <div class="card-header d-flex align-items-center justify-content-between py-2"
          role="button"
          data-bs-toggle="collapse"
@@ -218,9 +223,9 @@ if ($__dev_sec__ !== null): ?>
          aria-controls="collapse-mailer"
          tabindex="0">
         <div class="d-flex align-items-center overflow-hidden me-2">
-            <i class="bi bi-envelope me-2 fs-5 text-muted text-nowrap"></i>
+            <i class="bi bi-envelope me-2 fs-4 text-muted text-nowrap"></i>
             <div class="text-truncate">
-                <div class="fw-semibold small text-muted">Mailer</div>
+                <div class="fw-semibold fs-5 mb-0 text-muted">Mailer</div>
                 <div class="text-muted" style="font-size:11px">Mail delivery configuration.</div>
             </div>
         </div>
@@ -238,8 +243,8 @@ if ($__dev_sec__ !== null): ?>
 </div>
 
 <!-- Notifications placeholder -->
-<div class="col-12 col-md-6">
-<div class="card mb-4 h-100 w-100" data-section="notifications">
+<div class="col-12 col-md-6 js-settings-card">
+<div class="card mb-4 h-100 w-100" data-section="notifications" data-search-text="<?= strtolower(htmlspecialchars('Notifications The notification system is not yet implemented. This section will be populated by notification plugins.', ENT_QUOTES)) ?>">
     <div class="card-header d-flex align-items-center justify-content-between py-2"
          role="button"
          data-bs-toggle="collapse"
@@ -248,9 +253,9 @@ if ($__dev_sec__ !== null): ?>
          aria-controls="collapse-notifications"
          tabindex="0">
         <div class="d-flex align-items-center overflow-hidden me-2">
-            <i class="bi bi-bell me-2 fs-5 text-muted text-nowrap"></i>
+            <i class="bi bi-bell me-2 fs-4 text-muted text-nowrap"></i>
             <div class="text-truncate">
-                <div class="fw-semibold small text-muted">Notifications</div>
+                <div class="fw-semibold fs-5 mb-0 text-muted">Notifications</div>
                 <div class="text-muted" style="font-size:11px">Plugin-managed notification settings.</div>
             </div>
         </div>
@@ -355,49 +360,36 @@ if ($__dev_sec__ !== null): ?>
         setTimeout(function() { container.innerHTML = ''; }, 4000);
     }
 
-    // --- Search / filter ---
+    // --- Search / filter (robust) ---
     var searchInput = document.getElementById('settings-search');
-    var clearBtn = document.getElementById('settings-search-clear');
-    var emptyMsg = document.getElementById('settings-search-empty');
+    var clearBtn  = document.getElementById('settings-search-clear');
+    var emptyMsg  = document.getElementById('settings-search-empty');
     if (!searchInput) return;
 
-    var allCards = Array.from(document.querySelectorAll('.row.g-3 > .col-12'));
-    var allCardsNoWrap = Array.from(document.querySelectorAll('[data-section]'));
+    var cardWrappers = Array.from(document.querySelectorAll('.js-settings-card'));
 
-    searchInput.addEventListener('input', function() {
-        var q = this.value.toLowerCase().trim();
+    function applyFilter() {
+        var q = searchInput.value.toLowerCase().trim();
         clearBtn.style.display = q.length > 0 ? '' : 'none';
 
         var visibleCount = 0;
-        var cards = allCardsNoWrap.length > 0 ? allCardsNoWrap : allCards;
-        for (var i = 0; i < cards.length; i++) {
-            var card = cards[i];
-            var section = (card.getAttribute('data-section') || '').toLowerCase();
-            var searchText = (card.textContent || card.innerText || '').toLowerCase();
-            var match = !q || searchText.indexOf(q) !== -1 || section.indexOf(q) !== -1;
-            card.closest('.col-12, [data-section]')
-                ? (match ? card.closest('.col-12, .col-md-6').style.display = '' : card.closest('.col-12, .col-md-6').style.display = 'none')
-                : (match ? card.style.display = '' : card.style.display = 'none');
-            // Actually filter the column wrapper
-            var col = card.closest('.col-12');
-            if (col) {
-                var innerText = (col.textContent || col.innerText || '').toLowerCase();
-                var sectionAttr = (card.getAttribute('data-section') || '').toLowerCase();
-                var m = !q || innerText.indexOf(q) !== -1 || sectionAttr.indexOf(q) !== -1;
-                col.style.display = m ? '' : 'none';
-                if (m) visibleCount++;
-            } else {
-                // fallback: just hide/show card directly
-                card.style.display = (!q || (card.textContent || '').toLowerCase().indexOf(q) !== -1) ? '' : 'none';
-                if (!q || (card.textContent || '').toLowerCase().indexOf(q) !== -1) visibleCount++;
-            }
+        for (var i = 0; i < cardWrappers.length; i++) {
+            var wrapper = cardWrappers[i];
+            var card    = wrapper.querySelector('.card');
+            if (!card) continue;
+            var searchText = (card.getAttribute('data-search-text') || '').toLowerCase();
+            var match = !q || searchText.indexOf(q) !== -1;
+            wrapper.classList.toggle('d-none', !match);
+            if (match) visibleCount++;
         }
-        emptyMsg.style.display = visibleCount === 0 && q.length > 0 ? '' : 'none';
-    });
+        emptyMsg.style.display = (visibleCount === 0 && q.length > 0) ? '' : 'none';
+    }
+
+    searchInput.addEventListener('input', applyFilter);
 
     clearBtn.addEventListener('click', function() {
         searchInput.value = '';
-        searchInput.dispatchEvent(new Event('input'));
+        applyFilter();
         searchInput.focus();
     });
 })();
