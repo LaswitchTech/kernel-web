@@ -998,9 +998,11 @@ class AuthController extends Controller
 
         $result = $twoFactor->enable($user['id']);
 
+        // Return raw codes as strings for frontend rendering (codes are one-time use).
+        $rawCodes = array_map(function ($c) { return $c['code']; }, $result['recoveryCodes']);
         $this->json([
             'enabled'       => true,
-            'recoveryCodes' => $result['recoveryCodes'],
+            'recoveryCodes' => $rawCodes,
         ]);
     }
 

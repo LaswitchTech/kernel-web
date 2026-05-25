@@ -11,6 +11,14 @@ $ctx = $ctx ?? [];
 
 <div id="pm-2fa-status" class="d-none"></div>
 
+<!-- Success alert for disable flow (shown temporarily before re-rendering setup) -->
+<div id="pm-2fa-success" class="d-none">
+    <div class="alert alert-success alert-dismissible fade show small mb-3" role="alert">
+        <i class="bi bi-check-circle me-1"></i><span id="pm-2fa-success-msg"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+</div>
+
 <div id="pm-2fa-setup" class="card border-warning d-none">
     <div class="card-header fw-semibold d-flex align-items-center gap-2">
         <i class="bi bi-shield-lock"></i> Set Up Two-Factor Authentication
@@ -118,6 +126,15 @@ $ctx = $ctx ?? [];
     function showEl() { statusEl.classList.add('d-none'); setupEl.classList.add('d-none'); enabledEl.classList.add('d-none'); disabledEl.classList.add('d-none'); var el = arguments[0]; if (el) el.classList.remove('d-none'); }
     function showErr(msg) { errorEl.style.display = ''; errorEl.textContent = msg; }
     function clearErr() { errorEl.style.display = ''; errorEl.textContent = ''; }
+
+    // Success alert helpers
+    var successEl   = document.getElementById('pm-2fa-success');
+    var successMsg  = document.getElementById('pm-2fa-success-msg');
+    function showSuccess(msg) {
+        if (!successEl || !successMsg) return;
+        successMsg.textContent = msg;
+        successEl.classList.remove('d-none');
+    }
 
     // Generate (or retrieve) a unique setup_id for this QR code session.
     // Persisted in sessionStorage so it survives tab activations within the same session.
@@ -280,8 +297,9 @@ $ctx = $ctx ?? [];
         .then(function (r) { return r.json(); })
         .then(function (data) {
             if (data.enabled) {
-                enabledEl.classList.remove('d-none');
-                setupEl.classList.add('d-none');
+                // Hide the success alert and show the enabled card with recovery codes.
+                if (successEl) successEl.classList.add('d-none');
+                showEl(enabledEl);
                 renderRecoveryCodes(data.recoveryCodes || []);
             } else {
                 showErr(data.error || 'Invalid code.');
@@ -338,9 +356,9 @@ $ctx = $ctx ?? [];
             .then(function (r) { return r.json(); })
             .then(function (data) {
                 if (data.enabled === false || data.success) {
-                    enabledEl.classList.add('d-none');
-                    disabledEl.classList.remove('d-none');
                     disableEl.classList.add('d-none');
+                    showSuccess('Two-factor authentication has been disabled.');
+                    setTimeout(function () { loadStatus(); }, 2500);
                 } else {
                     disableErr.style.display = ''; disableErr.textContent = data.error || 'Failed.';
                 }
@@ -362,9 +380,9 @@ $ctx = $ctx ?? [];
         .then(function (r) { return r.json(); })
         .then(function (data) {
             if (data.enabled === false || data.success) {
-                enabledEl.classList.add('d-none');
-                disabledEl.classList.remove('d-none');
                 disableEl.classList.add('d-none');
+                showSuccess('Two-factor authentication has been disabled.');
+                setTimeout(function () { loadStatus(); }, 2500);
             } else {
                 disableErr.style.display = ''; disableErr.textContent = data.error || 'Failed.';
             }
