@@ -1736,8 +1736,13 @@ Implemented: `admin_audit_log` table with append-only rows, `DebugAuditLogger` s
 ### Configuration pipeline
 Implemented: `config/app.php` (env-driven) → `config/local.php` (array_replace_recursive) → `.env` → hardcoded defaults. Flat and nested config supported. Debug flags are file-backed, not database-driven. **Not frozen**: config resolution order and key format may change.
 
+### Admin-editable config
+Implemented: `/admin/settings` writes core config keys (app.name, app.url, developer.*) and 2FA enforcement to `config/local.php` via `ConfigOverrideService`. AJAX toggle at `POST /admin/settings/toggle`. Plugin sections still use SystemSettingService (deferred to later Phase 2b migration). **Not frozen**: migration path for plugin sections not yet implemented.
+
 ### Config override system
-Implemented: `ConfigOverrideService` (`app/Services/ConfigOverrideService.php`) writes admin-driven settings to `config/local.php` using dot-notation keys (e.g. `auth.two_factor.enforced`). All UI-driven overrides MUST write here — never to the database, never to `.env`, never to base config files. Atomic write via temp file + rename. **Not frozen**: write format may change.
+Implemented: `ConfigOverrideService` (`app/Services/ConfigOverrideService.php`) writes admin-driven settings to `config/local.php` using dot-notation keys (e.g. `auth.two_factor.enforced`). All UI-driven overrides MUST write here — never to the database, never to `.env`, never to base config files. Atomic write via temp file + rename.
+
+**Admin UI** (`/admin/settings`): Core config keys (app.name, app.url, developer.*), 2FA enforcement toggle (`auth.two_factor.enforced` via AJAX POST `/admin/settings/toggle`), and plugin sections (still via SystemSettingService — deferred migration). Card-based layout with icons, consistent spacing, and AJAX toggle feedback. **Not frozen**: write format may change.
 
 ### Configuration vs. Runtime State
 

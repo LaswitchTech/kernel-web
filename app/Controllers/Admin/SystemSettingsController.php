@@ -6,6 +6,7 @@ use App\Core\Controller;
 use App\Core\SettingsRegistry;
 use App\Models\AuditLogRepository;
 use App\Models\SystemSettingRepository;
+use App\Services\ConfigOverrideService;
 use App\Services\SystemSettingService;
 
 /**
@@ -41,19 +42,28 @@ class SystemSettingsController extends Controller
     {
         [$viewsPath, $appName, $displayName, $permissions] = $this->ctx();
 
-        $service = $this->service();
-        $config   = $this->container->get('config');
+        $config    = $this->container->get('config');
+        $override  = new ConfigOverrideService();
+        $local     = $override->readLocal();
 
         // Register developer section so toggle renders in /admin/settings.
         $this->registerDeveloperSection();
 
         $settings = [
-            'app_name'                 => $service->getString('app.name'),
-            'app_url'                  => $service->getString('app.url'),
-            'developer.developer'      => $service->getBool('developer.developer', false),
-            'developer.debug'          => $service->getBool('developer.debug', false),
-            'developer.dev_console'    => $service->getBool('developer.dev_console', false),
+            'app_name'                 => ($config['app']['name'] ?? 'Kernel-Web') !== ''
+                                          ? (string) $config['app']['name']
+                                          : 'Kernel-Web',
+            'app_url'                  => ($config['app']['url'] ?? '') !== ''
+                                          ? (string) $config['app']['url']
+                                          : 'http://localhost',
+            'developer.developer'      => ($local['developer']['developer'] ?? false) === true
+                                          || ($config['developer']['developer'] ?? false) === true,
+            'developer.debug'          => ($local['developer']['debug'] ?? false) === true
+                                          || ($config['developer']['debug'] ?? false) === true,
+            'developer.dev_console'    => ($local['developer']['dev_console'] ?? false) === true
+                                          || ($config['developer']['dev_console'] ?? false) === true,
             'auth.two_factor.enforced' => ($config['auth']['two_factor']['enforced'] ?? false) === true,
+            'flash'                      => $this->popFlash(),
         ];
 
         $sections = SettingsRegistry::getSections($permissions);
@@ -61,7 +71,6 @@ class SystemSettingsController extends Controller
         $pageTitle     = 'Settings';
         $activeSection = '/admin/settings';
         $errors        = [];
-        $flash         = $this->popFlash();
 
         $breadcrumbs = [
             ['label' => 'Administration', 'url' => '/admin'],
@@ -83,7 +92,7 @@ class SystemSettingsController extends Controller
     {
         [$viewsPath, $appName, $displayName, $permissions] = $this->ctx();
 
-        $service = $this->service();
+        $override = new ConfigOverrideService();
 
         $input = [
             'app.name' => trim($_POST['app_name'] ?? ''),
@@ -163,18 +172,16 @@ class SystemSettingsController extends Controller
             return;
         }
 
-        // Persist core
-        $service->set('app.name', $input['app.name']);
-        $service->set('app.url',  rtrim($input['app.url'], '/'));
+        // Persist core config to config/local.php (not DB).
+        $override->set('app.name', $input['app.name']);
+        $override->set('app.url', rtrim($input['app.url'], '/'));
 
-        // Persist developer section if registered.
-        if (isset($developerInput['developer.developer']) || isset($developerInput['developer.debug']) || isset($developerInput['developer.dev_console'])) {
-            if (SettingsRegistry::getSection('developer') !== null) {
-                SettingsRegistry::saveSection('developer', $developerInput, $service);
-            }
+        // Persist developer section to config/local.php.
+        if (!empty($developerInput)) {
+            $override->setBatch($developerInput);
         }
 
-        // Persist plugin sections
+        // Persist plugin sections (still via SystemSettingService — deferred migration).
         foreach ($pluginSections as $section) {
             $keys = SettingsRegistry::getSectionKeys($section->id);
             if (empty($keys)) {
@@ -186,7 +193,7 @@ class SystemSettingsController extends Controller
                     $sectionInput[$key] = $input[$key];
                 }
             }
-            SettingsRegistry::saveSection($section->id, $sectionInput, $service);
+            SettingsRegistry::saveSection($section->id, $sectionInput, $this->pluginService());
         }
 
         $actorId = (int) ($this->container->get('principal')['user']['id'] ?? 0);
@@ -282,6 +289,73 @@ class SystemSettingsController extends Controller
     private function flash(string $type, string $message): void
     {
         $_SESSION['admin_flash'] = ['type' => $type, 'message' => $message];
+    }
+
+    /**
+     * Instantiate SystemSettingService for plugin sections (deferred migration).
+     */
+    private function pluginService(): SystemSettingService
+    {
+        return new SystemSettingService(
+            new SystemSettingRepository($this->container->get('db'))
+        );
+    }
+
+    /**
+     * AJAX endpoint for toggling auth.two_factor.enforced.
+     *
+     * POST /admin/settings/toggle
+     * Body: { key: 'auth.two_factor.enforced', value: true|false }
+     * Returns: { ok: bool, message: string, error?: string }
+     */
+    public function toggle2faEnforcement(array $params = []): void
+    {
+        $payload = json_decode(file_get_contents('php://input'), true);
+
+        if (!$payload || !isset($payload['key'], $payload['value'])) {
+            $this->jsonResponse(400, [
+                'ok'    => false,
+                'error' => 'Missing key or value.',
+            ]);
+        }
+
+        $key   = $payload['key'];
+        $value = $payload['value'];
+
+        // Only allow known config keys.
+        $allowedKeys = ['auth.two_factor.enforced'];
+        if (!in_array($key, $allowedKeys, true)) {
+            $this->jsonResponse(400, [
+                'ok'    => false,
+                'error' => "Unknown config key: {$key}",
+            ]);
+        }
+
+        $normalized = ConfigOverrideService::normalizeFormValue($value);
+
+        $override = new ConfigOverrideService();
+        if (!$override->set($key, $normalized)) {
+            $this->jsonResponse(500, [
+                'ok'    => false,
+                'error' => 'Failed to write config/local.php.',
+            ]);
+        }
+
+        $this->jsonResponse(200, [
+            'ok'     => true,
+            'message' => "Config '{$key}' saved.",
+        ]);
+    }
+
+    /**
+     * Send a JSON response and exit.
+     */
+    private function jsonResponse(int $code, array $data): void
+    {
+        http_response_code($code);
+        header('Content-Type: application/json');
+        echo json_encode($data);
+        exit;
     }
 
     /**

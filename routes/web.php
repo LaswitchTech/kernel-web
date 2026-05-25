@@ -38,6 +38,7 @@ $router->get('/admin', 'Controllers\Admin\AdminController@index', ['WebAuth', 'W
 $router->get('/admin/audit', 'Controllers\Admin\AdminController@audit', ['WebAuth', 'WebPermission:admin']);
 $router->get('/admin/settings', 'Controllers\Admin\SystemSettingsController@show', ['WebAuth', 'WebPermission:admin']);
 $router->post('/admin/settings', 'Controllers\Admin\SystemSettingsController@update', ['WebAuth', 'WebPermission:admin']);
+$router->post('/admin/settings/toggle', 'Controllers\Admin\SystemSettingsController@toggle2faEnforcement', ['WebAuth', 'WebPermission:admin']);
 
 // Admin Organizations
 $router->get('/admin/organizations', 'Controllers\Admin\OrganizationsController@index', ['WebAuth', 'WebPermission:admin']);
