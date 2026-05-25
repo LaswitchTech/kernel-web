@@ -56,7 +56,8 @@ Core infrastructure improvements that unlock future feature work.
 - [x] Auth features: remember me (selector/validator tokens, rotation, auto-login) — design at docs/developer/auth-features.md
 - [x] Auth features: forgot password (selector/validator tokens, single-use, 60-minute expiry, email delivery) — design at docs/developer/auth-features.md
 - [x] Auth features: email verification (selector/validator tokens, single-use, 24-hour expiry, soft gate, email delivery) — design at docs/developer/auth-features.md
-- [x] Auth features: 2FA (TOTP RFC 6238, 160-bit secrets, 10 recovery codes, pending 2FA session state, Profile Modal integration)
+- [x] Auth features: 2FA (TOTP RFC 6238, 160-bit secrets, pending 2FA session state, Profile Modal integration)
+- [ ] Auth features: 2FA recovery code format — change from 10 hex codes to ONE UUID-formatted recovery code per user; update generation, display, and validation.
 - [x] Settings plugin hooks (extend system settings via registry) — implemented: SettingsRegistry, SettingsSection, controller integration, view loop
 - [x] CRUD test coverage (users, groups, permissions, tokens)
 - [P3] Remote catalog sync (periodic fetch of extension listings from a remote server)
@@ -91,13 +92,16 @@ The global view context was the root cause of bugs across the app. This has been
 - [x] **Add audit log type filtering** — `?type=all|debug|audit` query param on /admin/audit; button-group filter UI
 - [x] **Add repository disclaimer** — Development status added to README.md, CLAUDE.md, DESIGN.md
 - [x] **Add recovery codes for TOTP** — 10 recovery codes generated, toggle UI in /auth/2fa and Profile Modal
-- [x] **Add global 2FA enable/disable and enforce settings** — File-backed config key `auth.two_factor.enforced`, middleware enforcement in SessionAuth, read-only status in /admin/settings, 10 assertions
+- [x] **Add global 2FA enable/disable and enforce settings** — File-backed config key `auth.two_factor.enforced`, middleware enforcement in SessionAuth, 10 assertions
+- [ ] **Add admin toggle for 2FA enforcement** — /admin/settings currently shows a read-only badge for 2FA enforcement. Must add an editable toggle that writes `auth.two_factor.enforced` to config/local.php via ConfigOverrideService. P1 — missing admin control for an already-implemented enforcement feature.
+- [P2] **Reformat /admin/settings UX** — Current layout is a flat list of cards. /admin/developer shows a better pattern: card-based sections with clear titles, descriptions, and action groups. Settings must be grouped (Application, Developer, Auth, Plugins) with consistent card styling, form labels, and form-text explanations. Important: the config/local.php editing task depends on this being restructured.
 - [P3] **Make 2FA methods extensible** — TOTP (current); SMS/Email would need a plugin interface
 - [P3] **Disable 2FA for users with no selected method** — Defensive guard
 - [P4] **Add optional 2FA setup prompt after login** — 30-day skip logic in user preferences
 - [P4] **Preserve last opened profile modal tab** — sessionStorage persistence; currently always refreshes all tabs
 - [P3] **Fix card-header border-radius to match card radius** — CSS consistency
 - [x] **Design universal config-saving system** — ConfigOverrideService writes to config/local.php via dot-notation keys, atomic file writes, boolean/string normalization, 41 assertions
+- [P1] **Integrate ConfigOverrideService into /admin/settings** — ConfigOverrideService exists but /admin/settings still writes to DB via SystemSettingService. All config-local.php-backed keys (app.name, app.url, developer.*, smtp.*, telico.*, auth.*) must be editable from the admin UI and write to config/local.php. Unlocks the admin toggle for 2FA enforcement.
 - [P2] **Migrate remaining DB-backed config to ConfigOverrideService** — Audit at docs/developer/config-override-audit.md. Migrate: app.name, app.url, developer.*, smtp.* non-sensitive, telico.* non-sensitive from system_settings DB to config/local.php. Sensitive creds → encrypted storage. Remove SystemSettingService.write() path. Update SettingsRegistry to accept ConfigOverrideService or interface.
 - [P3] **Send real test email** — Test email button exists in SMTP settings but verify it actually sends
 - [P3] **Move SMTP settings into Mailer settings** — Selectable mailer provider (mail(), SMTP), provider-based settings

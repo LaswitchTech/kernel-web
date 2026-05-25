@@ -408,7 +408,7 @@ Add a second authentication factor to login. **TOTP (RFC 6238)** — compatible 
 
 - **TOTP only** — no SMS support. SMS requires a carrier, costs money, and is insecure (SIM swapping).
 - **Per-user** — users enable/disable 2FA independently. Disabled by default.
-- **Recovery codes** — 10 one-time-use backup codes generated when 2FA is enabled. Stored as SHA-256 hashes.
+- **Recovery codes** — ONE UUID-formatted (8-4-4-4-12) one-time-use backup code generated when 2FA is enabled. Stored as SHA-256 hash. Replaces the previous 10 hex-code format.
 - **Login flow**:
   1. User enters credentials → validated by `LocalAuthProvider`
   2. If user has 2FA enabled, prompt for TOTP code
@@ -471,7 +471,7 @@ CREATE INDEX auth_2fa_recovery_codes_user_id ON auth_2fa_recovery_codes (user_id
 
 - TOTP secret generated with `random_bytes(20)` → base32 (40 chars) — 160-bit entropy
 - TOTP window: ±1 step (30s × 3 = 90s total window)
-- Recovery codes: `random_bytes(5)` → hex (10 chars), hashed with SHA-256
+- Recovery codes: UUID (8-4-4-4-12 hex format, generated once per 2FA session), hashed with SHA-256
 - Recovery codes are one-time use — single-use flag
 - All recovery codes revoked when 2FA is disabled
 - TOTP secret never displayed after initial generation (except as QR code)
@@ -682,7 +682,7 @@ All auth tokens follow the same pattern:
 | `totp_code_verify_wrong` | Wrong code rejected |
 | `totp_code_verify_window` | Code within ±1 step accepted |
 | `totp_code_verify_expired` | Code outside window rejected |
-| `recovery_codes_generate` | 10 unique codes, hashed |
+| `recovery_codes_generate` | ONE UUID-formatted code, hashed |
 | `recovery_code_consume` | Single-use, revoked after use |
 | `recovery_code_wrong` | Wrong code rejected |
 | `totp_disable_revokes` | Disabling 2FA revokes secret and codes |
@@ -790,7 +790,7 @@ All auth tokens follow the same pattern:
 | AF-5 | Should admin be able to bypass 2FA for a user? | **Yes, reset only** — admin can revoke user's TOTP secret + recovery codes. Admin cannot "temporarily bypass" 2FA. |
 | AF-6 | Should the reset password link include the email as a parameter? | **Yes, for UX** — the token is the source of truth, email is displayed to confirm the target account. Token validated server-side. |
 | AF-7 | Should TOTP codes be 6-digit or 8-digit? | **6-digit** — standard for Google Authenticator, Authy, and all major TOTP apps. |
-| AF-8 | Should recovery codes be displayed as a downloadable file or inline? | **Both** — show inline in a code block AND provide a download button. Once dismissed, cannot be re-displayed. |
+| AF-8 | Should recovery codes be displayed as a downloadable file or inline? | **Inline UUID display** — ONE UUID-formatted recovery code shown in the Profile Modal. No download needed since it's a single code that must be copied manually. **Status:** Replaced by implementation task (single UUID code). |
 
 ---
 
