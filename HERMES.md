@@ -1,319 +1,233 @@
-# Kernel-Web - Claude Instructions
+# Kernel-Web — Project Rules for Hermes Agent
 
-## Purpose
+This file defines the rules, workflows, and architectural discipline for working in the Kernel-Web repository.
 
-This file defines **how Claude must work** in this repository.
+## 1. Required Startup Workflow
 
-It is intentionally focused on:
-- behavior
-- workflow
-- discipline
-- documentation habits
-- safety rules
-- git habits
-- coding expectations
+Before making any changes, follow this order:
 
-Architecture, structure, system design, plugin design, theme design, layout design, OAuth design, and licensing design belong in:
+1. Read `DESIGN.md` — source of truth for architecture and design decisions
+2. Read `ROADMAP.md` — current priorities and task sequencing
+3. Inspect the relevant `docs/` directory for implementation details
+4. Inspect existing code that will be touched to understand current behavior
 
-```text
-DESIGN.md
-```
+If a task is unclear, ask the user before proceeding. Never assume missing information.
 
-Claude must treat `DESIGN.md` as the source of truth for architectural direction.
+## 2. Implementation Workflow
 
----
+### Pre-Change Plan
 
-## Project Context
+Before coding, present a concise plan covering:
 
-Kernel-Web is a reusable PHP application kernel designed to support multiple applications through a modular system of core services, plugins, themes, layouts, and future licensing/authentication extensions.
+- What will be changed and why
+- Which files will be touched (specific paths)
+- Any risks or assumptions
+- Whether the task aligns with current `ROADMAP.md` priorities
 
-Repository:
-- Remote: `https://github.com/LaswitchTech/kernel-web/tree/dev`
-- Local development URL: `https://kernel-web.local/`
+Keep plans brief but specific. Do not begin coding without presenting the plan first.
 
-Stack summary:
-- PHP 8.1+ backend (CI: PHP 8.2), no heavy framework
-- JavaScript frontend
-- Bootstrap 5 and Bootstrap Icons
-- LESS for styling and theming
-- SQLite by default, future MySQL/MariaDB support
+### Implementation Rules
 
-For detailed design rules, directory structure, plugin architecture, theme architecture, layout architecture, authentication direction, OAuth goals, licensing goals, and security model, read `DESIGN.md` first.
-
----
-
-## Golden Rule
-
-Before making architectural, structural, or system-level changes:
-
-1. Read `DESIGN.md`
-2. Follow its direction
-3. Update it if the design changes
-4. Update `/docs` when implementation details change
-5. Check `ROADMAP.md` to ensure the task aligns with current priorities
-
-Do not duplicate large design explanations in this file.
-
----
-
-## Work Planning Rules
-
-Before coding, always explain the plan.
-
-The plan must include:
-- what will be changed
-- why it is being changed
-- which files are expected to be touched
-- any risks or assumptions
-- Ensure the task aligns with the current priority level in `ROADMAP.md`
-
-Keep plans concise, but specific.
-
-Do not start coding without first understanding the existing structure.
-
----
-
-## Coding Discipline
-
-When coding:
-
-- Make small, safe changes
+- Make small, incremental changes
 - Never modify unrelated files
-- Prefer readable code over clever code
-- Prefer explicit logic over magic
-- Respect existing architecture before introducing new patterns
-- Keep controllers thin
-- Keep services focused
-- Keep repositories focused on persistence
-- Keep reusable code generic
-- Avoid NetMon-specific assumptions in Kernel-Web core
-- Avoid hardcoding paths that should be configurable
+- Write readable, explicit code over clever or magical code
+- Prefer simpler code that can be expressed as inline logic over extracted helpers
+- Extract a helper only when the same pattern repeats three times
+- Preserve the existing architecture before introducing new patterns
+
+### Post-Change
+
+- Run relevant tests or validation (see Section 7)
+- Update documentation if the change affects behavior
+- Present a summary of changes and any remaining work
+- Do not commit unless explicitly instructed
+
+## 3. Kernel-Web Architectural Rules
+
+### Design Principles
+
+1. **Kernel first** — Core must remain app-agnostic. No domain-specific logic (e.g., NetMon) in core. Everything reusable lives in kernel or plugins.
+2. **Plugin-first** — Prefer plugins over core expansion. If unsure whether something belongs in core or a plugin, put it in a plugin.
+3. **Explicit over magic** — No hidden behaviors. No heavy frameworks. Readable, predictable flows.
+4. **Separation of concerns** — Controllers = orchestration only. Services = business logic. Repositories = persistence. Kernel = infrastructure. Plugins = features.
+5. **Secure by design** — Assume public deployment. Deny access by default. Validate everything server-side.
+
+### Code Structure Expectations
+
+- Keep controllers thin; they orchestrate, not compute
+- Keep services focused on a single responsibility
+- Keep repositories focused solely on data access
+- Keep reusable code generic — no hardcoded, application-specific assumptions
+- Avoid hardcoding paths that should be configuration
 - Avoid hidden side effects
 
----
+### Dependency Rules
 
-## Design Separation Rule
+- Prefer small, well-maintained packages
+- Do not introduce a framework unless explicitly requested
+- Before adding any dependency, explain why it is needed and confirm the problem cannot be solved with existing code
 
-Do not turn `CLAUDE.md` into an architecture document.
+### PHP Conventions
 
-Use this split:
+- Minimum PHP 8.1. Use modern PHP 8.x features: `readonly` value objects, union types, `mixed`, `match` expressions, constructor property promotion, native `str_contains`/`str_starts_with`.
+- No PHP 7.x compatibility. Code that reverts modern PHP syntax for backward compatibility is incorrect.
 
-```text
-CLAUDE.md → HOW to work
-DESIGN.md → WHAT is being built
-ROADMAP.md → WHAT is planned next (priorities and sequencing)
-/docs     → IMPLEMENTED behavior and reference documentation
-```
+## 4. Git and Safety Rules
 
-Examples:
+- Never commit unless explicitly instructed by the user
+- Never modify unrelated files
+- Never rewrite large sections unnecessarily
+- Keep commits focused — do not mix unrelated changes
+- When possible, preserve backward compatibility over breaking changes (unless the roadmap indicates active refactoring is the priority)
 
-- New plugin lifecycle decision → update `DESIGN.md`
-- Implemented plugin loader behavior → update `/docs`
-- Rule that Claude must commit after each run → keep in `CLAUDE.md`
-- Rule that plugins live in `/lib/plugins/{Name}` → keep in `DESIGN.md`
-- New feature prioritization or sequencing → update `ROADMAP.md`
+### Secrets Handling
 
----
+Never commit under any circumstances:
 
-## Documentation Rules
-
-Always update documentation when changes affect:
-- architecture
-- behavior
-- setup
-- deployment
-- security
-- database schema
-- migrations
-- routes
-- APIs
-- plugins
-- themes
-- layouts
-- authentication
-- authorization
-- licensing
-
-Documentation responsibilities:
-
-- `DESIGN.md` documents design intent and architecture decisions
-- `ROADMAP.md` documents priorities, sequencing, and upcoming work
-- `/docs` documents implemented behavior, setup, usage, APIs, and reference material
-- `CLAUDE.md` documents workflow and contribution behavior
-
-Never leave documentation knowingly stale.
-
----
-
-## Git Workflow Rules
-
-At the end of each completed run/task:
-
-1. Review changed files
-2. Run available checks/tests where practical
-3. Ensure docs are updated
-4. Commit the changes
-5. Summarize the commit
-
-Commit rules:
-- Use clear, descriptive commit messages
-- Keep commits focused
-- Do not mix unrelated changes
-- Do not commit secrets
-- Do not commit local-only generated files unless intentionally required
-
-If a task cannot be safely completed or committed, clearly explain why.
-
----
-
-## Safety and Secret Handling
-
-Never commit:
 - `.env` files containing secrets
-- private keys
-- API tokens
-- passwords
-- OAuth client secrets
-- license signing keys
-- production database dumps
-- user-uploaded private data
+- Private keys, API tokens, passwords
+- OAuth client secrets, license signing keys
+- Production database dumps
+- User-uploaded or user-owned private data
 
-Use safe examples instead:
-- `.env.example`
-- sample config files
-- placeholder credentials
-- documented setup instructions
+Use safe examples instead: `.env.example`, sample configs, placeholder credentials, documented setup instructions.
 
-When handling files, uploads, paths, routing, auth, or deployment behavior, assume the app may be exposed to the public internet.
+Assume the app may be exposed to the public internet when handling files, uploads, paths, routing, or auth behavior.
 
----
-
-## Refactoring Rules
-
-When refactoring code from NetMon or any other project into Kernel-Web:
+### Refactoring from Other Projects
 
 - Extract only reusable infrastructure into the kernel
 - Keep domain-specific behavior out of core
 - Convert reusable features into plugins where appropriate
 - Rename classes, namespaces, routes, and docs to generic Kernel-Web concepts
-- Avoid copying dead code
-- Avoid copying assumptions that only apply to NetMon
+- Avoid copying dead code or domain-specific assumptions
 - Keep changes incremental and reviewable
 
-If unsure whether something belongs in core or a plugin, prefer plugin until the core need is clear.
+## 5. Documentation Rules
 
----
+Always update documentation when changes affect:
 
-## Testing and Validation Rules
+- Architecture or system design
+- Behavior, setup, or deployment
+- Security, database schema, or migrations
+- Routes, APIs, plugins, themes, layouts
+- Authentication, authorization, or licensing
 
-After changes, run whatever validation is available and appropriate, such as:
-- PHP syntax checks
-- unit tests if present
-- migration dry-runs if applicable
-- route smoke tests if practical
-- manual browser checks when relevant
+### Documentation Responsibility Split
 
-If no automated checks exist yet, state that clearly in the summary and suggest the next useful validation to add.
+```
+HERMES.md     → Project rules and workflows (this file)
+DESIGN.md     → Architecture and design decisions (source of truth)
+ROADMAP.md    → Priorities, sequencing, and progress
+/docs         → Implemented behavior, setup guides, and reference material
+```
 
-Never claim tests passed unless they were actually run.
+Keep documentation aligned with code. Stale documentation is worse than none.
 
----
+When documenting new services, plugins, or routes:
 
-## Error Handling Expectations
+- Explain its purpose and responsibilities
+- List key public methods or endpoints
+- Note any dependencies on other system components
+- Document any configuration keys, permissions, or hooks involved
+
+### Architectural Changes
+
+Whenever a structural or architectural change is made:
+
+1. Update `DESIGN.md` with the design decision
+2. Update relevant `/docs` files with implementation details
+3. Update `ROADMAP.md` if the change affects priorities or task sequencing
+4. Maintain consistency across all three documents
+
+## 6. Testing Rules
+
+### Validation Expectations
+
+After making changes, run whatever validation is available and appropriate:
+
+- PHP syntax checks (always)
+- Unit tests if present (targeted first, broader after)
+- Migration dry-runs if applicable
+- Route smoke tests if practical
+- Manual browser checks when relevant
+
+### Test Reporting
+
+- Run targeted tests before broader ones
+- Explain what was tested and how
+- Report failures honestly — never claim tests passed if they were not actually run
+- If no automated tests exist for the changed area, state that clearly and suggest the next useful test to add
+
+## 7. Error Handling Expectations
 
 When introducing or modifying code:
-- Fail safely
-- Log useful errors where appropriate
-- Do not expose sensitive details to users
-- Avoid silent failures
-- Keep user-facing errors simple
-- Keep developer-facing logs actionable
 
-## Global View Context Rule
+- Fail safely — the system should degrade gracefully
+- Log useful, actionable errors for developers
+- Never expose sensitive details to users
+- Avoid silent failures — surface errors at the appropriate layer
+- Keep user-facing errors simple and non-technical
+- Keep developer-facing logs specific enough to diagnose the issue
 
-**Never hide missing globals by silently returning from partials.**
+## 8. Global View Context Rule
 
-If a partial encounters a missing global variable (e.g. `$Config`, `$Auth`, `$currentUserDisplayName`), that is a **context pipeline bug** — not a partial bug. The fix belongs at the layout entry point, not in defensive `isset()` checks that silently pass.
+Never hide missing global variables by silently returning from partials. If a partial encounters a missing global (`$Config`, `$Auth`, `$currentUserDisplayName`, etc.), that is a context pipeline bug — not a partial bug. The fix must be at the layout entry point where `ViewGlobals::contextFromScope()` guarantees all globals are available.
 
-See `DESIGN.md` § "Global View Context Design" for the intended architecture. The goal is a single guaranteed context layer at the top of every layout that provides all globals to all views/partials. Never patch around a missing global with fallbacks or silent returns.
+The goal is a single guaranteed context layer at the top of every layout. Never patch around a missing global with fallbacks or silent returns in partial files.
 
----
+## 9. Response Format
 
-## Dependency Rules
+When working on tasks, structure your response as follows:
 
-Kernel-Web should avoid heavy dependencies.
+### Plan
 
-Before adding a dependency:
-- Explain why it is needed
-- Confirm the problem cannot reasonably be solved with existing code
-- Prefer small, well-maintained packages
-- Document the dependency and its purpose
+Concise description of what will be done and why. List affected files. Note risks.
 
-Do not introduce a framework unless explicitly requested.
+### Implementation
 
----
+The actual work — code changes, configurations, structure modifications.
 
-## Style Expectations
+### Tests
 
-Code should be:
-- readable
-- explicit
-- modular
-- documented where needed
-- consistent with existing naming and structure
+What was tested and the results. Be honest about what passed, failed, or was not run.
 
-Documentation should be:
-- clear
-- practical
-- updated alongside code
-- written for future maintainers
+### Documentation
+
+What documentation was updated and what changed.
+
+### Summary
+
+Overview of changes made and any remaining work.
+
+### Next Steps
+
+Recommended follow-up actions, prioritized by impact.
 
 ---
 
-## Run Summary Format
+## Current Project State
 
-At the end of each run, summarize:
+Kernel-Web is a reusable PHP application kernel supporting multiple applications through a modular system of core services, plugins, themes, and layouts.
 
-```text
-Summary
-- What changed
+**Repository**
+- Remote: `https://github.com/LaswitchTech/kernel-web/tree/dev`
+- Local dev: `https://kernel-web.local/`
 
-Files changed
-- path/to/file — short explanation
+**Phase Status**
+- Phase 1 (stabilization): Complete (15/15 tasks)
+- Phase 2 (kernel foundations): Substantially complete
+- Phase 2b (global context and UX): Mostly complete
+- Phase 3 (mid-term): Not yet started
+- Phase 4 (long-term): Deferred
 
-Validation
-- What was run, or why validation was not run
-
-Commit
-- Commit hash/message, or why no commit was made
-
-Risks / Notes
-- Any risks, assumptions, or follow-up items
-```
-
----
-
-## Development Stage
-
-Kernel-Web is actively under development. APIs and internals may change between commits.
-
-When contributing to this repository:
-
-- **Prioritize architectural consistency over backward compatibility.** During this phase, refactoring core behavior is expected. Document changes in `DESIGN.md` and `/docs` rather than preserving legacy patterns.
-- **Avoid premature abstraction.** Write the simplest code that solves the immediate problem. Extract helpers only when a pattern repeats three times in a way that cannot reasonably be expressed as inline logic.
-- **Document breaking changes clearly.** If a change modifies public-facing behavior (routes, config keys, plugin hooks, view contracts, or database schema), update `DESIGN.md`, `ROADMAP.md`, and `/docs` as appropriate.
-- **Keep documentation aligned with code.** Stale documentation is worse than none — keep `DESIGN.md` and `ROADMAP.md` as the source of truth for architecture and priorities.
+**Next recommended tasks (per ROADMAP.md)**
+1. P2: Multi-tenant data scoping (organization-level filtering middleware)
+2. P2: Kernel update system (version check, download, apply workflow)
+3. P2: Migrate remaining DB-backed config to ConfigOverrideService
+4. P3: Make 2FA methods extensible
+5. P3: Add Variables.md documentation
 
 ---
 
-## Current Development Context
-
-The repository has been pulled locally and Apache has been configured for:
-
-```text
-https://kernel-web.local/
-```
-
-The project is currently in the early architecture/skeleton phase.
-
-Before copying existing NetMon code, stabilize the kernel skeleton, documentation, and conventions so future refactoring is intentional instead of a direct copy.
+*End of project rules.*
