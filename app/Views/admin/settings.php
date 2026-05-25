@@ -7,7 +7,10 @@
 
 <form method="POST" action="/admin/settings" novalidate id="settings-form">
 
+<div class="row g-3">
+
 <!-- Application -->
+<div class="col-12 col-md-6">
 <div class="card mb-4">
     <div class="card-body">
         <div class="d-flex align-items-center mb-3">
@@ -21,12 +24,12 @@
                 Application Name <span class="text-danger">*</span>
             </label>
             <input type="text"
-                   id="app-name"
-                   name="app_name"
-                   class="form-control form-control-sm <?= isset($errors['app_name']) ? 'is-invalid' : '' ?>"
-                   value="<?= htmlspecialchars($settings['app_name'] ?? '') ?>"
-                   maxlength="100"
-                   required>
+               id="app-name"
+               name="app_name"
+               class="form-control form-control-sm <?= isset($errors['app_name']) ? 'is-invalid' : '' ?>"
+               value="<?= htmlspecialchars($settings['app_name'] ?? '') ?>"
+               maxlength="100"
+               required>
             <?php if (isset($errors['app_name'])): ?>
                 <div class="invalid-feedback"><?= htmlspecialchars($errors['app_name']) ?></div>
             <?php else: ?>
@@ -39,13 +42,13 @@
                 Application URL <span class="text-danger">*</span>
             </label>
             <input type="url"
-                   id="app-url"
-                   name="app_url"
-                   class="form-control form-control-sm <?= isset($errors['app_url']) ? 'is-invalid' : '' ?>"
-                   value="<?= htmlspecialchars($settings['app_url'] ?? '') ?>"
-                   maxlength="255"
-                   placeholder="https://kernel-web.example.com"
-                   required>
+               id="app-url"
+               name="app_url"
+               class="form-control form-control-sm <?= isset($errors['app_url']) ? 'is-invalid' : '' ?>"
+               value="<?= htmlspecialchars($settings['app_url'] ?? '') ?>"
+               maxlength="255"
+               placeholder="https://kernel-web.example.com"
+               required>
             <?php if (isset($errors['app_url'])): ?>
                 <div class="invalid-feedback"><?= htmlspecialchars($errors['app_url']) ?></div>
             <?php else: ?>
@@ -54,8 +57,10 @@
         </div>
     </div>
 </div>
+</div>
 
 <!-- Authentication -->
+<div class="col-12 col-md-6">
 <div class="card mb-4">
     <div class="card-body">
         <div class="d-flex align-items-center mb-3">
@@ -74,8 +79,8 @@
             <div>
                 <div class="form-check form-switch mb-0">
                     <input class="form-check-input" type="checkbox" role="switch"
-                           id="settings_2fa_enforced"
-                           <?= ($settings['auth.two_factor.enforced'] ?? false) ? 'checked' : '' ?>>
+               id="settings_2fa_enforced"
+ <?= ($settings['auth.two_factor.enforced'] ?? false) ? 'checked' : '' ?>>
                     <label class="form-check-label small" for="settings_2fa_enforced">
                         <?= ($settings['auth.two_factor.enforced'] ?? false) ? 'On' : 'Off' ?>
                     </label>
@@ -88,8 +93,16 @@
         <div id="toggle-2fa-result" class="mt-2"></div>
     </div>
 </div>
+</div>
 
-<!-- Developer -->
+<!-- Developer (rendered from SettingsRegistry — skip in plugin loop) -->
+<?php
+$__developer_section__ = null;
+foreach ($sections as $_sec):
+    if ($_sec->id === 'developer') { $__developer_section__ = $_sec; break; }
+endforeach;
+if ($__developer_section__ !== null): ?>
+<div class="col-12 col-md-6">
 <div class="card mb-4">
     <div class="card-body">
         <div class="d-flex align-items-center mb-3">
@@ -97,56 +110,16 @@
             <h5 class="card-title mb-0">Developer Settings</h5>
         </div>
         <p class="text-muted small mb-3">Development and debugging features.</p>
-
-        <div class="row g-3">
-            <div class="col-md-4">
-                <div class="form-check form-switch">
-                    <input class="form-check-input" type="checkbox" role="switch"
-                           id="settings_developer"
-                           name="developer_developer"
-                           <?= ($settings['developer.developer'] ?? false) ? 'checked' : '' ?>>
-                    <label class="form-check-label small" for="settings_developer">
-                        Developer Mode
-                    </label>
-                </div>
-                <div class="form-text mt-1 mb-0">
-                    Shows developer tools, scaffold generator, and debug-gated features.
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="form-check form-switch">
-                    <input class="form-check-input" type="checkbox" role="switch"
-                           id="settings_debug"
-                           name="developer_debug"
-                           <?= ($settings['developer.debug'] ?? false) ? 'checked' : '' ?>>
-                    <label class="form-check-label small" for="settings_debug">
-                        Debug Mode
-                    </label>
-                </div>
-                <div class="form-text mt-1 mb-0">
-                    Shows error details, stack traces, and debug logging.
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="form-check form-switch">
-                    <input class="form-check-input" type="checkbox" role="switch"
-                           id="settings_dev_console"
-                           name="developer_dev_console"
-                           <?= ($settings['developer.dev_console'] ?? false) ? 'checked' : '' ?>>
-                    <label class="form-check-label small" for="settings_dev_console">
-                        Dev Console
-                    </label>
-                </div>
-                <div class="form-text mt-1 mb-0">
-                    Shows the floating developer console button and offcanvas panel.
-                </div>
-            </div>
-        </div>
+        <?= $__developer_section__->renderBody(['errors' => $errors, 'settings' => $settings]) ?>
     </div>
 </div>
+</div>
+<?php endif; unset($__developer_section__); ?>
 
-<!-- Plugin sections -->
-<?php foreach ($sections as $section): ?>
+<!-- Plugin sections (exclude developer — already rendered above) -->
+<?php foreach ($sections as $section):
+    if ($section->id === 'developer') continue; ?>
+    <div class="col-12 col-md-6">
     <div class="card mb-4">
         <div class="card-body">
             <div class="d-flex align-items-center mb-3">
@@ -156,9 +129,11 @@
             <?= $section->renderBody(['errors' => $errors, 'settings' => $settings]) ?>
         </div>
     </div>
+    </div>
 <?php endforeach; ?>
 
 <!-- Mailer -->
+<div class="col-12 col-md-6">
 <div class="card mb-4">
     <div class="card-body">
         <div class="d-flex align-items-center mb-3">
@@ -171,8 +146,10 @@
         </p>
     </div>
 </div>
+</div>
 
 <!-- Notifications placeholder -->
+<div class="col-12 col-md-6">
 <div class="card mb-4">
     <div class="card-body">
         <div class="d-flex align-items-center mb-3">
@@ -185,6 +162,9 @@
         </p>
     </div>
 </div>
+</div>
+
+</div> <!-- end .row -->
 
 <div class="mt-4">
     <button type="submit" class="btn btn-primary">
