@@ -1003,7 +1003,7 @@ div.dt-container td.dt-empty {
   padding: 0.45rem 0.55rem 0.45rem 0.8rem;
   border: 1px solid var(--app-border);
   border-radius: 0.8rem;
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--app-panel-2);
   color: var(--app-text);
 }
 .app-topbar-user-trigger {

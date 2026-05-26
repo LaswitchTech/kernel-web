@@ -357,6 +357,7 @@ if ($pluginsDir !== false && is_dir($pluginsDir)) {
         ['name' => 'admin-settings', 'label' => 'Settings', 'url' => '/admin/settings', 'icon' => 'bi bi-sliders', 'permission' => 'admin', 'order' => 35, 'sections' => []],
         ['name' => 'admin-audit', 'label' => 'Audit Log', 'url' => '/admin/audit', 'icon' => 'bi bi-journal-text', 'permission' => 'admin', 'order' => 40, 'sections' => []],
         ['name' => 'admin-extensions', 'label' => 'Extensions', 'url' => '/admin/extensions', 'icon' => 'bi bi-boxes', 'permission' => 'extensions.manage', 'order' => 45, 'sections' => []],
+        ['name' => 'admin-kernel-updates', 'label' => 'Kernel Updates', 'url' => '/admin/updates', 'icon' => 'bi bi-arrow-down-square', 'permission' => 'admin', 'order' => 47, 'sections' => []],
     ];
 
     foreach ($adminMenus as $menuDef) {
