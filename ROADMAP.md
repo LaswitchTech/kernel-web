@@ -57,7 +57,7 @@ Core infrastructure improvements that unlock future feature work.
 - [x] Auth features: forgot password (selector/validator tokens, single-use, 60-minute expiry, email delivery) — design at docs/developer/auth-features.md
 - [x] Auth features: email verification (selector/validator tokens, single-use, 24-hour expiry, soft gate, email delivery) — design at docs/developer/auth-features.md
 - [x] Auth features: 2FA (TOTP RFC 6238, 160-bit secrets, pending 2FA session state, Profile Modal integration)
-- [ ] Auth features: 2FA recovery code format — change from 10 hex codes to ONE UUID-formatted recovery code per user; update generation, display, and validation.
+- [x] Auth features: 2FA recovery code format — change from 10 hex codes to ONE UUID-formatted recovery code per user; update generation, display, and validation.
 - [x] Settings plugin hooks (extend system settings via registry) — implemented: SettingsRegistry, SettingsSection, controller integration, view loop
 - [x] CRUD test coverage (users, groups, permissions, tokens)
 - [P3] Remote catalog sync (periodic fetch of extension listings from a remote server)
@@ -93,7 +93,7 @@ The global view context was the root cause of bugs across the app. This has been
 - [x] **Add repository disclaimer** — Development status added to README.md, CLAUDE.md, DESIGN.md
 - [x] **Add recovery codes for TOTP** — 10 recovery codes generated, toggle UI in /auth/2fa and Profile Modal
 - [x] **Add global 2FA enable/disable and enforce settings** — File-backed config key `auth.two_factor.enforced`, middleware enforcement in SessionAuth, 10 assertions
-- [ ] **Add admin toggle for 2FA enforcement** — /admin/settings currently shows a read-only badge for 2FA enforcement. Must add an editable toggle that writes `auth.two_factor.enforced` to config/local.php via ConfigOverrideService. P1 — missing admin control for an already-implemented enforcement feature.
+- [x] **Add admin toggle for 2FA enforcement** — /admin/settings currently shows a read-only badge for 2FA enforcement. Must add an editable toggle that writes `auth.two_factor.enforced` to config/local.php via ConfigOverrideService. P1 — missing admin control for an already-implemented enforcement feature.
 - [x] **Reformat /admin/settings UX** — Card-based layout matching /admin/developer: icons per section, consistent spacing, clear titles/descriptions. 2FA enforcement now a working toggle (AJAX POST). Developer settings on one row. Plugin sections preserved from registry.
 - [P3] **Make 2FA methods extensible** — TOTP (current); SMS/Email would need a plugin interface
 - [P3] **Disable 2FA for users with no selected method** — Defensive guard
@@ -188,7 +188,7 @@ These are planned or requested but are out of scope for the current development 
 | Layout system | Implemented | `app.php` (app), `panel.php` (admin), `blank.php` (auth, local assets, hooks) |
 | Theme system | Partially implemented | Bootstrap 5, LESS, dark/light mode |
 | Auth system | Fully implemented | Users, groups, permissions, tokens, sessions, remember me, forgot password, email verification, user registration (config-gated), 2FA (TOTP + recovery codes) |
-| Auth features | Complete | All documented auth features implemented: remember me (40 assertions), forgot password (29 assertions), email verification (38 assertions), registration (55 assertions), 2FA (64 assertions). 2FA enforcement (system-wide) remains as remaining Phase 2b task. |
+| Auth features | Complete | All documented auth features implemented: remember me (40 assertions), forgot password (29 assertions), email verification (38 assertions), registration (55 assertions), 2FA (TOTP + recovery codes). Admin toggle for 2FA enforcement complete. 2FA recovery code format updated to UUID. |
 | Organizations | Implemented | Plugin foundation: organizations + organization_users tables, OrganizationRepository, OrganizationMemberRepository, OrganizationContext (session-based default org resolution), Profile Modal integration with AJAX switch/create/list endpoints, slug generation, 90 assertions across organization_test.php and organization_runtime_test.php, /admin/organizations listing page. Design at docs/developer/organizations.md. |
 | Theme preview | Implemented | GET /admin/themes/preview, all Bootstrap components, panel layout with breadcrumbs |
 | Plugin migrations | Implemented | Migration runner, catalog integration |

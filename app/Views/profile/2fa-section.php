@@ -58,7 +58,7 @@ $ctx = $ctx ?? [];
         </p>
         <div class="mb-3">
             <label class="form-label small fw-semibold">Recovery Codes</label>
-            <p class="small text-muted">Use these codes if you lose access to your authenticator app. Each code can only be used once.</p>
+            <p class="small text-muted">Use this code if you lose access to your authenticator app. It can only be used once.</p>
             <div id="pm-2fa-recovery-codes" class="d-flex flex-wrap gap-2"></div>
         </div>
         <div class="d-flex gap-2">

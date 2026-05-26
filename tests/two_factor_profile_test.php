@@ -194,7 +194,7 @@ assert_false($svc->verifyTotp(1, $wrongCode), 'wrong code fails verification');
 // Enable (promotes pending → enabled)
 $enableResult = $svc->enable(1);
 assert_true($svc->isEnabled(1), '2FA is enabled after enable()');
-assert_true(count($enableResult['recoveryCodes']) > 0, 'enable() generates recovery codes');
+assert_true(isset($enableResult['recoveryCodes']['code']), 'enable() generates single recovery code');
 
 // totp_enabled_at must be set, totp_pending_at must be cleared
 $enabledData = (new TwoFactorRepository($db))->getTotpSecret(1);
@@ -365,7 +365,7 @@ assert_true($svc->verifyTotp(1, $userCode), 'user code verifies against pending 
 $enableResult = $svc->enable(1);
 assert_true($svc->isEnabled(1), '2FA enabled after user code verification');
 assert_false($svc->hasPendingSetup(1), 'pending setup cleared after enable');
-assert_true(count($enableResult['recoveryCodes']) > 0, 'recovery codes generated');
+assert_true(isset($enableResult['recoveryCodes']['code']), 'single recovery code generated');
 
 // Verify the code also works within ±1 window
 for ($i = -1; $i <= 1; $i++) {
@@ -478,11 +478,11 @@ assert_true($svc->verifyTotp(1, $directCode), 'enable code verifies');
 $enableResult = $svc->enable(1);
 assert_true($svc->isEnabled(1), '2FA enabled for recovery code test');
 
-$recoveryCodes = $enableResult['recoveryCodes'];
-assert_true(count($recoveryCodes) > 0, 'recovery codes generated');
+$recoveryCode = $enableResult['recoveryCodes'];
+assert_true(isset($recoveryCode['code']), 'single recovery code generated');
 
-$rawCode = $recoveryCodes[0]['code'];
-$rawHash = $recoveryCodes[0]['codeHash'];
+$rawCode = $recoveryCode['code'];
+$rawHash = $recoveryCode['codeHash'];
 
 // First validation succeeds (and consumes the code, since it's single-use)
 $firstValidate = $svc->validateRecoveryCode(1, $rawCode);

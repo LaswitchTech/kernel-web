@@ -35,7 +35,7 @@
               <label for="type" class="form-label">Recovery code</label>
               <input type="hidden" name="type" value="recovery" id="recovery-type">
               <input type="text" class="form-control" id="recovery-code" name="code"
-                     placeholder="XXXXX-XXXXX" maxlength="11">
+                     placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" maxlength="36">
             </div>
 
             <button type="submit" class="btn btn-primary w-100">Verify</button>

@@ -21,7 +21,6 @@ class TwoFactorService
     private const TOTP_STEP   = 30;
     private const TOTP_DIGITS = 6;
     private const TOTP_WINDOW = 1;
-    private const RECOVERY_COUNT = 10;
 
     public function __construct(
         private TwoFactorRepository $repository,
@@ -228,25 +227,21 @@ class TwoFactorService
     }
 
     /**
-     * Generate recovery codes for a user.
+     * Generate a single UUID-formatted recovery code for a user.
      *
-     * Replaces any existing unused codes.
+     * Replaces any existing code.
      *
-     * @return array<int, array{code: string, codeHash: string, id: int}> The generated codes with their hashes.
+     * @return array{code: string, codeHash: string} The raw code and its SHA-256 hash.
      */
     public function generateRecoveryCodes(int $userId): array
     {
         $this->repository->deleteAllCodes($userId);
 
-        $codes = [];
-        for ($i = 0; $i < self::RECOVERY_COUNT; $i++) {
-            $raw = bin2hex(random_bytes(5)); // 10 hex chars
-            $hash = hash('sha256', $raw);
-            $id = $this->repository->createRecoveryCode($userId, $hash);
-            $codes[] = ['code' => $raw, 'codeHash' => $hash, 'id' => $id];
-        }
+        $raw = $this->generateUUID();
+        $hash = hash('sha256', $raw);
+        $this->repository->createRecoveryCode($userId, $hash);
 
-        return $codes;
+        return ['code' => $raw, 'codeHash' => $hash];
     }
 
     /**
@@ -266,7 +261,7 @@ class TwoFactorService
      * If a pending secret exists, promotes it to enabled (sets totp_enabled_at, clears totp_pending_at).
      * If no secret exists, generates a new one and enables immediately.
      *
-     * @return array{secret: string, recoveryCodes: array} The secret and generated recovery codes.
+     * @return array{secret: string, recoveryCodes: array{code: string, codeHash: string}} The secret and generated recovery code.
      */
     public function enable(int $userId): array
     {
@@ -296,6 +291,22 @@ class TwoFactorService
     {
         $this->repository->setTotpSecret($userId, null);
         $this->repository->deleteAllCodes($userId);
+    }
+
+    /**
+     * Generate a UUID v4 formatted recovery code.
+     */
+    private function generateUUID(): string
+    {
+        $bytes = random_bytes(16);
+        $bytes[6] = chr(ord($bytes[6]) & 0x0F | 0x40); // version 4
+        $bytes[8] = chr(ord($bytes[8]) & 0x3F | 0x80); // variant RFC 4122
+        $hex = bin2hex($bytes);
+        return substr($hex, 0, 8) . '-'
+             . substr($hex, 8, 4) . '-'
+             . substr($hex, 12, 4) . '-'
+             . substr($hex, 16, 4) . '-'
+             . substr($hex, 20, 12);
     }
 
     /**

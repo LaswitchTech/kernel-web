@@ -231,23 +231,15 @@ assert_false($service->verifyTotp(1, $tooOldCode), 'step -2 code fails (outside 
 // Enable 2FA
 $enableResult = $service->enable(1);
 assert_true($service->isEnabled(1), '2FA enabled after enable()');
-assert_true(count($enableResult['recoveryCodes']) > 0, 'enable() generates recovery codes');
+assert_true(isset($enableResult['recoveryCodes']['code']), 'enable() generates single recovery code');
 
 // Verify secret and timestamp set
 $secretAfter = $tokenRepo->getTotpSecret(1);
 assert_not_null($secretAfter['totp_secret'], 'totp_secret set on enable');
 assert_not_null($secretAfter['totp_enabled_at'], 'totp_enabled_at set on enable');
 
-// Consume one recovery code
-$recoveryCodes = $tokenRepo->getUnusedCodes(1);
-$rawCode = null;
-foreach ($enableResult['recoveryCodes'] as $rc) {
-    if ($rc['codeHash'] === $recoveryCodes[0]['code_hash']) {
-        $rawCode = $rc['code'];
-        break;
-    }
-}
-assert_not_null($rawCode, 'found raw code for recovery code test');
+// Consume the single recovery code
+$rawCode = $enableResult['recoveryCodes']['code'];
 assert_true($service->validateRecoveryCode(1, $rawCode), 'recovery code validates once');
 assert_false($service->validateRecoveryCode(1, $rawCode), 'recovery code consumed — cannot reuse');
 
@@ -276,15 +268,14 @@ assert_false($service->verifyTotp(1, $validCode), 'verifyTotp returns false for 
 assert_null($service->generateSecret(9999), 'generateSecret returns null for nonexistent user');
 assert_false($service->isEnabled(9999), 'isEnabled returns false for nonexistent user');
 
-// ============= 9. RECOVERY CODES STORED AS HASHES ============
+// ============= 9. RECOVERY CODE STORED AS HASH ============
 
 $enableResult2 = $service->enable(1);
-assert_true(count($enableResult2['recoveryCodes']) > 0, 'recovery codes generated');
+assert_true(isset($enableResult2['recoveryCodes']['code']), 'single recovery code generated');
 
-foreach ($enableResult2['recoveryCodes'] as $rc) {
-    $computedHash = hash('sha256', $rc['code']);
-    assert_equal($computedHash, $rc['codeHash'], 'stored hash matches computed hash');
-}
+$rc = $enableResult2['recoveryCodes'];
+$computedHash = hash('sha256', $rc['code']);
+assert_equal($computedHash, $rc['codeHash'], 'stored hash matches computed hash');
 
 // ============= 10. OTPAUTH URI ===--===
 
@@ -380,7 +371,7 @@ $service->disable(1);
 $codesAfter = $tokenRepo->getUnusedCodes(1);
 assert_true(empty($codesAfter), 'recovery codes cleared on disable');
 
-// ============= 15. RECOVERY CODE GENERATES EXACT COUNT ============
+// ============= 15. RECOVERY CODE GENERATES SINGLE UUID ============
 
 // Create a new user specifically for this test
 $db->execute(
@@ -393,12 +384,8 @@ $db->execute(
 $service->disable(3);
 
 $recoveryResult = $service->generateRecoveryCodes(3);
-assert_equal(10, count($recoveryResult), 'generateRecoveryCodes generates 10 codes');
-
-// All should be unique hashes
-$hashes = array_column($recoveryResult, 'codeHash');
-$uniqueHashes = array_unique($hashes);
-assert_equal(count($hashes), count($uniqueHashes), 'all recovery code hashes are unique');
+assert_true(isset($recoveryResult['code']), 'generateRecoveryCodes returns single code object');
+assert_true((bool) preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/', $recoveryResult['code']), 'code is UUID v4 format');
 
 // ============= 16. PENDING SECRET — ENABLE IS FALSE (2FA SAFETY) ============
 // Critical safety test: generating a TOTP secret must NOT enable 2FA.
@@ -515,8 +502,8 @@ assert_true($service->verifyTotp(1, $testCode), 'valid code for test setup');
 $enableResult = $service->enable(1);
 assert_true($service->isEnabled(1), '2FA enabled for recovery disable test');
 
-// getRecoveryCodes was called by enable() — use one of them
-$recoveryCodeValue = $enableResult['recoveryCodes'][0]['code'];
+// getRecoveryCodes was called by enable() — use the single code
+$recoveryCodeValue = $enableResult['recoveryCodes']['code'];
 assert_not_null($recoveryCodeValue, 'recovery code available');
 
 // validateRecoveryCode consumes the code (used for login, not disable)
@@ -728,7 +715,7 @@ assert_true($userSvc->verifyTotp(1, $userCode), 'code matches before enable');
 $enableResult = $userSvc->enable(1);
 assert_true($userSvc->isEnabled(1), '2FA enabled after user secret verification');
 assert_false($userSvc->hasPendingSetup(1), 'pending cleared after enable');
-assert_true(count($enableResult['recoveryCodes']) > 0, 'recovery codes generated');
+assert_true(isset($enableResult['recoveryCodes']['code']), 'recovery code generated');
 
 // ============= 23. STALE QR / SETUP_ID BINDING REGRESSION ============
 // Regression test: simulate stale QR scenario where setup_id binding prevents
@@ -837,7 +824,7 @@ assert_true($s23Svc->hasPendingSetup(1), 'pending before enable');
 $enableS23 = $s23Svc->enable(1);
 assert_true($s23Svc->isEnabled(1), '2FA enabled after code B');
 assert_false($s23Svc->hasPendingSetup(1), 'pending cleared after enable');
-assert_true(count($enableS23['recoveryCodes']) > 0, 'recovery codes generated');
+assert_true(isset($enableS23['recoveryCodes']['code']), 'recovery code generated');
 
 // ============= SUMMARY ============
 
