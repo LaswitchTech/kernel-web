@@ -21,15 +21,24 @@
  * Usage:
  *   php tests/route_smoke_test.php              — run all tests
  *   php tests/route_smoke_test.php --base-url X  — use custom base URL
+ *   ROUTE_SMOKE_BASE_URL=https://example.com php tests/route_smoke_test.php
  */
 
 // --- Parse args ---
-$baseUrl = 'https://kernel-web.local';
+$baseUrl = getenv('ROUTE_SMOKE_BASE_URL') ?: 'https://kernel-web.local';
 for ($i = 1; $i < $argc; $i++) {
     if ($argv[$i] === '--base-url' && isset($argv[$i + 1])) {
         $baseUrl = rtrim($argv[$i + 1], '/');
         $i++;
     }
+}
+
+// Skip gracefully if the host is unresolvable (e.g. CI environment).
+$parsedHost = parse_url($baseUrl, PHP_URL_HOST);
+if ($parsedHost && !dns_get_record($parsedHost, DNS_A)) {
+    echo "SKIP: Cannot resolve host '{$parsedHost}' for base URL '{$baseUrl}'.\n";
+    echo "Set ROUTE_SMOKE_BASE_URL or pass --base-url to configure.\n";
+    exit(0);
 }
 
 echo "Route smoke-test\n";
