@@ -14,6 +14,32 @@ Use this file to:
 
 ---
 
+## Product Vision
+
+Kernel-Web is an **AI-native business application framework**.
+
+Its purpose is to provide a reusable PHP kernel for building modular business applications that can be operated by both humans and AI agents.
+
+Kernel-Web should support:
+
+- Traditional web UI workflows
+- Plugin-based business applications
+- Safe automation through services, APIs, tasks, and events
+- Agent-readable documentation and metadata
+- Strong auditability for business-critical actions
+- Self-hosted/private deployments
+
+Primary target application families:
+
+1. **Transport / Logistics**
+2. **Customs Consultation**
+3. **LaswitchTech operations**
+   - Tech blog
+   - Product creation
+   - Documentation
+   - Content workflow
+   - YouTube/content planning
+
 ## Design Principles
 
 ### 1. Kernel First
@@ -44,6 +70,44 @@ Use this file to:
 - Assume public deployment
 - Deny access by default
 - Validate everything server-side
+
+### 6. Agent-Operable by Design
+
+Every major feature should be designed so it can be operated safely by:
+
+- A human through the UI
+- An AI agent through explicit services, APIs, tasks, or events
+
+Agent-operable does not mean unrestricted automation.
+
+All agent actions must follow the same rules as human actions:
+
+- Permission checks
+- Validation
+- CSRF/API-token rules where applicable
+- Audit logging
+- Clear ownership
+- Safe error handling
+- No silent destructive behavior
+
+### 7. Business Automation Ready
+
+Kernel-Web should be suitable for building real business applications.
+
+Core systems should support:
+
+- Organizations
+- Users and permissions
+- Tasks
+- Activities
+- Documents
+- Notifications
+- Audit trails
+- Configurable workflows
+- Plugin-defined entities
+- API-driven automation
+
+The kernel must remain domain-neutral, but it should provide the primitives required by domain-specific plugins.
 
 ---
 
@@ -122,6 +186,77 @@ Provide:
 
 ---
 
+## AI-Native Architecture
+
+Kernel-Web treats AI agents as future first-class operators of the system.
+
+Agents are not special users that bypass the application. They are external or internal operators that interact with Kernel-Web through controlled interfaces.
+
+### Human + Agent Operation Model
+
+```text
+Human UI
+   ↓
+Controllers
+   ↓
+Services
+   ↓
+Repositories
+   ↓
+Database / Files / External APIs
+
+AI Agent
+   ↓
+API / Action Endpoint / Task Queue
+   ↓
+Same Services
+   ↓
+Same Repositories
+   ↓
+Same Audit + Permission Layer
+```
+
+### Core Rule
+
+> Agents must use the same business services as humans. No separate hidden write path.
+
+### Agent-Operable Feature Requirements
+
+A feature is considered agent-operable when it provides:
+
+* Clear service methods
+* Explicit permissions
+* Validated inputs
+* Predictable outputs
+* Audit logging
+* Error responses suitable for automation
+* Documentation describing safe usage
+* Optional task/event hooks where useful
+
+### Agent Safety Rules
+
+AI agents must not:
+
+* Bypass permissions
+* Write directly to the database
+* Modify config files except through approved services
+* Perform destructive actions without an explicit service/API path
+* Auto-approve their own high-risk actions
+* Hide failures or skipped validations
+
+### Agent Auditability
+
+Agent-driven actions should record:
+
+* Actor identity
+* Agent/profile name when available
+* Action performed
+* Target entity
+* Input summary
+* Result status
+* Error message if failed
+* Related task/run ID when applicable
+
 ## Directory Responsibilities
 
 ### `/app`
@@ -146,6 +281,46 @@ Runtime data (logs, cache, uploads)
 Persistent local data (SQLite)
 
 ---
+
+## Business Application Plugin Strategy
+
+Kernel-Web business apps should be built as plugins or plugin groups.
+
+Examples:
+
+```text
+lib/plugins/Logistics/
+lib/plugins/Customs/
+lib/plugins/ContentStudio/
+lib/plugins/Products/
+lib/plugins/Projects/
+lib/plugins/Agents/
+```
+
+### Business Plugin Rules
+
+* Business logic belongs in plugins, not kernel core
+* Plugins define their own entities, routes, services, repositories, permissions, menus, and migrations
+* Plugins should expose service-level operations suitable for both UI and automation
+* Plugins should document their entities and workflows
+* Plugins should integrate with common kernel services instead of duplicating them
+
+### Shared Kernel Primitives
+
+Business plugins should reuse kernel primitives where possible:
+
+* Auth
+* Organizations
+* Permissions
+* Settings
+* Audit logs
+* Mailer
+* Messenger
+* Tasks
+* Events/hooks
+* API tokens
+* Profile modal sections
+* Admin settings sections
 
 ## Plugin System Design
 
@@ -1697,6 +1872,82 @@ $Kernel = new KernelContext($container);
 5. **`$Helper` is lazy** — helper objects are instantiated on first access, not eagerly loaded
 
 ---
+
+## Future Agents System
+
+Kernel-Web will eventually support an Agents plugin or agent-management subsystem.
+
+### Purpose
+
+The Agents system will coordinate AI-assisted work across Kernel-Web applications.
+
+Possible roles:
+
+- Project Manager Agent
+- Coder Agent
+- Reviewer Agent
+- Documentation Agent
+- Infrastructure Agent
+- Business Operations Agent
+- Content Agent
+
+### Initial Data Concepts
+
+```text
+agents
+agent_profiles
+agent_permissions
+agent_runs
+agent_messages
+agent_tasks
+agent_artifacts
+agent_approvals
+```
+
+### Agent Run Tracking
+
+Each agent run should be traceable:
+
+* Agent/profile
+* Project/application context
+* Prompt/input
+* Output/summary
+* Tool activity
+* Files touched, if applicable
+* Tests run, if applicable
+* Approval status
+* Error/failure state
+* Timestamps
+
+### Approval Gates
+
+High-risk actions should require explicit human approval:
+
+* Git commits
+* Deployments
+* Deleting records
+* Sending external emails/SMS
+* Changing security settings
+* Modifying billing/payment records
+* Updating production configuration
+
+### Relationship to External Agents
+
+Kernel-Web does not need to replace tools like Claude Code, Hermes, Ollama, or n8n.
+
+Instead, Kernel-Web should become the coordination and state layer:
+
+```text
+Kernel-Web PM App
+   ↓
+Task / Run / Approval Records
+   ↓
+External Agents
+   ↓
+Results / Logs / Summaries
+   ↓
+Kernel-Web Audit + Roadmap State
+```
 
 ## Design Evolution Rule
 

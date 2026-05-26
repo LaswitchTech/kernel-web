@@ -12,6 +12,35 @@ PHP 7.x compatibility must not be reintroduced.
 
 ---
 
+## Product Direction: AI-Native Business Application Framework
+
+Kernel-Web is not only a reusable PHP application kernel. Its long-term direction is to become an **AI-native business application framework**.
+
+The framework must support applications that are:
+
+- Human-usable through normal web UI
+- Agent-operable through APIs, services, events, tasks, and audit logs
+- Modular through plugins
+- Safe for business automation
+- Suitable for self-hosted and private deployments
+
+Primary target application families:
+
+1. **Transport / Logistics**
+   - Shipments, orders, trips, documents, customers, vendors, follow-ups, operational tasks
+
+2. **Customs Consultation**
+   - Clients, compliance reviews, documents, classifications, audit trails, consultation workflows
+
+3. **LaswitchTech**
+   - Tech blog, product creation, documentation, release planning, content workflow, possible YouTube creator pipeline
+
+Design implication:
+
+> Every major Kernel-Web feature should be designed so a human can operate it from the UI and an AI agent can operate it safely through explicit services, APIs, tasks, and audit logs.
+
+---
+
 ## Phase 1: Immediate / Stabilization
 
 Foundational work that should happen before major feature development.
@@ -131,6 +160,11 @@ Features that depend on Phase 2 foundations being in place.
 - [ ] Plugin marketplace foundation (extension listing, version tracking)
 - [x] Developer mode tools implementation (scaffold generator, example templates)
 - [ ] Extension installation progress tracking (large extensions)
+- [P2] Agent-operable task foundation — shared task/activity model for human and AI workflows
+- [P2] API/action contract conventions — standard pattern for safe agent-callable operations
+- [P3] Agent runs / automation log foundation — store agent prompts, responses, tool activity, test results, approvals, and summaries
+- [P3] Business application plugin conventions — define how Transport, Customs, and LaswitchTech apps should be structured on top of Kernel-Web
+- [P3] Project management application foundation — projects, milestones, tasks, roadmap state, repositories, agent assignments
 
 ---
 
@@ -148,6 +182,11 @@ Major architectural additions requiring significant infrastructure.
 - [P3] Distributed authentication sharing (across multiple kernel instances)
 - [P4] Extension analytics / telemetry
 - [P2] Multi-tenant data scoping (organization-level query filtering, middleware)
+- [P2] AI agent orchestration system — project-manager agents, coder agents, reviewer agents, documentation agents
+- [P2] Agent permission model — restrict what agents can read, write, execute, approve, or deploy
+- [P2] Agent approval gates — human approval for commits, destructive actions, external messages, deployments, and sensitive records
+- [P3] Multi-agent work queues — assign tasks to specialized agents with logs, status, retries, and review workflows
+- [P3] Business automation apps — Transport/Logistics, Customs Consultation, and LaswitchTech operational apps
 
 ---
 
@@ -155,12 +194,14 @@ Major architectural additions requiring significant infrastructure.
 
 These are the highest-impact items that should be addressed next:
 
-1. **P2: System-wide 2FA enforcement** — Per-user toggle exists but no global enforcement switch ✅ DONE
-2. **P2: Universal config-saving system** — ConfigOverrideService foundation ✅ DONE
-3. **P2: Multi-tenant data scoping** — Organization-level query filtering middleware (unlocks proper SaaS mode)
-4. **P2: Kernel update system** — Version check exists; needs download and apply workflow
-5. **P3: Make 2FA methods extensible** — TOTP-only currently; plugin interface for SMS/Email methods
-6. **P3: Variables.md documentation** — Document the global view context contract for future developers
+1. **P2: Multi-tenant data scoping** — Organization-level query filtering middleware and repository conventions. This unlocks proper business-app and SaaS-style usage.
+2. **P2: Agent-operable task foundation** — Core task/activity model usable by humans and AI agents. Should support assignment, status, priority, due dates, links to entities, and audit history.
+3. **P2: API/action contract conventions** — Define how plugins expose safe agent-callable actions through controllers/services with permission checks and audit logging.
+4. **P2: Migrate remaining DB-backed config to ConfigOverrideService** — Complete config/local.php-backed settings migration for non-sensitive instance config.
+5. **P2: Kernel update system** — Version check exists; needs download and apply workflow.
+6. **P3: Agent runs / automation log foundation** — Track AI agent runs, prompts, outputs, tool calls, files changed, tests run, approvals, and errors.
+7. **P3: Make 2FA methods extensible** — TOTP-only currently; plugin interface for SMS/Email methods.
+8. **P3: Variables.md documentation** — Document the global view context contract for future developers and agents.
 
 ## Deferred / Explicitly Not Now
 
