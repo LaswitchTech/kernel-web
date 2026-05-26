@@ -322,8 +322,7 @@ $__dev_search__ = strtolower(htmlspecialchars($__dev_label__ . ' ' . strip_tags(
     // --- Developer section AJAX (existing) ---
     var toggle = document.getElementById('settings_developer');
     var result = document.getElementById('settings-dev-result');
-    if (!toggle) return;
-
+    if (toggle) {
     toggle.addEventListener('change', function() {
         var checked = toggle.checked;
         toggle.nextElementSibling.textContent = checked ? 'On' : 'Off';
@@ -351,6 +350,7 @@ $__dev_search__ = strtolower(htmlspecialchars($__dev_label__ . ' ' . strip_tags(
             showResult(result, 'danger', 'Network error.');
         });
     });
+    }
 
     function showResult(container, type, message) {
         var cls = type === 'success' ? 'alert-success' : 'alert-danger';
@@ -398,6 +398,7 @@ $__dev_search__ = strtolower(htmlspecialchars($__dev_label__ . ' ' . strip_tags(
     var clearBtn    = document.getElementById('settings-search-clear');
     var emptyState  = document.getElementById('settings-search-empty');
 
+
     function getCards() {
         return Array.prototype.slice.call(document.querySelectorAll('.js-settings-card'));
     }
@@ -408,6 +409,7 @@ $__dev_search__ = strtolower(htmlspecialchars($__dev_label__ . ' ' . strip_tags(
         var query = searchInput.value.trim().toLowerCase();
         var visible = 0;
         var cards = getCards();
+
 
         for (var i = 0; i < cards.length; i++) {
             var wrapper = cards[i];
