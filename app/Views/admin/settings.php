@@ -7,7 +7,7 @@
 
 <div class="row g-3 mb-3">
 <div class="col-12 col-md-6">
-<div class="input-group input-group-sm" style="max-width:320px">
+<div class="input-group input-group-sm">
     <span class="input-group-text"><i class="bi bi-search"></i></span>
     <input type="search"
            id="settings-search"
