@@ -2,6 +2,7 @@
 
 namespace Plugins\Telico;
 
+use App\Contracts\ConfigWriterInterface;
 use App\Core\SettingsRegistry;
 use App\Core\SettingsSection;
 use App\Services\SystemSettingService;
@@ -30,6 +31,7 @@ class TelicoSettings
             'render'   => [self::class, 'render'],
             'validate' => [self::class, 'validate'],
             'save'     => [self::class, 'save'],
+            'saveConfig' => [self::class, 'saveConfig'],
             'source'   => 'telico',
         ]);
     }
@@ -107,17 +109,25 @@ class TelicoSettings
     }
 
     /**
-     * Save Telico settings to the SystemSettingService.
+     * Save Telico settings: non-sensitive values via ConfigWriterInterface,
+     * sensitive credentials (password) via SystemSettingService.
+     */
+    public static function saveConfig(array $input, ConfigWriterInterface $writer, ?SystemSettingService $dbSvc = null): void
+    {
+        $writer->set('telico.username', $input['telico.username'] ?? '');
+        $writer->set('telico.callerid', $input['telico.callerid'] ?? '');
+
+        // Password stays in DB temporarily — encrypted storage in future.
+        if (!empty($input['telico.sms_pass']) && $dbSvc !== null) {
+            $dbSvc->set('telico.sms_pass', $input['telico.sms_pass']);
+        }
+    }
+
+    /**
+     * @deprecated Use saveConfig() instead. Kept for backward compat with SettingsRegistry::saveSection().
      */
     public static function save(array $input, SystemSettingService $svc): void
     {
-        $svc->set('telico.username', $input['telico.username'] ?? '');
-
-        // Only update password if a new value was provided.
-        if (!empty($input['telico.sms_pass'])) {
-            $svc->set('telico.sms_pass', $input['telico.sms_pass']);
-        }
-
-        $svc->set('telico.callerid', $input['telico.callerid'] ?? '');
+        self::saveConfig($input, $svc, $svc);
     }
 }

@@ -178,7 +178,7 @@ class SystemSettingsController extends Controller
             $override->setBatch($developerInput);
         }
 
-        // Persist plugin sections (still via SystemSettingService — deferred migration).
+        // Persist plugin sections via ConfigOverrideService (file-backed config).
         foreach ($pluginSections as $section) {
             $keys = SettingsRegistry::getSectionKeys($section->id);
             if (empty($keys)) {
@@ -190,7 +190,10 @@ class SystemSettingsController extends Controller
                     $sectionInput[$key] = $input[$key];
                 }
             }
-            SettingsRegistry::saveSection($section->id, $sectionInput, $this->pluginService());
+            $dbSvc = new SystemSettingService(
+                new SystemSettingRepository($this->container->get('db'))
+            );
+            SettingsRegistry::saveSectionViaConfig($section->id, $sectionInput, $override, $dbSvc);
         }
 
         $actorId = (int) ($this->container->get('principal')['user']['id'] ?? 0);
@@ -232,16 +235,6 @@ class SystemSettingsController extends Controller
         }
 
         return $errors;
-    }
-
-    /**
-     * Instantiate the service with fresh repository.
-     */
-    private function service(): SystemSettingService
-    {
-        return new SystemSettingService(
-            new SystemSettingRepository($this->container->get('db'))
-        );
     }
 
     /**
@@ -301,16 +294,6 @@ class SystemSettingsController extends Controller
             return $config['app'];
         }
         return $config;
-    }
-
-    /**
-     * Instantiate SystemSettingService for plugin sections (deferred migration).
-     */
-    private function pluginService(): SystemSettingService
-    {
-        return new SystemSettingService(
-            new SystemSettingRepository($this->container->get('db'))
-        );
     }
 
     /**
@@ -434,10 +417,10 @@ class SystemSettingsController extends Controller
                 }
                 return $errors;
             },
-            'save'   => function (array $input, SystemSettingService $svc): void {
+            'saveConfig'   => function (array $input, \App\Contracts\ConfigWriterInterface $writer): void {
                 foreach (['developer.developer', 'developer.debug', 'developer.dev_console'] as $key) {
                     if (isset($input[$key])) {
-                        $svc->set($key, $input[$key]);
+                        $writer->set($key, ConfigOverrideService::normalizeFormValue($input[$key]));
                     }
                 }
             },

@@ -2,29 +2,16 @@
 
 namespace App\Services;
 
+use App\Contracts\ConfigWriterInterface;
 use App\Core\Config;
 
 /**
  * File-backed config override writer.
  *
  * Writes admin-driven settings to config/local.php (not DB, not .env, not base config).
- * Uses dot-notation keys that map to nested arrays:
- *   app.name       → ['app' => ['name' => '...']]
- *   auth.enforced  → ['auth' => ['enforced' => true]]
- *
- * Write path:
- *   1. Read existing local.php (or start with [])
- *   2. Set value at the dot-notation path
- *   3. Write back as valid PHP returning an array
- *   4. Atomic write via temp file + rename
- *   5. Flush Config cache so the new value takes effect
- *
- * Values are normalized:
- *   bool   — stored as PHP boolean (true/false)
- *   int    — stored as integer
- *   string — stored as quoted string (no escaping for simple values)
+ * Implements ConfigWriterInterface for plugin settings migration.
  */
-class ConfigOverrideService
+class ConfigOverrideService implements ConfigWriterInterface
 {
     private string $localPath;
 

@@ -161,6 +161,9 @@ class SystemSettingService
     /**
      * Persist a setting to the DB.
      *
+     * @deprecated Use ConfigOverrideService for non-sensitive config keys.
+     *   This method is kept only for sensitive credential writes.
+     *
      * Booleans are stored as '1' or '0'.
      * Other values are cast to string.
      */

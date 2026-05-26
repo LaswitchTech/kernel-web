@@ -2,6 +2,7 @@
 
 namespace Plugins\Telico;
 
+use App\Core\Config;
 use App\Core\Container;
 use App\Core\Messenger;
 use App\Core\SettingsRegistry;
@@ -47,6 +48,7 @@ class TelicoHooks
             'render'   => [TelicoSettings::class, 'render'],
             'validate' => [TelicoSettings::class, 'validate'],
             'save'     => [TelicoSettings::class, 'save'],
+            'saveConfig' => [TelicoSettings::class, 'saveConfig'],
             'source'   => 'telico',
         ]);
     }
@@ -54,9 +56,11 @@ class TelicoHooks
     /**
      * Swap the default Messenger transport with Telico if configured.
      *
-     * Only swaps if:
-     *   - The container has a Messenger instance
-     *   - Telico credentials are configured (non-empty username)
+     * Reads config from Config::load('messenger') which merges base
+     * messenger.php with config/local.php overrides (including plugin
+     * config written by ConfigOverrideService via /admin/settings).
+     *
+     * Sensitive credentials (password) are read from the DB.
      */
     private static function swapTransport(Container $container): void
     {
@@ -69,21 +73,28 @@ class TelicoHooks
             return;
         }
 
-        if (!$container->has('settings')) {
+        // Read non-sensitive config from merged config/local.php.
+        $mConfig = Config::load('messenger');
+        $telicoConfig = $mConfig['telico'] ?? [];
+        $username = $telicoConfig['username'] ?? '';
+        $callerId = $telicoConfig['callerid'] ?? '';
+
+        if ($username === '' || $callerId === '') {
+            // Credentials required before swapping transport.
             return;
         }
 
-        $settings = $container->get('settings');
-        if (!$settings instanceof SystemSettingService) {
-            return;
+        // Read sensitive credential from DB.
+        $dbSvc = null;
+        if ($container->has('db')) {
+            $dbSvc = new SystemSettingService(
+                new \App\Models\SystemSettingRepository($container->get('db'))
+            );
         }
+        $smsPass = $dbSvc ? $dbSvc->getString('telico.sms_pass', '') : '';
 
-        $username = $settings->getString('telico.username', '');
-        $smsPass  = $settings->getString('telico.sms_pass', '');
-        $callerId = $settings->getString('telico.callerid', '');
-
-        if ($username === '' || $smsPass === '' || $callerId === '') {
-            // All three credentials required before swapping transport.
+        if ($smsPass === '') {
+            // Password required before swapping transport.
             return;
         }
 

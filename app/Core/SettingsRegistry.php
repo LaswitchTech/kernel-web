@@ -2,6 +2,7 @@
 
 namespace App\Core;
 
+use App\Contracts\ConfigWriterInterface;
 use App\Services\SystemSettingService;
 
 /**
@@ -56,6 +57,11 @@ class SettingsRegistry
     public static function addSection(array|SettingsSection $section): void
     {
         if (!$section instanceof SettingsSection) {
+            // Extract saveConfig before constructing (non-standard field).
+            $saveConfig = isset($section['saveConfig']) && is_callable($section['saveConfig'])
+                ? $section['saveConfig']
+                : null;
+
             $section = new SettingsSection(
                 $section['id'],
                 $section['label'],
@@ -68,6 +74,11 @@ class SettingsRegistry
                 $section['save'] ?? null,
                 $section['source'] ?? 'core',
             );
+
+            // Set saveConfig after construction (not in constructor param).
+            if ($saveConfig !== null) {
+                $section->saveConfig = $saveConfig;
+            }
         }
 
         if (isset(self::$sections[$section->id])) {
@@ -150,6 +161,9 @@ class SettingsRegistry
 
     /**
      * Save a section's settings.
+     *
+     * @deprecated Use saveSectionViaConfig() for file-backed config.
+     *   This method persists to the database via SystemSettingService.
      */
     public static function saveSection(string $id, array $input, SystemSettingService $svc): void
     {
@@ -158,6 +172,24 @@ class SettingsRegistry
             return;
         }
         call_user_func($section->save, $input, $svc);
+    }
+
+    /**
+     * Save a section's settings using a ConfigWriterInterface (file-backed).
+     *
+     * Also passes SystemSettingService for sensitive credential writes.
+     */
+    public static function saveSectionViaConfig(string $id, array $input, ConfigWriterInterface $writer, ?SystemSettingService $dbSvc = null): void
+    {
+        $section = self::$sections[$id] ?? null;
+        if ($section === null || $section->saveConfig === null) {
+            return;
+        }
+        if ($dbSvc !== null) {
+            call_user_func($section->saveConfig, $input, $writer, $dbSvc);
+        } else {
+            call_user_func($section->saveConfig, $input, $writer);
+        }
     }
 
     /**

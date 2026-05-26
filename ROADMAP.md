@@ -129,7 +129,7 @@ The global view context was the root cause of bugs across the app. This has been
 - [P3] **Fix card-header border-radius to match card radius** — CSS consistency
 - [x] **Design universal config-saving system** — ConfigOverrideService writes to config/local.php via dot-notation keys, atomic file writes, boolean/string normalization, 41 assertions
 - [x] **Integrate ConfigOverrideService into /admin/settings** — Core config keys (app.name, app.url, developer.*) now write to config/local.php via ConfigOverrideService. 2FA enforcement toggle at /admin/settings works via AJAX POST /admin/settings/toggle. Plugin sections still use SystemSettingService (deferred).
-- [P2] **Migrate remaining DB-backed config to ConfigOverrideService** — Audit at docs/developer/config-override-audit.md. Migrate: app.name, app.url, developer.*, smtp.* non-sensitive, telico.* non-sensitive from system_settings DB to config/local.php. Sensitive creds → encrypted storage. Remove SystemSettingService.write() path. Update SettingsRegistry to accept ConfigOverrideService or interface.
+- [x] **Migrate remaining DB-backed config to ConfigOverrideService** — Plugin config (SMTP, Telico) non-sensitive keys now write to config/local.php via ConfigOverrideService. Sensitive creds written directly to DB by plugins. Transport hooks read from Config::load('mail'). SettingsRegistry updated with ConfigWriterInterface.
 - [P3] **Send real test email** — Test email button exists in SMTP settings but verify it actually sends
 - [P3] **Move SMTP settings into Mailer settings** — Selectable mailer provider (mail(), SMTP), provider-based settings
 - [P3] **Make SMS settings provider-based** — Extensible via plugins (Telico, Twilio, etc.)

@@ -2,6 +2,7 @@
 
 namespace Plugins\Smtp;
 
+use App\Core\Config;
 use App\Core\Container;
 use App\Core\Mail\Mailer;
 use App\Core\Mail\TransportInterface;
@@ -53,6 +54,7 @@ class SmtpHooks
             'render'   => [SmtpSettings::class, 'render'],
             'validate' => [SmtpSettings::class, 'validate'],
             'save'     => [SmtpSettings::class, 'save'],
+            'saveConfig' => [SmtpSettings::class, 'saveConfig'],
             'source'   => 'smtp',
         ]);
     }
@@ -60,9 +62,12 @@ class SmtpHooks
     /**
      * Swap the default Mailer transport with SMTP if configured.
      *
-     * Only swaps if:
-     *   - The container has a Mailer instance
-     *   - SMTP host is configured (non-default)
+     * Reads config from Config::load('mail') which merges base mail.php
+     * with config/local.php overrides (including plugin config written
+     * by ConfigOverrideService via /admin/settings).
+     *
+     * Sensitive credentials (password) are read from the DB
+     * (SystemSettingService) since they are not stored in config files.
      */
     private static function swapTransport(Container $container): void
     {
@@ -75,30 +80,31 @@ class SmtpHooks
             return;
         }
 
-        if (!$container->has('settings')) {
-            return;
-        }
-
-        $settings = $container->get('settings');
-        if (!$settings instanceof SystemSettingService) {
-            return;
-        }
-
-        $host = $settings->getString('smtp.host', 'localhost');
+        // Read non-sensitive config from merged config/local.php.
+        $mailConfig = Config::load('mail');
+        $host = $mailConfig['smtp.host'] ?? 'localhost';
         if ($host === 'localhost') {
             // SMTP not configured — keep default transport.
             return;
         }
 
+        // Read sensitive credential from DB.
+        $dbSvc = null;
+        if ($container->has('db')) {
+            $dbSvc = new SystemSettingService(
+                new \App\Models\SystemSettingRepository($container->get('db'))
+            );
+        }
+
         $config = [
             'host'        => $host,
-            'port'        => $settings->getInt('smtp.port', 587),
-            'encryption'  => $settings->getString('smtp.encryption', 'tls'),
-            'user'        => $settings->getString('smtp.user', ''),
-            'pass'        => $settings->getString('smtp.pass', ''),
-            'verify_peer' => $settings->getBool('smtp.verify_peer', true),
-            'from_address' => $settings->getString('smtp.from_address', ''),
-            'from_name'   => $settings->getString('smtp.from_name', ''),
+            'port'        => (int) ($mailConfig['smtp.port'] ?? 587),
+            'encryption'  => $mailConfig['smtp.encryption'] ?? 'tls',
+            'user'        => $mailConfig['smtp.user'] ?? '',
+            'pass'        => $dbSvc ? $dbSvc->getString('smtp.pass', '') : '',
+            'verify_peer' => (bool) ($mailConfig['smtp.verify_peer'] ?? true),
+            'from_address' => $mailConfig['smtp.from_address'] ?? '',
+            'from_name'   => $mailConfig['smtp.from_name'] ?? '',
         ];
 
         $smtpTransport = new SmtpTransport($config);

@@ -10,6 +10,9 @@ namespace App\Core;
  */
 final class SettingsSection
 {
+    /** @var callable|null fn(array $input, ConfigWriterInterface $writer): void — file-backed save */
+    public mixed $saveConfig = null;
+
     public function __construct(
         public readonly string    $id,
         public readonly string    $label,

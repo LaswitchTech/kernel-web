@@ -2,9 +2,10 @@
 
 namespace Plugins\Smtp;
 
+use App\Contracts\ConfigWriterInterface;
 use App\Core\SettingsRegistry;
 use App\Core\SettingsSection;
-use App\Services\SystemSettingService;
+use App\Models\SystemSettingRepository;
 
 /**
  * Registers the SMTP settings section with SettingsRegistry.
@@ -38,6 +39,7 @@ class SmtpSettings
             'render'   => [self::class, 'render'],
             'validate' => [self::class, 'validate'],
             'save'     => [self::class, 'save'],
+            'saveConfig' => [self::class, 'saveConfig'],
             'source'   => 'smtp',
         ]);
     }
@@ -214,21 +216,30 @@ class SmtpSettings
     }
 
     /**
-     * Save SMTP settings to the SystemSettingService.
+     * Save SMTP settings: non-sensitive values via ConfigWriterInterface,
+     * sensitive credentials (password) via SystemSettingService.
+     */
+    public static function saveConfig(array $input, ConfigWriterInterface $writer, ?SystemSettingService $dbSvc = null): void
+    {
+        $writer->set('smtp.host', $input['smtp.host'] ?? 'localhost');
+        $writer->set('smtp.port', $input['smtp.port'] ?? '587');
+        $writer->set('smtp.encryption', $input['smtp.encryption'] ?? 'tls');
+        $writer->set('smtp.user', $input['smtp.user'] ?? '');
+        $writer->set('smtp.verify_peer', isset($input['smtp.verify_peer']) ? true : false);
+        $writer->set('smtp.from_address', $input['smtp.from_address'] ?? '');
+        $writer->set('smtp.from_name', $input['smtp.from_name'] ?? '');
+
+        // Password stays in DB temporarily — encrypted storage in future.
+        if (!empty($input['smtp.pass']) && $dbSvc !== null) {
+            $dbSvc->set('smtp.pass', $input['smtp.pass']);
+        }
+    }
+
+    /**
+     * @deprecated Use saveConfig() instead. Kept for backward compat with SettingsRegistry::saveSection().
      */
     public static function save(array $input, SystemSettingService $svc): void
     {
-        $svc->set('smtp.host', $input['smtp.host'] ?? 'localhost');
-        $svc->set('smtp.port', $input['smtp.port'] ?? '587');
-        $svc->set('smtp.encryption', $input['smtp.encryption'] ?? 'tls');
-        $svc->set('smtp.user', $input['smtp.user'] ?? '');
-        $svc->set('smtp.verify_peer', isset($input['smtp.verify_peer']) ? true : false);
-        $svc->set('smtp.from_address', $input['smtp.from_address'] ?? '');
-        $svc->set('smtp.from_name', $input['smtp.from_name'] ?? '');
-
-        // Only update password if a new value was provided.
-        if (!empty($input['smtp.pass'])) {
-            $svc->set('smtp.pass', $input['smtp.pass']);
-        }
+        self::saveConfig($input, $svc);
     }
 }

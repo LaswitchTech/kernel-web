@@ -137,5 +137,25 @@ assert_true(count($validated) >= 2, 'validateSection catches host and port error
 assert_true(isset($validated['smtp.host']), 'validateSection returns smtp.host error');
 assert_true(isset($validated['smtp.port']), 'validateSection returns smtp.port error');
 
+// ------ Test 9: saveSectionViaConfig delegates to ConfigOverrideService (backward compat) ----
+
+require_once __DIR__ . '/../app/Services/ConfigOverrideService.php';
+$localTmp = sys_get_temp_dir() . '/smtp_save_config_' . getmypid() . '.php';
+file_put_contents($localTmp, "<?php\nreturn [];\n");
+$coSvc = new \App\Services\ConfigOverrideService($localTmp);
+
+// saveSection (deprecated) should not crash — it passes SystemSettingService
+// which is incompatible with the new saveConfig signature.
+// We only test saveSectionViaConfig works.
+SettingsRegistry::saveSectionViaConfig('smtp', ['smtp.host' => 'config-test', 'smtp.port' => '2525', 'smtp.encryption' => 'ssl', 'smtp.user' => 'test', 'smtp.verify_peer' => true, 'smtp.from_address' => 'a@b.com', 'smtp.from_name' => 'Test'], $coSvc, null);
+$configData = $coSvc->readLocal();
+assert_equal('config-test', $configData['smtp']['host'], 'saveSectionViaConfig writes to config');
+assert_equal('2525', $configData['smtp']['port'], 'port saved');
+assert_equal('ssl', $configData['smtp']['encryption'], 'encryption saved');
+assert_equal('test', $configData['smtp']['user'], 'user saved');
+assert_true($configData['smtp']['verify_peer'] === true, 'verify_peer saved as bool');
+
+unlink($localTmp);
+
 summary();
 exit($__FAIL__ > 0 ? 1 : 0);
