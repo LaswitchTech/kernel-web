@@ -126,8 +126,6 @@ The global view context was the root cause of bugs across the app. This has been
 - [x] **Reformat /admin/settings UX** — Card-based layout matching /admin/developer: icons per section, consistent spacing, clear titles/descriptions. 2FA enforcement now a working toggle (AJAX POST). Developer settings on one row. Plugin sections preserved from registry.
 - [P3] **Make 2FA methods extensible** — TOTP (current); SMS/Email would need a plugin interface
 - [P3] **Disable 2FA for users with no selected method** — Defensive guard
-- [P4] **Add optional 2FA setup prompt after login** — 30-day skip logic in user preferences
-- [P4] **Preserve last opened profile modal tab** — sessionStorage persistence; currently always refreshes all tabs
 - [P3] **Fix card-header border-radius to match card radius** — CSS consistency
 - [x] **Design universal config-saving system** — ConfigOverrideService writes to config/local.php via dot-notation keys, atomic file writes, boolean/string normalization, 41 assertions
 - [x] **Integrate ConfigOverrideService into /admin/settings** — Core config keys (app.name, app.url, developer.*) now write to config/local.php via ConfigOverrideService. 2FA enforcement toggle at /admin/settings works via AJAX POST /admin/settings/toggle. Plugin sections still use SystemSettingService (deferred).
@@ -135,14 +133,53 @@ The global view context was the root cause of bugs across the app. This has been
 - [P3] **Send real test email** — Test email button exists in SMTP settings but verify it actually sends
 - [P3] **Move SMTP settings into Mailer settings** — Selectable mailer provider (mail(), SMTP), provider-based settings
 - [P3] **Make SMS settings provider-based** — Extensible via plugins (Telico, Twilio, etc.)
-- [P4] **Add application logo upload/selection** — Admin setting + global application across all layouts
-- [P4] **Add mailer queue/history admin page** — .eml access, server response logs
-- [P4] **Add SMS queue/history admin page** — Provider response logs, delivery status
 - [P2] **Fix organization creation from profile tab** — JSON body parsing fixed; verify end-to-end flow
 - [P3] **Add organization type JSON field** — Extensible org roles beyond basic type discriminator
-- [P4] **Add organization subsidiaries/corporate structure** — Parent-child org relationships
-- [P4] **Rename /signin → /auth/login and /signup → /auth/register** — Standardize auth route naming, preserve redirects/aliases
 - [P3] **Add Variables.md documentation** — Document always-available variables/objects for future developers
+
+---
+
+## V1.0 Target: 2026-08-15
+
+Kernel-Web V1.0 is a stable, self-hostable kernel suitable for building one business application on top.
+
+**In scope for V1.0:**
+
+- [P2] Migrate remaining DB-backed config to ConfigOverrideService
+- [P2] Multi-tenant data scoping (repository-level organization filtering)
+- [P2] Kernel update system (download + apply workflow)
+- [P2] Agent-operable task foundation (shared task/activity model)
+- [P2] API/action contract conventions (safe agent-callable operations)
+- [P3] Make 2FA methods extensible
+- [P3] Disable 2FA for users with no selected method
+- [P3] Fix card-header border-radius to match card radius
+- [P3] Send real test email (verify test-email button works end-to-end)
+- [P3] Move SMTP settings into Mailer settings
+- [P3] Make SMS settings provider-based
+- [P3] Theme/layout runtime management (switch without manual file operations)
+- [P3] ZIP download + checksum verification for extension installs
+- [P3] Kernel update system (version check, download, apply)
+- [P3] Agent runs / automation log foundation
+- [P3] Business application plugin conventions
+- [P3] Project management application foundation
+- [P3] Add Variables.md documentation
+- [P3] Extension submission/review improvements (bulk operations, better UX)
+- [P3] Extension installation progress tracking (large extensions)
+
+**Out of scope for V1.0 (Post-V1.0):**
+
+- OAuth server / client integration
+- Licensing server and validation system
+- Extension marketplace with payment processing
+- Online extension submission/review portal
+- Multi-app ecosystem support
+- Remote update channels (signed release distribution)
+- Plugin signing / checksum verification
+- Distributed authentication sharing
+- AI agent orchestration system
+- Business automation apps
+
+These systems are large enough to warrant their own design documents and development timelines. They are planned but explicitly out of scope for V1.0.
 
 ---
 
@@ -168,24 +205,20 @@ Features that depend on Phase 2 foundations being in place.
 
 ---
 
-## Phase 4: Long-Term
+## Phase 4: Post-V1.0
 
-Major architectural additions requiring significant infrastructure.
+These are planned but explicitly out of scope for V1.0. They are major systems that deserve their own design docs and timelines.
 
 - [P1] OAuth server / client integration
 - [P1] Licensing server and validation system
 - [P2] Extension marketplace with payment processing
 - [P2] Online extension submission/review portal
+- [P2] Multi-tenant data scoping (organization-level query filtering, middleware)
+- [P2] AI agent orchestration system — project-manager agents, coder agents, reviewer agents, documentation agents
 - [P3] Multi-app ecosystem support (kernel shared across applications)
 - [P3] Remote update channels (signed release distribution)
 - [P3] Plugin signing / checksum verification
 - [P3] Distributed authentication sharing (across multiple kernel instances)
-- [P4] Extension analytics / telemetry
-- [P2] Multi-tenant data scoping (organization-level query filtering, middleware)
-- [P2] AI agent orchestration system — project-manager agents, coder agents, reviewer agents, documentation agents
-- [P2] Agent permission model — restrict what agents can read, write, execute, approve, or deploy
-- [P2] Agent approval gates — human approval for commits, destructive actions, external messages, deployments, and sensitive records
-- [P3] Multi-agent work queues — assign tasks to specialized agents with logs, status, retries, and review workflows
 - [P3] Business automation apps — Transport/Logistics, Customs Consultation, and LaswitchTech operational apps
 
 ---
@@ -247,6 +280,7 @@ These are planned or requested but are out of scope for the current development 
 | Contributing docs | Implemented | Documented in /docs/contributing.md |
 | Runtime DB safety | Hardened | DB files excluded from public/, .gitignore updated |
 | Phase 1 stabilization | Closed | 15/15 tasks done |
+| V1.0 target | Planned | Target: 2026-08-15. Scope defined below. OAuth, licensing, marketplace, agent orchestration, and business apps are Post-V1.0. |
 | Testing | Partially implemented | Zero-dependency test framework with 33 suites — router, plugin, migration, auth, mailer, remember_me, forgot_password, email_verification, registration, two_factor, two_factor_profile, organization, organization_runtime, smtp, smtp_settings, telico, telico_settings, version, messenger, profile_organizations, global_context, view_globals, layout_context_regression, dev_tools_partial, devtools_controller, devtools_scope, config_runtime, env_config, audit_filter, audit_render, debug_audit_logger, barcode, 2fa_login_flow. CRUD coverage for users/groups/permissions/tokens complete. Mailer + SMTP + Telico foundation implemented. Two-factor auth includes regression test for missing-schema degradation. VersionProvider tests cover kernel/app version resolution. Messenger + Telico tests cover transport interface, message immutability, and API client validation. See docs/developer/testing.md |
 | Mailer | Implemented | Core infrastructure: MailMessage, Attachment, TemplateRegistry, TransportInterface, MailTransport (mail()), Mailer facade, MailerException. SMTP transport plugin with settings, test-email endpoint, bootstrap hook transport swap. Config at config/mail.php. 86 assertions (63 mailer + 23 smtp). Design at docs/developer/mailer.md. SMTP docs at docs/developer/smtp-plugin.md. |
 | Messenger (SMS) | Implemented | Core infrastructure: Message (immutable readonly VO), MessengerTransportInterface, Messenger service (wired in container), MessengerException. Telico transport plugin with settings (username, SMS password, caller ID), test-sms endpoint, bootstrap hook transport swap. Config at config/messenger.php. 34 assertions (22 messenger + 12 telico). Design at docs/developer/messenger.md. Telico plugin docs at docs/developer/telico-plugin.md. |
