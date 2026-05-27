@@ -16,6 +16,13 @@
             </span>
             <?php endif; ?>
             <span class="badge bg-secondary">Update check not configured</span>
+            <?php if ($versions['updates']['configured']): ?>
+                <?php if ($versions['updates']['kernel_available']): ?>
+                    <span class="badge bg-success" id="update-available-badge">Update v<?= htmlspecialchars($versions['updates']['kernel_latest'] ?? 'unknown') ?> available</span>
+                <?php else: ?>
+                    <span class="badge bg-success">Up to date</span>
+                <?php endif; ?>
+            <?php endif; ?>
         </div>
     </div>
 </div>
@@ -99,6 +106,14 @@
                         <div>
                             <div class="small fw-semibold">Extensions</div>
                             <div class="text-muted" style="font-size:.8rem;">Browse discovered plugins, themes, and layouts</div>
+                        </div>
+                        <i class="bi bi-chevron-right ms-auto text-muted small"></i>
+                    </a>
+                    <a href="/admin/updates" class="list-group-item list-group-item-action d-flex align-items-center gap-3 px-0">
+                        <i class="bi bi-arrow-down-square text-muted"></i>
+                        <div>
+                            <div class="small fw-semibold">Kernel Updates</div>
+                            <div class="text-muted" style="font-size:.8rem;">Check, download, and apply kernel updates</div>
                         </div>
                         <i class="bi bi-chevron-right ms-auto text-muted small"></i>
                     </a>

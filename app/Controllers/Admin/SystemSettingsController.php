@@ -47,8 +47,9 @@ class SystemSettingsController extends Controller
         $override  = new ConfigOverrideService();
         $local     = $override->readLocal();
 
-        // Register developer section so toggle renders in /admin/settings.
+        // Register developer and kernel updates sections so they render in /admin/settings.
         $this->registerDeveloperSection();
+        $this->registerUpdatesSection();
 
         $settings = [
             'app_name'                 => $config['name'] ?? 'Kernel-Web',
@@ -60,6 +61,7 @@ class SystemSettingsController extends Controller
             'developer.dev_console'    => ($local['developer']['dev_console'] ?? false) === true
                                           || ($config['dev_console'] ?? false) === true,
             'auth.two_factor.enforced' => ($rawConfig['auth']['two_factor']['enforced'] ?? false) === true,
+            'updates.kernel.url'       => $local['updates']['kernel'] ?? $local['kernel'] ?? '',
         ];
 
         $sections = SettingsRegistry::getSections($permissions);
@@ -423,6 +425,57 @@ class SystemSettingsController extends Controller
                         $writer->set($key, ConfigOverrideService::normalizeFormValue($input[$key]));
                     }
                 }
+            },
+            'source' => 'core',
+        ]);
+    }
+
+    /**
+     * Register the Kernel Updates settings section (update source URL).
+     */
+    private function registerUpdatesSection(): void
+    {
+        if (SettingsRegistry::getSection('updates') !== null) {
+            return;
+        }
+
+        SettingsRegistry::addSection([
+            'id'       => 'updates',
+            'label'    => 'Kernel Updates',
+            'column'   => 'left',
+            'order'    => 4,
+            'permission' => null,
+            'keys'     => ['updates.kernel.url'],
+            'render'   => function (array $context): string {
+                $settings = $context['settings'] ?? [];
+                $errors   = $context['errors'] ?? [];
+
+                $ec = function(string $key) use ($errors): string {
+                    return isset($errors[$key]) ? 'is-invalid' : '';
+                };
+
+                return '<div class="mb-0">'
+                    . '<label for="updates_kernel_url" class="form-label small fw-semibold">Update Source URL</label>'
+                    . '<input type="url" class="form-control form-control-sm ' . $ec('updates.kernel.url') . '" '
+                    . 'id="updates_kernel_url" name="updates_kernel_url" '
+                    . 'value="' . htmlspecialchars($settings['updates.kernel.url'] ?? '') . '" '
+                    . 'placeholder="https://example.com/kernel-update.json">'
+                    . '<div class="form-text mt-1">JSON source for version + download URL. Leave blank to disable update checks.</div>'
+                    . '<div class="invalid-feedback">' . htmlspecialchars($errors['updates.kernel.url'] ?? '') . '</div>'
+                    . '</div>';
+            },
+            'validate' => function (array $input): array {
+                $errors = [];
+                if (isset($input['updates.kernel.url']) && $input['updates.kernel.url'] !== '') {
+                    if (!filter_var($input['updates.kernel.url'], FILTER_VALIDATE_URL)) {
+                        $errors['updates.kernel.url'] = 'Must be a valid URL.';
+                    }
+                }
+                return $errors;
+            },
+            'saveConfig' => function (array $input, \App\Contracts\ConfigWriterInterface $writer): void {
+                $url = trim($input['updates.kernel.url'] ?? '');
+                $writer->set('updates.kernel', $url === '' ? null : $url);
             },
             'source' => 'core',
         ]);

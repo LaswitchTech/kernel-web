@@ -123,6 +123,10 @@ class VersionProvider
             'updates' => [
                 'configured' => false,
                 'kernel_available' => null,
+                'kernel_latest' => null,
+                'kernel_download_url' => null,
+                'kernel_checksum' => null,
+                'kernel_notes' => null,
                 'application_available' => null,
                 'extensions_available' => null,
             ],

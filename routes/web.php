@@ -65,6 +65,14 @@ $router->get('/admin/developer', 'Controllers\Admin\DeveloperController@tools', 
 $router->get('/admin/developer/scaffold', 'Controllers\Admin\DeveloperController@createScaffold', ['WebAuth', 'WebPermission:admin']);
 $router->post('/admin/developer/scaffold', 'Controllers\Admin\DeveloperController@createScaffold', ['WebAuth', 'WebPermission:admin']);
 
+// Admin Kernel Updates — version check, download, apply.
+$router->get('/admin/updates', 'Controllers\Admin\KernelUpdatesController@index', ['WebAuth', 'WebPermission:admin']);
+$router->get('/admin/updates/staging', 'Controllers\Admin\KernelUpdatesController@staging', ['WebAuth', 'WebPermission:admin']);
+$router->delete('/admin/updates/staging/delete', 'Controllers\Admin\KernelUpdatesController@deleteStaged', ['WebAuth', 'WebPermission:admin']);
+$router->post('/admin/updates/download', 'Controllers\Admin\KernelUpdatesController@download', ['WebAuth', 'WebPermission:admin']);
+$router->post('/admin/updates/apply', 'Controllers\Admin\KernelUpdatesController@apply', ['WebAuth', 'WebPermission:admin']);
+$router->post('/admin/updates/rollback', 'Controllers\Admin\KernelUpdatesController@rollback', ['WebAuth', 'WebPermission:admin']);
+
 // Admin permissions — full CRUD.
 $router->get('/admin/permissions', 'Controllers\Admin\PermissionController@index', ['WebAuth', 'WebPermission:admin']);
 $router->get('/admin/permissions/create', 'Controllers\Admin\PermissionController@createForm', ['WebAuth', 'WebPermission:admin']);

@@ -7,6 +7,8 @@ use App\Models\AuditLogRepository;
 use App\Models\GroupRepository;
 use App\Models\PermissionRepository;
 use App\Models\UserRepository;
+use App\Services\ConfigOverrideService;
+use App\Services\KernelUpdateChecker;
 
 /**
  * Admin area controller — landing page, permissions list, and audit log.
@@ -78,6 +80,39 @@ class AdminController extends Controller
                 // Catalog may not exist — count stays 0.
             }
         }
+
+        // Check kernel update status for admin overview.
+        $updateUrl = null;
+        $localConfig = (new ConfigOverrideService())->readLocal();
+        if (isset($localConfig['updates']['kernel'])) {
+            $updateUrl = $localConfig['updates']['kernel'];
+        } elseif (isset($localConfig['kernel']['url'])) {
+            $updateUrl = $localConfig['kernel']['url'];
+        }
+
+        $updateInfo = [
+            'configured' => false,
+            'kernel_available' => null,
+            'kernel_latest' => null,
+            'kernel_download_url' => null,
+            'kernel_checksum' => null,
+            'kernel_notes' => null,
+        ];
+
+        if ($updateUrl !== null && $updateUrl !== '') {
+            $checker = new KernelUpdateChecker($updateUrl);
+            $checkResult = $checker->check($kernelVersion);
+            $updateInfo['configured'] = true;
+            $updateInfo['kernel_available'] = $checkResult->has_update ?? false;
+            $updateInfo['kernel_latest'] = $checkResult->latest_version ?? null;
+            $updateInfo['kernel_download_url'] = $checkResult->download_url ?? null;
+            $updateInfo['kernel_checksum'] = $checkResult->checksum ?? null;
+            $updateInfo['kernel_notes'] = $checkResult->notes ?? null;
+        }
+
+        $versions['updates']['configured'] = $updateInfo['configured'];
+        $versions['updates']['kernel_available'] = $updateInfo['kernel_available'];
+        $versions['updates']['kernel_latest'] = $updateInfo['kernel_latest'];
 
         $breadcrumbs = [
             ['label' => 'Administration', 'url' => '/admin'],
