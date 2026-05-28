@@ -5,19 +5,16 @@ namespace App\Core;
 /**
  * Abstract base for repositories that support organization-level data scoping.
  *
- * This interface defines the contract for repository methods that filter
- * queries by organization. It is intentionally lightweight — the kernel
- * provides no automatic scoping. Callers explicitly request scope.
- *
  * Implementation pattern:
  *   class MyEntityRepository extends OrganizationScopedRepository
  *   {
- *       public function findAll(): array
+ *       public function findAll(array $params = []): array
  *       {
- *           $where = $this->organizationWhere();
- *           $sql = 'SELECT * FROM my_entities';
+ *           $orgParams = $this->organizationParams();
+ *           $where     = $this->organizationWhere();
+ *           $sql       = 'SELECT * FROM my_entities';
  *           if ($where !== '') $sql .= ' ' . $where;
- *           return $this->db->fetch($sql);
+ *           return $this->db->fetch($sql, array_merge($params, $orgParams));
  *       }
  *   }
  *
@@ -117,11 +114,25 @@ abstract class OrganizationScopedRepository
     }
 
     /**
+     * Get the current organization IDs for use as query parameters.
+     *
+     * Returns an array of parameter values (e.g. [1, 2]) that correspond
+     * to the ? placeholders in the WHERE clause. When unscoped, returns [].
+     */
+    public function organizationParams(): array
+    {
+        if ($this->organizationIds === null) {
+            return [];
+        }
+        return array_map('intval', array_values($this->organizationIds));
+    }
+
+    /**
      * Build the WHERE clause for the current instance scope.
      *
      * @param string $tableAlias Optional table prefix
      * @param string $column Column name
-     * @return string SQL fragment (may be empty if unscoped)
+     * @return string SQL WHERE fragment (empty string if unscoped)
      */
     protected function organizationWhere(
         string $tableAlias = '',
@@ -137,5 +148,30 @@ abstract class OrganizationScopedRepository
             $tableAlias,
             $column
         );
+    }
+
+    /**
+     * Build an AND clause for queries that already have a WHERE clause.
+     *
+     * @param string $tableAlias Optional table prefix
+     * @param string $column Column name
+     * @return string SQL fragment (empty string if unscoped)
+     */
+    protected function organizationAnd(
+        string $tableAlias = '',
+        string $column = 'organization_id'
+    ): string {
+        if ($this->organizationIds === null) {
+            return '';
+        }
+
+        $fragment = static::buildOrganizationWhereClause(
+            $this->organizationIds,
+            $tableAlias,
+            $column
+        );
+
+        // Replace leading "WHERE" with "AND" (case-insensitive).
+        return preg_replace('/^\s*WHERE\b/i', 'AND', $fragment);
     }
 }

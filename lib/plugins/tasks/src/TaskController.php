@@ -30,7 +30,13 @@ class TaskController extends Controller
     {
         [$principal, $config, $appName, $displayName, $permissions] = $this->ctx();
 
-        $service   = new TaskService(new TaskRepository($this->container->get('db')));
+        $db         = $this->container->get('db');
+        $repo       = new TaskRepository($db);
+        $orgContext = \App\Core\OrganizationContext::current();
+        if ($orgContext !== null) {
+            $repo->scopeOrganization($orgContext->id);
+        }
+        $service = new TaskService($repo);
         $userId    = (int) ($principal['user']['id'] ?? 0);
 
         // Allowed scope values; default to 'all'.
@@ -145,6 +151,10 @@ class TaskController extends Controller
             $executionPayload = null;
         }
 
+        $db            = $this->container->get('db');
+        $orgContext    = \App\Core\OrganizationContext::current();
+        $organizationId = $orgContext !== null ? $orgContext->id : null;
+
         $input = [
             'title'              => $_POST['title']       ?? '',
             'description'        => $_POST['description'] ?? '',
@@ -157,9 +167,10 @@ class TaskController extends Controller
             'entity_type'        => $_POST['entity_type'] ?? null,
             'entity_id'          => $_POST['entity_id']   ?? null,
             'created_by_user_id' => (int) ($principal['user']['id'] ?? 0) ?: null,
+            'organization_id'    => $organizationId,
         ];
 
-        $service = new TaskService(new TaskRepository($this->container->get('db')));
+        $service = new TaskService(new TaskRepository($db));
 
         try {
             $newId = $service->create($input);

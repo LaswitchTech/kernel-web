@@ -12,7 +12,7 @@ namespace App\Plugins\tasks;
  *
  * Returns raw arrays; no domain objects.
  */
-class TaskRepository
+class TaskRepository extends \App\Core\OrganizationScopedRepository
 {
     private \App\Core\DatabaseInterface $db;
 
@@ -21,9 +21,7 @@ class TaskRepository
         $this->db = $db;
     }
 
-    // ---------------------------------------------------------------
-    // Read
-    // ---------------------------------------------------------------
+    // ------READ---------------------------------------------------------------
 
     /**
      * Return all tasks, newest first.
@@ -32,34 +30,40 @@ class TaskRepository
      */
     public function findAll(): array
     {
-        return $this->db->fetch(
-            "SELECT
-                t.id,
-                t.title,
-                t.description,
-                t.status,
-                t.assigned_type,
-                t.assigned_id,
-                t.execution_type,
-                t.last_run_at,
-                t.last_run_status,
-                t.due_at,
-                t.entity_type,
-                t.entity_id,
-                t.created_by_user_id,
-                t.created_at,
-                t.updated_at,
-                a.username     AS assigned_username,
-                a.display_name AS assigned_display,
-                c.username     AS created_username,
-                c.display_name AS created_display
-            FROM   tasks t
-            LEFT   JOIN users a ON (t.assigned_type = 'user' AND a.id = t.assigned_id)
-            LEFT   JOIN users c ON c.id = t.created_by_user_id
-            WHERE  t.deleted_at IS NULL
-            ORDER  BY t.created_at DESC",
-            []
-        );
+        $and  = $this->organizationAnd();
+        $orgParams = $this->organizationParams();
+
+        $sql = "SELECT
+            t.id,
+            t.title,
+            t.description,
+            t.status,
+            t.assigned_type,
+            t.assigned_id,
+            t.execution_type,
+            t.last_run_at,
+            t.last_run_status,
+            t.due_at,
+            t.entity_type,
+            t.entity_id,
+            t.created_by_user_id,
+            t.organization_id,
+            t.created_at,
+            t.updated_at,
+            a.username     AS assigned_username,
+            a.display_name AS assigned_display,
+            c.username     AS created_username,
+            c.display_name AS created_display
+         FROM   tasks t
+         LEFT   JOIN users a ON (t.assigned_type = 'user' AND a.id = t.assigned_id)
+         LEFT   JOIN users c ON c.id = t.created_by_user_id
+         WHERE  t.deleted_at IS NULL";
+        if ($and !== '') {
+            $sql .= ' ' . $and;
+        }
+        $sql .= " ORDER  BY t.created_at DESC";
+
+        return $this->db->fetch($sql, $orgParams);
     }
 
     /**
@@ -69,36 +73,42 @@ class TaskRepository
      */
     public function findByEntity(string $entityType, int $entityId): array
     {
-        return $this->db->fetch(
-            "SELECT
-                t.id,
-                t.title,
-                t.description,
-                t.status,
-                t.assigned_type,
-                t.assigned_id,
-                t.execution_type,
-                t.last_run_at,
-                t.last_run_status,
-                t.due_at,
-                t.entity_type,
-                t.entity_id,
-                t.created_by_user_id,
-                t.created_at,
-                t.updated_at,
-                a.username     AS assigned_username,
-                a.display_name AS assigned_display,
-                c.username     AS created_username,
-                c.display_name AS created_display
-            FROM   tasks t
-            LEFT   JOIN users a ON (t.assigned_type = 'user' AND a.id = t.assigned_id)
-            LEFT   JOIN users c ON c.id = t.created_by_user_id
-            WHERE  t.entity_type = ?
-              AND  t.entity_id   = ?
-              AND  t.deleted_at  IS NULL
-            ORDER  BY t.created_at DESC",
-            [$entityType, $entityId]
-        );
+        $and    = $this->organizationAnd();
+        $params = array_merge([$entityType, $entityId], $this->organizationParams());
+
+        $sql = "SELECT
+            t.id,
+            t.title,
+            t.description,
+            t.status,
+            t.assigned_type,
+            t.assigned_id,
+            t.execution_type,
+            t.last_run_at,
+            t.last_run_status,
+            t.due_at,
+            t.entity_type,
+            t.entity_id,
+            t.created_by_user_id,
+            t.organization_id,
+            t.created_at,
+            t.updated_at,
+            a.username     AS assigned_username,
+            a.display_name AS assigned_display,
+            c.username     AS created_username,
+            c.display_name AS created_display
+         FROM   tasks t
+         LEFT   JOIN users a ON (t.assigned_type = 'user' AND a.id = t.assigned_id)
+         LEFT   JOIN users c ON c.id = t.created_by_user_id
+         WHERE  t.entity_type = ?
+           AND  t.entity_id   = ?
+           AND  t.deleted_at  IS NULL";
+        if ($and !== '') {
+            $sql .= ' ' . $and;
+        }
+        $sql .= " ORDER  BY t.created_at DESC";
+
+        return $this->db->fetch($sql, $params);
     }
 
     /**
@@ -108,41 +118,45 @@ class TaskRepository
      */
     public function findById(int $id): ?array
     {
-        return $this->db->fetchOne(
-            "SELECT
-                t.id,
-                t.title,
-                t.description,
-                t.status,
-                t.assigned_type,
-                t.assigned_id,
-                t.execution_type,
-                t.execution_payload,
-                t.last_run_at,
-                t.last_run_status,
-                t.last_run_message,
-                t.due_at,
-                t.entity_type,
-                t.entity_id,
-                t.created_by_user_id,
-                t.created_at,
-                t.updated_at,
-                a.username     AS assigned_username,
-                a.display_name AS assigned_display,
-                c.username     AS created_username,
-                c.display_name AS created_display
-            FROM   tasks t
-            LEFT   JOIN users a ON (t.assigned_type = 'user' AND a.id = t.assigned_id)
-            LEFT   JOIN users c ON c.id = t.created_by_user_id
-            WHERE  t.id = ?
-              AND  t.deleted_at IS NULL",
-            [$id]
-        );
+        $and    = $this->organizationAnd();
+        $params = array_merge([$id], $this->organizationParams());
+
+        $sql = "SELECT
+            t.id,
+            t.title,
+            t.description,
+            t.status,
+            t.assigned_type,
+            t.assigned_id,
+            t.execution_type,
+            t.execution_payload,
+            t.last_run_at,
+            t.last_run_status,
+            t.last_run_message,
+            t.due_at,
+            t.entity_type,
+            t.entity_id,
+            t.created_by_user_id,
+            t.organization_id,
+            t.created_at,
+            t.updated_at,
+            a.username     AS assigned_username,
+            a.display_name AS assigned_display,
+            c.username     AS created_username,
+            c.display_name AS created_display
+         FROM   tasks t
+         LEFT   JOIN users a ON (t.assigned_type = 'user' AND a.id = t.assigned_id)
+         LEFT   JOIN users c ON c.id = t.created_by_user_id
+         WHERE  t.id = ?
+           AND  t.deleted_at IS NULL";
+        if ($and !== '') {
+            $sql .= ' ' . $and;
+        }
+
+        return $this->db->fetchOne($sql, $params);
     }
 
-    // ---------------------------------------------------------------
-    // Write
-    // ---------------------------------------------------------------
+    // ------WRITE--------------------------------------------------------------
 
     /**
      * Insert a new task row.
@@ -157,6 +171,7 @@ class TaskRepository
      *   entity_type:         string|null,
      *   entity_id:           int|null,
      *   created_by_user_id:  int|null,
+     *   organization_id:     int|null,
      * } $data
      * @return int  The new task ID
      */
@@ -169,8 +184,9 @@ class TaskRepository
                 (title, description, status, due_at,
                  entity_type, entity_id, created_by_user_id,
                  assigned_type, assigned_id, execution_type, execution_payload,
+                 organization_id,
                  created_at, updated_at)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
             [
                 $data['title'],
                 $data['description']        ?? null,
@@ -183,6 +199,7 @@ class TaskRepository
                 $data['assigned_id']        ?? null,
                 $data['execution_type']     ?? null,
                 $data['execution_payload']  ?? null,
+                $data['organization_id']    ?? null,
                 $now,
                 $now,
             ]
@@ -233,170 +250,202 @@ class TaskRepository
         );
     }
 
-    // ---------------------------------------------------------------
-    // User-scoped queries
-    // ---------------------------------------------------------------
+    // ------USER-SCOPED--------------------------------------------------------
 
     public function findForUser(int $userId): array
     {
-        return $this->db->fetch(
-            "SELECT
-                t.id, t.title, t.description, t.status,
-                t.assigned_type, t.assigned_id, t.due_at,
-                t.entity_type, t.entity_id, t.created_by_user_id,
-                t.created_at, t.updated_at,
-                a.username     AS assigned_username,
-                a.display_name AS assigned_display,
-                c.username     AS created_username,
-                c.display_name AS created_display
-            FROM   tasks t
-            LEFT   JOIN users a ON (t.assigned_type = 'user' AND a.id = t.assigned_id)
-            LEFT   JOIN users c ON c.id = t.created_by_user_id
-            WHERE  t.assigned_type = 'user'
-              AND  t.assigned_id   = ?
-              AND  t.status NOT IN ('completed', 'canceled')
-              AND  t.deleted_at IS NULL
-            ORDER  BY CASE WHEN t.due_at IS NULL THEN 1 ELSE 0 END,
-                      t.due_at ASC,
-                      t.created_at DESC",
-            [$userId]
-        );
+        $and    = $this->organizationAnd();
+        $params = array_merge([$userId], $this->organizationParams());
+
+        $sql = "SELECT
+            t.id, t.title, t.description, t.status,
+            t.assigned_type, t.assigned_id, t.due_at,
+            t.entity_type, t.entity_id, t.created_by_user_id,
+            t.created_at, t.updated_at,
+            a.username     AS assigned_username,
+            a.display_name AS assigned_display,
+            c.username     AS created_username,
+            c.display_name AS created_display
+         FROM   tasks t
+         LEFT   JOIN users a ON (t.assigned_type = 'user' AND a.id = t.assigned_id)
+         LEFT   JOIN users c ON c.id = t.created_by_user_id
+         WHERE  t.assigned_type = 'user'
+           AND  t.assigned_id   = ?
+           AND  t.status NOT IN ('completed', 'canceled')
+           AND  t.deleted_at IS NULL";
+        if ($and !== '') {
+            $sql .= ' ' . $and;
+        }
+        $sql .= " ORDER  BY CASE WHEN t.due_at IS NULL THEN 1 ELSE 0 END,
+             t.due_at ASC,
+             t.created_at DESC";
+
+        return $this->db->fetch($sql, $params);
     }
 
     public function findOverdueForUser(int $userId): array
     {
-        return $this->db->fetch(
-            "SELECT
-                t.id, t.title, t.description, t.status,
-                t.assigned_type, t.assigned_id, t.due_at,
-                t.entity_type, t.entity_id, t.created_by_user_id,
-                t.created_at, t.updated_at,
-                a.username     AS assigned_username,
-                a.display_name AS assigned_display,
-                c.username     AS created_username,
-                c.display_name AS created_display
-            FROM   tasks t
-            LEFT   JOIN users a ON (t.assigned_type = 'user' AND a.id = t.assigned_id)
-            LEFT   JOIN users c ON c.id = t.created_by_user_id
-            WHERE  t.assigned_type = 'user'
-              AND  t.assigned_id   = ?
-              AND  t.status NOT IN ('completed', 'canceled')
-              AND  t.deleted_at IS NULL
-              AND  t.due_at IS NOT NULL
-              AND  DATE(t.due_at) < DATE('now')
-            ORDER  BY t.due_at ASC, t.created_at DESC",
-            [$userId]
-        );
+        $and    = $this->organizationAnd();
+        $params = array_merge([$userId], $this->organizationParams());
+
+        $sql = "SELECT
+            t.id, t.title, t.description, t.status,
+            t.assigned_type, t.assigned_id, t.due_at,
+            t.entity_type, t.entity_id, t.created_by_user_id,
+            t.created_at, t.updated_at,
+            a.username     AS assigned_username,
+            a.display_name AS assigned_display,
+            c.username     AS created_username,
+            c.display_name AS created_display
+         FROM   tasks t
+         LEFT   JOIN users a ON (t.assigned_type = 'user' AND a.id = t.assigned_id)
+         LEFT   JOIN users c ON c.id = t.created_by_user_id
+         WHERE  t.assigned_type = 'user'
+           AND  t.assigned_id   = ?
+           AND  t.status NOT IN ('completed', 'canceled')
+           AND  t.deleted_at IS NULL
+           AND  t.due_at IS NOT NULL
+           AND  DATE(t.due_at) < DATE('now')";
+        if ($and !== '') {
+            $sql .= ' ' . $and;
+        }
+        $sql .= " ORDER  BY t.due_at ASC, t.created_at DESC";
+
+        return $this->db->fetch($sql, $params);
     }
 
     public function findDueTodayForUser(int $userId): array
     {
-        return $this->db->fetch(
-            "SELECT
-                t.id, t.title, t.description, t.status,
-                t.assigned_type, t.assigned_id, t.due_at,
-                t.entity_type, t.entity_id, t.created_by_user_id,
-                t.created_at, t.updated_at,
-                a.username     AS assigned_username,
-                a.display_name AS assigned_display,
-                c.username     AS created_username,
-                c.display_name AS created_display
-            FROM   tasks t
-            LEFT   JOIN users a ON (t.assigned_type = 'user' AND a.id = t.assigned_id)
-            LEFT   JOIN users c ON c.id = t.created_by_user_id
-            WHERE  t.assigned_type = 'user'
-              AND  t.assigned_id   = ?
-              AND  t.status NOT IN ('completed', 'canceled')
-              AND  t.deleted_at IS NULL
-              AND  t.due_at IS NOT NULL
-              AND  DATE(t.due_at) = DATE('now')
-            ORDER  BY t.due_at ASC, t.created_at DESC",
-            [$userId]
-        );
+        $and    = $this->organizationAnd();
+        $params = array_merge([$userId], $this->organizationParams());
+
+        $sql = "SELECT
+            t.id, t.title, t.description, t.status,
+            t.assigned_type, t.assigned_id, t.due_at,
+            t.entity_type, t.entity_id, t.created_by_user_id,
+            t.created_at, t.updated_at,
+            a.username     AS assigned_username,
+            a.display_name AS assigned_display,
+            c.username     AS created_username,
+            c.display_name AS created_display
+         FROM   tasks t
+         LEFT   JOIN users a ON (t.assigned_type = 'user' AND a.id = t.assigned_id)
+         LEFT   JOIN users c ON c.id = t.created_by_user_id
+         WHERE  t.assigned_type = 'user'
+           AND  t.assigned_id   = ?
+           AND  t.status NOT IN ('completed', 'canceled')
+           AND  t.deleted_at IS NULL
+           AND  t.due_at IS NOT NULL
+           AND  DATE(t.due_at) = DATE('now')";
+        if ($and !== '') {
+            $sql .= ' ' . $and;
+        }
+        $sql .= " ORDER  BY t.due_at ASC, t.created_at DESC";
+
+        return $this->db->fetch($sql, $params);
     }
 
     public function countOpenForUser(int $userId): int
     {
-        $row = $this->db->fetchOne(
-            "SELECT COUNT(*) AS n
+        $and    = $this->organizationAnd();
+        $params = array_merge([$userId], $this->organizationParams());
+
+        $sql = "SELECT COUNT(*) AS n
              FROM   tasks
              WHERE  assigned_type = 'user'
                AND  assigned_id   = ?
                AND  status IN ('open', 'in_progress')
-               AND  deleted_at IS NULL",
-            [$userId]
-        );
-        return (int) ($row['n'] ?? 0);
+               AND  deleted_at IS NULL";
+        if ($and !== '') {
+            $sql .= ' ' . $and;
+        }
+
+        return (int) (($this->db->fetchOne($sql, $params)['n'] ?? 0));
     }
 
     public function countOverdueForUser(int $userId): int
     {
-        $row = $this->db->fetchOne(
-            "SELECT COUNT(*) AS n
+        $and    = $this->organizationAnd();
+        $params = array_merge([$userId], $this->organizationParams());
+
+        $sql = "SELECT COUNT(*) AS n
              FROM   tasks
              WHERE  assigned_type = 'user'
                AND  assigned_id   = ?
                AND  status NOT IN ('completed', 'canceled')
                AND  deleted_at IS NULL
                AND  due_at IS NOT NULL
-               AND  DATE(due_at) < DATE('now')",
-            [$userId]
-        );
-        return (int) ($row['n'] ?? 0);
+               AND  DATE(due_at) < DATE('now')";
+        if ($and !== '') {
+            $sql .= ' ' . $and;
+        }
+
+        return (int) (($this->db->fetchOne($sql, $params)['n'] ?? 0));
     }
 
     public function countDueTodayForUser(int $userId): int
     {
-        $row = $this->db->fetchOne(
-            "SELECT COUNT(*) AS n
+        $and    = $this->organizationAnd();
+        $params = array_merge([$userId], $this->organizationParams());
+
+        $sql = "SELECT COUNT(*) AS n
              FROM   tasks
              WHERE  assigned_type = 'user'
                AND  assigned_id   = ?
                AND  status NOT IN ('completed', 'canceled')
                AND  deleted_at IS NULL
                AND  due_at IS NOT NULL
-               AND  DATE(due_at) = DATE('now')",
-            [$userId]
-        );
-        return (int) ($row['n'] ?? 0);
+               AND  DATE(due_at) = DATE('now')";
+        if ($and !== '') {
+            $sql .= ' ' . $and;
+        }
+
+        return (int) (($this->db->fetchOne($sql, $params)['n'] ?? 0));
     }
 
     public function findUnassigned(): array
     {
-        return $this->db->fetch(
-            "SELECT
-                t.id, t.title, t.description, t.status,
-                t.assigned_type, t.assigned_id, t.due_at,
-                t.entity_type, t.entity_id, t.created_by_user_id,
-                t.created_at, t.updated_at,
-                c.username     AS created_username,
-                c.display_name AS created_display
-            FROM   tasks t
-            LEFT   JOIN users c ON c.id = t.created_by_user_id
-            WHERE  t.assigned_type IS NULL
-              AND  t.status NOT IN ('completed', 'canceled')
-              AND  t.deleted_at IS NULL
-            ORDER  BY t.created_at DESC",
-            []
-        );
+        $and    = $this->organizationAnd();
+        $params = $this->organizationParams();
+
+        $sql = "SELECT
+            t.id, t.title, t.description, t.status,
+            t.assigned_type, t.assigned_id, t.due_at,
+            t.entity_type, t.entity_id, t.created_by_user_id,
+            t.created_at, t.updated_at,
+            c.username     AS created_username,
+            c.display_name AS created_display
+         FROM   tasks t
+         LEFT   JOIN users c ON c.id = t.created_by_user_id
+         WHERE  assigned_type IS NULL
+           AND  status NOT IN ('completed', 'canceled')
+           AND  deleted_at IS NULL";
+        if ($and !== '') {
+            $sql .= ' ' . $and;
+        }
+        $sql .= " ORDER  BY t.created_at DESC";
+
+        return $this->db->fetch($sql, $params);
     }
 
     public function countUnassigned(): int
     {
-        $row = $this->db->fetchOne(
-            "SELECT COUNT(*) AS n
+        $and    = $this->organizationAnd();
+        $params = $this->organizationParams();
+
+        $sql = "SELECT COUNT(*) AS n
              FROM   tasks
              WHERE  assigned_type IS NULL
                AND  status NOT IN ('completed', 'canceled')
-               AND  deleted_at IS NULL",
-            []
-        );
-        return (int) ($row['n'] ?? 0);
+               AND  deleted_at IS NULL";
+        if ($and !== '') {
+            $sql .= ' ' . $and;
+        }
+
+        return (int) (($this->db->fetchOne($sql, $params)['n'] ?? 0));
     }
 
-    // ---------------------------------------------------------------
-    // Reminder queries (used by scripts/task-reminders.php)
-    // ---------------------------------------------------------------
+    // ------REMINDER QUERIES (used by scripts/task-reminders.php)--------------
 
     public function findDueTodayPendingReminder(): array
     {
@@ -458,9 +507,7 @@ class TaskRepository
         );
     }
 
-    // ---------------------------------------------------------------
-    // Cron / scheduler queries
-    // ---------------------------------------------------------------
+    // ------SCHEDULER----------------------------------------------------------
 
     public function findRunnableCron(): array
     {
