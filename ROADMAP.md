@@ -146,7 +146,7 @@ Kernel-Web V1.0 is a stable, self-hostable kernel suitable for building one busi
 **In scope for V1.0:**
 
 - [P2] Migrate remaining DB-backed config to ConfigOverrideService
-- [P1→P2] Multi-tenant data scoping — **Repository-level interface** (`OrganizationScopedRepository`) completed; **data model scoping** (migration 0055, TaskRepository, NoteRepository, TaskController) completed
+- [x] Multi-tenant data scoping — Repository interface, data model scoping, and middleware/auto-scoping completed
 - [P2] Kernel update system (download + apply workflow)
 - [P2] Agent-operable task foundation (shared task/activity model)
 - [P2] API/action contract conventions (safe agent-callable operations)
@@ -213,7 +213,7 @@ These are planned but explicitly out of scope for V1.0. They are major systems t
 - [P1] Licensing server and validation system
 - [P2] Extension marketplace with payment processing
 - [P2] Online extension submission/review portal
-- [P2] Multi-tenant data scoping (organization-level query filtering, middleware)
+- [x] Multi-tenant data scoping (organization-level query filtering, middleware)
 - [P2] AI agent orchestration system — project-manager agents, coder agents, reviewer agents, documentation agents
 - [P3] Multi-app ecosystem support (kernel shared across applications)
 - [P3] Remote update channels (signed release distribution)

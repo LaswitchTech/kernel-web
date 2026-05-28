@@ -30,12 +30,9 @@ class TaskController extends Controller
     {
         [$principal, $config, $appName, $displayName, $permissions] = $this->ctx();
 
-        $db         = $this->container->get('db');
-        $repo       = new TaskRepository($db);
-        $orgContext = \App\Core\OrganizationContext::current();
-        if ($orgContext !== null) {
-            $repo->scopeOrganization($orgContext->id);
-        }
+        $db   = $this->container->get('db');
+        $repo = new TaskRepository($db);
+        $repo->scopeFromContainer($this->container);
         $service = new TaskService($repo);
         $userId    = (int) ($principal['user']['id'] ?? 0);
 
@@ -152,8 +149,7 @@ class TaskController extends Controller
         }
 
         $db            = $this->container->get('db');
-        $orgContext    = \App\Core\OrganizationContext::current();
-        $organizationId = $orgContext !== null ? $orgContext->id : null;
+        $organizationId = $this->container->get('org_scope');
 
         $input = [
             'title'              => $_POST['title']       ?? '',

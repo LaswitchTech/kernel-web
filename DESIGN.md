@@ -624,7 +624,8 @@ Full design at [`docs/developer/organizations.md`](docs/developer/organizations.
 
 **Scoping strategy:**
 - Repository pattern (explicit `scopeOrganization()` on repositories) as default
-- Optional middleware (`OrganizationMiddleware`) for cross-cutting scoping (opt-in)
+- Optional middleware (`OrganizationScope`) for automatic scoping via container (`opt-in`)
+- `OrganizationScopedRepository::scopeFromContainer(Container)` reads `'org_scope'` from the container and applies it
 - Session stores `org_default_{userId}` for active org resolution
 
 **Key design decisions:**

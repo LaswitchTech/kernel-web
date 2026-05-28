@@ -52,8 +52,10 @@ class NotesController extends Controller
             return;
         }
 
+        $orgId = $this->container->get('org_scope');
+
         try {
-            $noteId = $this->service()->addNote($entityType, $entityId, $userId, $content);
+            $noteId = $this->service()->addNote($entityType, $entityId, $userId, $content, $orgId);
         } catch (\InvalidArgumentException $e) {
             $this->json(['error' => $e->getMessage()], 422);
             return;
@@ -113,6 +115,8 @@ class NotesController extends Controller
     private function service(): NoteService
     {
         $db = $this->container->get('db');
-        return new NoteService(new NoteRepository($db));
+        $repo = new NoteRepository($db);
+        $repo->scopeFromContainer($this->container);
+        return new NoteService($repo);
     }
 }

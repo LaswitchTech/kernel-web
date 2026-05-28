@@ -22,14 +22,15 @@ class NoteService
     /**
      * Validate and create a note.
      *
-     * @param  string $entityType  e.g. 'device', 'alert', 'finding'
-     * @param  int    $entityId    Primary key of the target entity
-     * @param  int|null $userId    Authenticated user ID; null = anonymous
-     * @param  string $content     Note body (will be trimmed before storage)
-     * @return int                 New note ID
+     * @param  string $entityType    e.g. 'device', 'alert', 'finding'
+     * @param  int    $entityId      Primary key of the target entity
+     * @param  int|null $userId      Authenticated user ID; null = anonymous
+     * @param  string $content       Note body (will be trimmed before storage)
+     * @param  int|null $orgId       Organization ID for data scoping
+     * @return int                   New note ID
      * @throws \InvalidArgumentException
      */
-    public function addNote(string $entityType, int $entityId, ?int $userId, string $content): int
+    public function addNote(string $entityType, int $entityId, ?int $userId, string $content, ?int $orgId = null): int
     {
         $content = trim($content);
 
@@ -44,10 +45,11 @@ class NoteService
         }
 
         return $this->repo->create([
-            'entity_type' => $entityType,
-            'entity_id'   => $entityId,
-            'user_id'     => $userId,
-            'content'     => $content,
+            'entity_type'     => $entityType,
+            'entity_id'       => $entityId,
+            'user_id'         => $userId,
+            'content'         => $content,
+            'organization_id' => $orgId,
         ]);
     }
 

@@ -4,7 +4,7 @@ namespace App\Controllers;
 
 use App\Core\Controller;
 use App\Core\ProfileModal;
-use App\Models\OrganizationContext;
+use App\Core\OrganizationContext;
 use App\Models\OrganizationMemberRepository;
 use App\Models\OrganizationRepository;
 

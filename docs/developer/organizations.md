@@ -85,7 +85,8 @@ The Organizations plugin provides:
 
 1. **`OrganizationContext`** — a value object holding the current user's default organization ID (or null).
 2. **`OrganizationScoper`** — a static helper that reads/writes the active org from the session.
-3. **Repository extension interface** — plugins implement `OrganizationScopedRepository` which adds `scopeOrganization(int $orgId)` and `scopeUserOrgs(array $orgIds)` methods.
+3. **Repository extension interface** — plugins implement `OrganizationScopedRepository` which adds `scopeOrganization(int $orgId)`, `scopeFromContainer(Container)`, and `scopeUserOrgs(array $orgIds)` methods.
+4. **`OrganizationScope` middleware** — opt-in HTTP middleware that resolves `OrganizationContext::current()` and sets `'org_scope'` in the container for automatic repository scoping.
 
 ### Repository Pattern (Preferred)
 
@@ -397,6 +398,9 @@ app/Models/
 ├── OrganizationMemberRepository.php — organization_users pivot operations
 app/Core/
 ├── OrganizationContext.php          — Session-based default org resolution
+├── OrganizationScopedRepository.php — Abstract base + scopeFromContainer() for auto-scoping
+app/Middleware/
+├── OrganizationScope.php            — Opt-in middleware (sets 'org_scope' in container)
 
 routes/
 └── web.php                          — /api/profile/organizations routes

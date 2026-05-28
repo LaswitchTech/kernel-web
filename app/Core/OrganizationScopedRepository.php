@@ -36,6 +36,28 @@ abstract class OrganizationScopedRepository
     protected ?array $organizationIds = null;
 
     /**
+     * Apply organization scope from the DI container.
+     *
+     * Reads the 'org_scope' binding (int|null) set by OrganizationScope
+     * middleware. Manual scopeOrganization() calls override this value.
+     *
+     * @return static
+     */
+    public function scopeFromContainer(\App\Core\Container $container): static
+    {
+        $orgId = null;
+        try {
+            $orgId = $container->get('org_scope');
+        } catch (\RuntimeException $e) {
+            // 'org_scope' not bound — unscoped.
+        }
+        if ($orgId !== null && $orgId > 0) {
+            $this->organizationIds = [(int) $orgId];
+        }
+        return $this;
+    }
+
+    /**
      * Scope queries to a single organization.
      *
      * @return static
