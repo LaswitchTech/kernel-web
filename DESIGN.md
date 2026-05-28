@@ -929,7 +929,7 @@ After the NetMon cleanup pass, the kernel contains:
 
 ### Plugins (Extracted from Core)
 - **Notes** (`lib/plugins/notes/`) — polymorphic note annotations (first real plugin)
-- **Tasks** (`lib/plugins/tasks/`) — polymorphic task management (second real plugin)
+- **Tasks** (`lib/plugins/tasks/`) — polymorphic task management with priority (low/medium/high/critical), activity tracking (status changes, reassignments, etc.), assignment model, execution hooks, and scheduling (second real plugin)
 
 ### Plugin Migrations
 - Plugin migrations run via `SetupService::runPluginMigrations()` during install.

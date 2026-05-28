@@ -38,6 +38,7 @@ class TaskRepository extends \App\Core\OrganizationScopedRepository
             t.title,
             t.description,
             t.status,
+            t.priority,
             t.assigned_type,
             t.assigned_id,
             t.execution_type,
@@ -61,7 +62,7 @@ class TaskRepository extends \App\Core\OrganizationScopedRepository
         if ($and !== '') {
             $sql .= ' ' . $and;
         }
-        $sql .= " ORDER  BY t.created_at DESC";
+        $sql .= " ORDER  BY t.priority DESC, t.due_at ASC NULLS LAST, t.created_at DESC";
 
         return $this->db->fetch($sql, $orgParams);
     }
@@ -126,6 +127,7 @@ class TaskRepository extends \App\Core\OrganizationScopedRepository
             t.title,
             t.description,
             t.status,
+            t.priority,
             t.assigned_type,
             t.assigned_id,
             t.execution_type,
@@ -181,16 +183,17 @@ class TaskRepository extends \App\Core\OrganizationScopedRepository
 
         $this->db->execute(
             "INSERT INTO tasks
-                (title, description, status, due_at,
+                (title, description, status, priority, due_at,
                  entity_type, entity_id, created_by_user_id,
                  assigned_type, assigned_id, execution_type, execution_payload,
                  organization_id,
                  created_at, updated_at)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
             [
                 $data['title'],
                 $data['description']        ?? null,
                 $data['status'],
+                $data['priority']           ?? 0,
                 $data['due_at']             ?? null,
                 $data['entity_type']        ?? null,
                 $data['entity_id']          ?? null,
@@ -220,6 +223,7 @@ class TaskRepository extends \App\Core\OrganizationScopedRepository
              SET title             = ?,
                  description       = ?,
                  status            = ?,
+                 priority          = ?,
                  due_at            = ?,
                  assigned_type     = ?,
                  assigned_id       = ?,
@@ -231,6 +235,7 @@ class TaskRepository extends \App\Core\OrganizationScopedRepository
                 $data['title'],
                 $data['description']       ?? null,
                 $data['status'],
+                $data['priority']          ?? 0,
                 $data['due_at']            ?? null,
                 $data['assigned_type']     ?? null,
                 $data['assigned_id']       ?? null,

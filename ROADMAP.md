@@ -148,7 +148,7 @@ Kernel-Web V1.0 is a stable, self-hostable kernel suitable for building one busi
 - [P2] Migrate remaining DB-backed config to ConfigOverrideService
 - [x] Multi-tenant data scoping — Repository interface, data model scoping, and middleware/auto-scoping completed
 - [P2] Kernel update system (download + apply workflow)
-- [P2] Agent-operable task foundation (shared task/activity model)
+- [x] Agent-operable task foundation (shared task/activity model)
 - [P2] API/action contract conventions (safe agent-callable operations)
 - [P3] Make 2FA methods extensible
 - [P3] Disable 2FA for users with no selected method
@@ -228,7 +228,7 @@ These are planned but explicitly out of scope for V1.0. They are major systems t
 These are the highest-impact items that should be addressed next:
 
 1. **P2: Multi-tenant data scoping** — Organization-level query filtering middleware and repository conventions. This unlocks proper business-app and SaaS-style usage.
-2. **P2: Agent-operable task foundation** — Core task/activity model usable by humans and AI agents. Should support assignment, status, priority, due dates, links to entities, and audit history.
+2. **P2: API/action contract conventions** — Define how plugins expose safe agent-callable actions through controllers/services with permission checks and audit logging.
 3. **P2: API/action contract conventions** — Define how plugins expose safe agent-callable actions through controllers/services with permission checks and audit logging.
 4. **P2: Migrate remaining DB-backed config to ConfigOverrideService** — Complete config/local.php-backed settings migration for non-sensitive instance config.
 5. **P2: Kernel update system** — Version check exists; needs download and apply workflow.

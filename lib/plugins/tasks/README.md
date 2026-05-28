@@ -10,11 +10,12 @@ Polymorphic task management — create, assign, track, and link tasks to any dom
 lib/plugins/tasks/
 ├── plugin.json       — manifest (routes, services, hooks, menus)
 ├── src/
-│   ├── TaskController.php — HTTP endpoints
-│   ├── TaskService.php    — Validation and business logic
-│   └── TaskRepository.php — Database queries
+│   ├── TaskController.php     — HTTP endpoints
+│   ├── TaskService.php        — Validation and business logic
+│   ├── TaskRepository.php     — Database queries
+│   └── TaskActivityRepository.php — Task activity/event tracking
 ├── routes.php        — Manual route registration (optional)
-├── migrations/       — 9 migration files (create table → schedule fields)
+├── migrations/       — 11 migration files (create table → activity tracking)
 ├── views/
 │   ├── index.php    — Task list with scope filters
 │   ├── create.php   — Create task form
@@ -87,6 +88,8 @@ Registered in the container under `tasks.service`:
 - Cron task execution requires a separate scheduler process
 - No subtask support (parent_id column reserved)
 - Reminder system is query-ready but delivery requires a notification backend
+- Priority uses integer weights (-1 to 2); no custom labels per-organization
+- Activity log is append-only; there is no edit or delete event
 
 ## Migration Status
 
@@ -103,3 +106,5 @@ All 9 migrations are included in the plugin:
 | 0036 | drop_tasks_assigned_user_id.php | Remove deprecated assigned_user_id column |
 | 0037 | add_task_execution_tracking.php | last_run_at, last_run_status, last_run_message |
 | 0043 | add_task_schedule_fields.php | schedule_type, schedule_value |
+| 0056 | add_task_priority.php | priority column (low=-1, medium=0, high=1, critical=2) |
+| 0057 | create_task_activity_table.php | task_activity table for per-task event tracking |

@@ -13,6 +13,30 @@ class TaskService
     /** Valid status values — matches the DB CHECK constraint comment. */
     public const STATUSES = ['open', 'in_progress', 'completed', 'canceled'];
 
+    /** Priority weights — mapped from named levels. */
+    public const PRIORITY_LEVELS = [
+        'low'      => -1,
+        'medium'   =>  0,
+        'high'     =>  1,
+        'critical' =>  2,
+    ];
+
+    /** Priority levels indexed by weight (inverse of PRIORITY_LEVELS). */
+    public const PRIORITY_LABELS = [
+        -1 => 'Low',
+         0 => 'Medium',
+         1 => 'High',
+         2 => 'Critical',
+    ];
+
+    /** Sort order: higher priority first. */
+    public const PRIORITY_SORT = [
+        'critical' => 2,
+        'high'     => 1,
+        'medium'   => 0,
+        'low'      => -1,
+    ];
+
     /**
      * Valid assigned_type values.
      *
@@ -89,10 +113,12 @@ class TaskService
     public const MAX_DESCRIPTION_LENGTH = 10000;
 
     private TaskRepository $repo;
+    private ?TaskActivityRepository $activity;
 
-    public function __construct(TaskRepository $repo)
+    public function __construct(TaskRepository $repo, ?TaskActivityRepository $activity = null)
     {
-        $this->repo = $repo;
+        $this->repo     = $repo;
+        $this->activity = $activity;
     }
 
     // ------
@@ -131,7 +157,21 @@ class TaskService
         $data = $this->normalise($data);
         $this->validate($data);
 
-        return $this->repo->create($data);
+        $id = $this->repo->create($data);
+
+        // Log creation activity if activity repo is available.
+        if ($this->activity !== null) {
+            $this->activity->logEvent(
+                $id,
+                'task_created',
+                $data['created_by_user_id'] ?? null,
+                null,
+                null,
+                ['title' => $data['title']]
+            );
+        }
+
+        return $id;
     }
 
     // ------
@@ -201,6 +241,18 @@ class TaskService
 
         $this->repo->delete($id, date('Y-m-d H:i:s'));
 
+        // Log deletion activity.
+        if ($this->activity !== null) {
+            $this->activity->logEvent(
+                $id,
+                'deleted',
+                null,
+                null,
+                null,
+                ['title' => $task['title'] ?? null]
+            );
+        }
+
         return $task;
     }
 
@@ -215,6 +267,51 @@ class TaskService
         $this->validate($data);
 
         $this->repo->update($id, $data);
+
+        // Log activity for changes that matter.
+        if ($this->activity === null) {
+            return;
+        }
+
+        $oldStatus = $task['status'] ?? null;
+        $newStatus = $data['status'] ?? $oldStatus;
+        $oldPriority = $task['priority'] ?? null;
+        $newPriority = $data['priority'] ?? $oldPriority;
+        $oldAssignee = $task['assigned_type'] . ':' . ($task['assigned_id'] ?? '');
+        $newAssignee = ($data['assigned_type'] ?? null) . ':' . ($data['assigned_id'] ?? null);
+
+        if ($oldStatus !== $newStatus) {
+            $this->activity->logEvent(
+                $id,
+                'status_changed',
+                null,
+                $oldStatus,
+                $newStatus,
+                ['old_title' => $oldStatus, 'new_title' => $newStatus]
+            );
+        }
+
+        if ($oldPriority !== $newPriority) {
+            $this->activity->logEvent(
+                $id,
+                'priority_changed',
+                null,
+                (string) $oldPriority,
+                (string) $newPriority,
+                ['old_value' => (string) $oldPriority, 'new_value' => (string) $newPriority]
+            );
+        }
+
+        if ($oldAssignee !== $newAssignee) {
+            $this->activity->logEvent(
+                $id,
+                'assigned',
+                null,
+                $oldAssignee,
+                $newAssignee,
+                ['old_assignee' => $oldAssignee, 'new_assignee' => $newAssignee]
+            );
+        }
     }
 
     // ------
@@ -227,6 +324,20 @@ class TaskService
         $data['description'] = trim($data['description'] ?? '') ?: null;
         $data['status']      = trim($data['status'] ?? 'open');
         $data['due_at']      = trim($data['due_at'] ?? '') ?: null;
+
+        // Priority: accept named level ("high") or integer weight (1).
+        $priorityInput = trim($data['priority'] ?? '');
+        if ($priorityInput !== '') {
+            if (isset(self::PRIORITY_LEVELS[$priorityInput])) {
+                $data['priority'] = self::PRIORITY_LEVELS[$priorityInput];
+            } elseif (ctype_digit($priorityInput) || (string) (int) $priorityInput === $priorityInput) {
+                $data['priority'] = (int) $priorityInput;
+            } else {
+                $data['priority'] = self::PRIORITY_LEVELS['medium'];
+            }
+        } else {
+            $data['priority'] = null;
+        }
 
         $assignedType = trim($data['assigned_type'] ?? '');
         $data['assigned_type'] = $assignedType !== '' ? $assignedType : null;
@@ -278,6 +389,16 @@ class TaskService
      */
     private function validate(array $data): void
     {
+        // ---- Priority ----
+
+        if ($data['priority'] !== null && !in_array($data['priority'], array_values(self::PRIORITY_LEVELS), true)) {
+            throw new \InvalidArgumentException(
+                'Invalid priority value. Must be one of: ' . implode(', ', array_keys(self::PRIORITY_LEVELS))
+            );
+        }
+
+        // ---- Title ----
+
         if ($data['title'] === '') {
             throw new \InvalidArgumentException('Title is required.');
         }

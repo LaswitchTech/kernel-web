@@ -155,6 +155,7 @@ class TaskController extends Controller
             'title'              => $_POST['title']       ?? '',
             'description'        => $_POST['description'] ?? '',
             'status'             => $_POST['status']      ?? 'open',
+            'priority'           => $_POST['priority']     ?? null,
             'assigned_type'      => $assignedType,
             'assigned_id'        => $assignedId,
             'execution_type'     => $executionType,
@@ -166,7 +167,10 @@ class TaskController extends Controller
             'organization_id'    => $organizationId,
         ];
 
-        $service = new TaskService(new TaskRepository($db));
+        $db = $this->container->get('db');
+        $repo       = new TaskRepository($db);
+        $activity   = new TaskActivityRepository($db);
+        $service    = new TaskService($repo, $activity);
 
         try {
             $newId = $service->create($input);
@@ -218,8 +222,12 @@ class TaskController extends Controller
     {
         [$principal, $config, $appName, $displayName, $permissions] = $this->ctx();
 
-        $service = new TaskService(new TaskRepository($this->container->get('db')));
-        $task    = $service->getById((int) ($params['id'] ?? 0));
+        $db            = $this->container->get('db');
+        $activity      = new TaskActivityRepository($db);
+        $repo          = new TaskRepository($db);
+        $repo->scopeFromContainer($this->container);
+        $service       = new TaskService($repo, $activity);
+        $task          = $service->getById((int) ($params['id'] ?? 0));
 
         if ($task === null) {
             http_response_code(404);
@@ -251,10 +259,13 @@ class TaskController extends Controller
     {
         [$principal, $config, $appName, $displayName, $permissions] = $this->ctx();
 
-        $db      = $this->container->get('db');
-        $service = new TaskService(new TaskRepository($db));
-        $taskId  = (int) ($params['id'] ?? 0);
-        $task    = $service->getById($taskId);
+        $db             = $this->container->get('db');
+        $activity       = new TaskActivityRepository($db);
+        $repo           = new TaskRepository($db);
+        $repo->scopeFromContainer($this->container);
+        $service        = new TaskService($repo, $activity);
+        $taskId         = (int) ($params['id'] ?? 0);
+        $task           = $service->getById($taskId);
 
         if ($task === null) {
             http_response_code(404);
@@ -289,6 +300,7 @@ class TaskController extends Controller
             'title'             => $_POST['title']       ?? '',
             'description'       => $_POST['description'] ?? '',
             'status'            => $_POST['status']      ?? 'open',
+            'priority'          => $_POST['priority']     ?? null,
             'assigned_type'     => $assignedType,
             'assigned_id'       => $assignedId,
             'execution_type'    => $executionType,
@@ -340,8 +352,12 @@ class TaskController extends Controller
     {
         [$principal, $config, $appName, $displayName, $permissions] = $this->ctx();
 
-        $service = new TaskService(new TaskRepository($this->container->get('db')));
-        $taskId  = (int) ($params['id'] ?? 0);
+        $db             = $this->container->get('db');
+        $activity       = new TaskActivityRepository($db);
+        $repo           = new TaskRepository($db);
+        $repo->scopeFromContainer($this->container);
+        $service        = new TaskService($repo, $activity);
+        $taskId         = (int) ($params['id'] ?? 0);
 
         try {
             $task = $service->delete($taskId);
