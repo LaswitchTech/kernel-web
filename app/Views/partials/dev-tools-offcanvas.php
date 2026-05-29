@@ -381,7 +381,9 @@ function devRenderTopLevelChildren(array $children, string $varId, int $initialB
 <div class="offcanvas offcanvas-end dev-tools-offcanvas"
      tabindex="-1"
      id="dev-tools-offcanvas"
-     aria-labelledby="dev-tools-label">
+     aria-labelledby="dev-tools-label"
+     style="--bs-border-opacity: 1; border-left-width: 5px; border-left-color: rgba(var(--bs-primary-rgb),var(--bs-border-opacity)) !important;"
+     >
     <div class="offcanvas-header border-bottom">
         <h5 class="offcanvas-title" id="dev-tools-label">Developer Tools</h5>
         <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
