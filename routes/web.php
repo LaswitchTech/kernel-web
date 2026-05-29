@@ -189,6 +189,11 @@ $router->get('/api/tokens', 'TokenController@index', ['SessionAuth']);
 $router->post('/api/tokens', 'TokenController@create', ['SessionAuth']);
 $router->delete('/api/tokens/{id}', 'TokenController@revoke', ['SessionAuth']);
 
+// -------------------------------- Agent Action API ------
+$router->get('/api/actions', 'App\Controllers\ActionApiController@index', ['SessionAuth'], 10);
+$router->get('/api/actions/{id}', 'App\Controllers\ActionApiController@show', ['SessionAuth'], 10);
+$router->post('/api/actions/{id}/execute', 'App\Controllers\ActionApiController@execute', ['SessionAuth'], 10);
+
 // -------------------------------- Barcode/QR Generation (public) ------
 // Path-based value (simple strings only):
 //   GET /api/barcode/QR/SVG/FI2I72O7Q5KULICABPJD7QDGHNB3JFNA

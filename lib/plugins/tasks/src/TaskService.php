@@ -506,4 +506,195 @@ class TaskService
             );
         }
     }
+
+    // ------
+    // Action registration
+    // ------
+
+    /**
+     * Register all tasks plugin actions with the ActionRegistry.
+     *
+     * Called by the plugins.bootstrap hook during plugin bootstrap.
+     */
+    public static function registerActions(): void
+    {
+        $prefix = 'tasks';
+
+        ActionRegistry::add(new ActionDefinition(
+            id: "{$prefix}.create",
+            name: 'Create Task',
+            description: 'Create a new task with a title and optional metadata.',
+            service_class: self::class,
+            service_method: 'createFromInput',
+            parameters: [
+                ['name' => 'title', 'type' => 'string', 'required' => true, 'description' => 'Task title', 'min_length' => 1, 'max_length' => 255],
+                ['name' => 'description', 'type' => 'string', 'required' => false, 'description' => 'Task description', 'default' => null],
+                ['name' => 'status', 'type' => 'string', 'required' => false, 'description' => 'Initial status', 'default' => 'open', 'enum' => self::STATUSES],
+                ['name' => 'priority', 'type' => 'string', 'required' => false, 'description' => 'Priority level', 'default' => 'medium', 'enum' => array_keys(self::PRIORITY_LEVELS)],
+                ['name' => 'due_at', 'type' => 'string', 'required' => false, 'description' => 'Due date (YYYY-MM-DD HH:MM:SS)', 'default' => null],
+                ['name' => 'assigned_type', 'type' => 'string', 'required' => false, 'description' => 'Assignment type', 'default' => null, 'enum' => self::ASSIGNED_TYPES],
+                ['name' => 'assigned_id', 'type' => 'nullable_int', 'required' => false, 'description' => 'Assignee ID', 'default' => null],
+            ],
+            permission: 'tasks.manage',
+            risk_level: 'low',
+            audit_entity_type: 'task',
+            metadata: [
+                'scope' => 'tasks',
+                'category' => 'crud',
+                'input_summary' => 'title, description, status, priority',
+            ],
+            source: 'tasks',
+            order: 10,
+        ));
+
+        ActionRegistry::add(new ActionDefinition(
+            id: "{$prefix}.update",
+            name: 'Update Task',
+            description: 'Update an existing task\'s fields (status, priority, assignee, etc.).',
+            service_class: self::class,
+            service_method: 'updateFromInput',
+            parameters: [
+                ['name' => 'id', 'type' => 'int', 'required' => true, 'description' => 'Task ID'],
+                ['name' => 'status', 'type' => 'string', 'required' => false, 'description' => 'New status', 'enum' => self::STATUSES],
+                ['name' => 'priority', 'type' => 'string', 'required' => false, 'description' => 'New priority', 'enum' => array_keys(self::PRIORITY_LEVELS)],
+                ['name' => 'title', 'type' => 'string', 'required' => false, 'description' => 'New title', 'max_length' => 255],
+                ['name' => 'description', 'type' => 'string', 'required' => false, 'description' => 'New description'],
+                ['name' => 'due_at', 'type' => 'string', 'required' => false, 'description' => 'New due date'],
+                ['name' => 'assigned_type', 'type' => 'string', 'required' => false, 'description' => 'New assignment type', 'enum' => self::ASSIGNED_TYPES],
+                ['name' => 'assigned_id', 'type' => 'nullable_int', 'required' => false, 'description' => 'New assignee ID'],
+            ],
+            permission: 'tasks.manage',
+            risk_level: 'low',
+            audit_entity_type: 'task',
+            metadata: [
+                'scope' => 'tasks',
+                'category' => 'crud',
+                'input_summary' => 'id, status, priority, title, description',
+            ],
+            source: 'tasks',
+            order: 20,
+        ));
+
+        ActionRegistry::add(new ActionDefinition(
+            id: "{$prefix}.delete",
+            name: 'Delete Task',
+            description: 'Permanently delete a task. This action requires approval for agent callers.',
+            service_class: self::class,
+            service_method: 'deleteFromInput',
+            parameters: [
+                ['name' => 'id', 'type' => 'int', 'required' => true, 'description' => 'Task ID to delete'],
+            ],
+            permission: 'tasks.manage',
+            risk_level: 'high',
+            audit_entity_type: 'task',
+            metadata: [
+                'scope' => 'tasks',
+                'category' => 'crud',
+                'input_summary' => 'id',
+            ],
+            source: 'tasks',
+            order: 30,
+        ));
+
+        ActionRegistry::add(new ActionDefinition(
+            id: "{$prefix}.assign",
+            name: 'Assign Task',
+            description: 'Change the assignee of a task.',
+            service_class: self::class,
+            service_method: 'assignFromInput',
+            parameters: [
+                ['name' => 'id', 'type' => 'int', 'required' => true, 'description' => 'Task ID'],
+                ['name' => 'assigned_type', 'type' => 'string', 'required' => true, 'description' => 'Assignment type', 'enum' => self::ASSIGNED_TYPES],
+                ['name' => 'assigned_id', 'type' => 'nullable_int', 'required' => true, 'description' => 'Assignee ID'],
+            ],
+            permission: 'tasks.manage',
+            risk_level: 'low',
+            audit_entity_type: 'task',
+            metadata: [
+                'scope' => 'tasks',
+                'category' => 'assign',
+                'input_summary' => 'id, assigned_type, assigned_id',
+            ],
+            source: 'tasks',
+            order: 40,
+        ));
+    }
+
+    /**
+     * Thin wrappers that expose the service methods as action handlers.
+     *
+     * These instantiate the service internally (or use the container if available)
+     * and call the existing service methods. They bridge the action contract
+     * with the existing TaskService API.
+     */
+
+    public static function createFromInput(array $input): int
+    {
+        $db = \App\Core\Config::load('database');
+        $driver = match ($db['driver'] ?? 'sqlite') {
+            'sqlite' => new \App\Core\SQLiteDriver($db['sqlite']['path']),
+            default => throw new \RuntimeException('Unsupported database driver'),
+        };
+        $repo = new TaskRepository($driver);
+        $service = new self($repo);
+        return $service->create($input);
+    }
+
+    public static function updateFromInput(array $input): array
+    {
+        if (!isset($input['id'])) {
+            throw new \InvalidArgumentException('id is required for update.');
+        }
+        $id = (int) $input['id'];
+        unset($input['id']);
+
+        $db = \App\Core\Config::load('database');
+        $driver = match ($db['driver'] ?? 'sqlite') {
+            'sqlite' => new \App\Core\SQLiteDriver($db['sqlite']['path']),
+            default => throw new \RuntimeException('Unsupported database driver'),
+        };
+        $repo = new TaskRepository($driver);
+        $service = new self($repo);
+        $service->update($id, $input);
+        return ['id' => $id, 'updated' => true];
+    }
+
+    public static function deleteFromInput(array $input): array
+    {
+        if (!isset($input['id'])) {
+            throw new \InvalidArgumentException('id is required for delete.');
+        }
+        $id = (int) $input['id'];
+
+        $db = \App\Core\Config::load('database');
+        $driver = match ($db['driver'] ?? 'sqlite') {
+            'sqlite' => new \App\Core\SQLiteDriver($db['sqlite']['path']),
+            default => throw new \RuntimeException('Unsupported database driver'),
+        };
+        $repo = new TaskRepository($driver);
+        $service = new self($repo);
+        $task = $service->delete($id);
+        return ['id' => $id, 'deleted' => true, 'title' => $task['title'] ?? null];
+    }
+
+    public static function assignFromInput(array $input): array
+    {
+        if (!isset($input['id'], $input['assigned_type'], $input['assigned_id'])) {
+            throw new \InvalidArgumentException('id, assigned_type, and assigned_id are required for assign.');
+        }
+        $id = (int) $input['id'];
+
+        $db = \App\Core\Config::load('database');
+        $driver = match ($db['driver'] ?? 'sqlite') {
+            'sqlite' => new \App\Core\SQLiteDriver($db['sqlite']['path']),
+            default => throw new \RuntimeException('Unsupported database driver'),
+        };
+        $repo = new TaskRepository($driver);
+        $service = new self($repo);
+        $service->update($id, [
+            'assigned_type' => $input['assigned_type'],
+            'assigned_id' => $input['assigned_id'],
+        ]);
+        return ['id' => $id, 'assigned_type' => $input['assigned_type'], 'assigned_id' => (int) $input['assigned_id']];
+    }
 }

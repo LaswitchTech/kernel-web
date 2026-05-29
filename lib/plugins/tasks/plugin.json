@@ -44,6 +44,13 @@
                 "priority": 5,
                 "callback": "Plugins\\Tasks\\TaskController::headAssets"
             }
+        },
+        {
+            "hook": "plugins.bootstrap",
+            "content": {
+                "priority": 5,
+                "callback": "App\\Plugins\\Tasks\\TaskService::registerActions"
+            }
         }
     ],
     "menus": [
