@@ -214,7 +214,8 @@ class PluginLoader
         // with "not in discovered bucket". Needed when:
         //   - no catalog entry (catalogState is null) + manifest enabled
         //   - catalog override changes enabled state vs manifest
-        if ($catalogState === null || $catalogState !== $manifest->enabled()) {
+        //   - catalog says enabled but manifest also says enabled (they agree)
+        if ($effectiveEnabled) {
             $this->registry->addDiscovered($manifest);
         }
 

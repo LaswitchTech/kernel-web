@@ -153,6 +153,9 @@ $router->post('/api/profile/organizations/create', 'ProfileOrganizationsControll
 // Chat JSON API — SessionAuth for AJAX callers.
 $router->get('/api/chat/unread', 'Modules\Chat\Controllers\ChatController@unreadCount', ['SessionAuth']);
 
+// -------------------------------- Application Dashboard ------
+$router->get('/app', 'AppDashboardController@index', ['WebAuth'], 0);
+
 // -------------------------------- Authentication (public) ------
 $router->get('/signin', 'AuthController@loginForm');
 $router->post('/auth/login', 'AuthController@login');

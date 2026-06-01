@@ -177,6 +177,7 @@ class ViewGlobals
                 'appConfig'         => $appConfig,
                 'appName'           => $appName,
                 'principal'         => $principal,
+                'user'              => $resolvedUser,
             ]
         );
     }
@@ -258,7 +259,10 @@ class ViewGlobals
         if (($scopeVars['appName'] ?? '') === '') {
             $scopeVars['appName'] = 'Kernel-Web';
         }
-
+        // Ensure $pageTitle always has a default.
+        if (($scopeVars['pageTitle'] ?? '') === '') {
+            $scopeVars['pageTitle'] = '';
+        }
         // Ensure $appConfig always exists so dev-tools guard doesn't fail.
         if (!isset($scopeVars['appConfig']) || !is_array($scopeVars['appConfig'])) {
             $scopeVars['appConfig'] = [];

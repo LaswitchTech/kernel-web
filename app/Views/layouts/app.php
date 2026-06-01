@@ -1,3 +1,12 @@
+<?php
+// Resolve global view context before any content that depends on it.
+use App\Core\ViewGlobals;
+$__ctx = get_defined_vars();
+$__globals = ViewGlobals::contextFromScope($__ctx);
+extract($__globals);
+$__ctx = null;
+unset($__ctx);
+?>
 <!DOCTYPE html>
 <html lang="en" data-bs-theme="dark">
 <head>
@@ -84,7 +93,6 @@
     </script>
 </head>
 <body>
-<?php use App\Core\ViewGlobals; $__devScope = get_defined_vars(); $__globals = ViewGlobals::contextFromScope($__devScope); extract($__globals); $__devScope = null; unset($__devScope); ?>
 
 <?php
 // Hook: layout.body.start — plugins can inject content at the start of <body>

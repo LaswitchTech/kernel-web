@@ -727,7 +727,7 @@ class ExtensionDependencyResolver
 
     private static function isValidVersion(string $version): bool
     {
-        return preg_match('/^\d+\.\d+\.\d+$/', $version) === 1;
+        return preg_match('/^\d+\.\d+(\.\d+)?$/', $version) === 1;
     }
 
     /**

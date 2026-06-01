@@ -109,6 +109,10 @@ class Router
     public function dispatch(string $method, string $uri): void
     {
         $uri = strtok($uri, '?'); // strip query string
+        $uri = rtrim($uri, '/'); // normalize trailing slashes — /app/ → /app
+        if ($uri === '') {
+            $uri = '/';
+        }
 
         // Sort routes by priority (highest first), preserving insertion order for ties.
         $sorted = $this->routes;

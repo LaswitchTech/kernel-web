@@ -53,9 +53,25 @@ spl_autoload_register(function (string $class): void {
 // Handles both App\Plugins\ (kernel core) and Plugins\ (external plugins) namespaces.
 spl_autoload_register(function (string $class): void {
     if (strncmp($class, 'App\\Plugins\\', strlen('App\\Plugins\\')) === 0) {
-        // App\Plugins\Core\ProfileModal → app/Core/ProfileModal.php
         $relative = substr($class, strlen('App\\Plugins\\'));
-        $file     = __DIR__ . '/Core/' . str_replace('\\', '/', $relative) . '.php';
+        $parts    = explode('\\', $relative);
+
+        // Try external plugin directory first (e.g. App\Plugins\Notes\NotesController
+        // → lib/plugins/notes/src/NotesController.php).
+        $pluginsDir = __DIR__ . '/../lib/plugins';
+        if (is_dir($pluginsDir) && count($parts) >= 2) {
+            $pluginName = strtolower($parts[0]);
+            $classPath  = implode('/', array_slice($parts, 1));
+            $file       = $pluginsDir . '/' . $pluginName . '/src/' . $classPath . '.php';
+            if (is_file($file)) {
+                require $file;
+                return;
+            }
+        }
+
+        // Fall back to kernel Core (e.g. App\Plugins\Core\ProfileModal
+        // → app/Core/ProfileModal.php).
+        $file = __DIR__ . '/Core/' . str_replace('\\', '/', $relative) . '.php';
         if (file_exists($file)) {
             require $file;
         }
@@ -292,9 +308,10 @@ if ($pluginsDir !== false && is_dir($pluginsDir)) {
     $loader->getRegistry()->setContainer($container);
     $loader->registerServices();
 
-    // Register plugin hooks and menus.
+    // Register plugin hooks, menus, and routes.
     $loader->registerHooks();
     $loader->registerMenus();
+    $loader->registerRoutes();
 
     // Execute plugin bootstrap hooks (transport override, settings registration, etc.).
     $loader->executePluginHooks('plugins.bootstrap', ['kernelRoot' => dirname(__DIR__)]);
@@ -318,6 +335,7 @@ if ($pluginsDir !== false && is_dir($pluginsDir)) {
         // Tools section — visible only when user has any tool permission.
         ['name' => '__section__tools', 'label' => 'Tools', 'url' => null, 'icon' => null, 'permission' => null, 'order' => 10,
          'sections' => [['label' => 'Tools', 'order' => 10]]],
+        ['name' => 'tasks', 'label' => 'Tasks', 'url' => '/tasks', 'icon' => 'bi bi-check2-square', 'permission' => 'tasks.manage', 'order' => 20, 'sections' => []],
         // Chat and File Manager are kernel modules (not plugins yet).
         ['name' => 'chat', 'label' => 'Chat', 'url' => '/chat', 'icon' => 'bi bi-chat-dots', 'permission' => 'chat.use', 'order' => 25, 'sections' => []],
         ['name' => 'files', 'label' => 'File Manager', 'url' => '/files', 'icon' => 'bi bi-folder2', 'permission' => 'files.manage', 'order' => 30, 'sections' => []],

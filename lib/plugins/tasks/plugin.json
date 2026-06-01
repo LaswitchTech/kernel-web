@@ -4,7 +4,7 @@
     "description": "Polymorphic task management — create, assign, track, and link tasks to any domain entity.",
     "enabled": true,
     "requires": {
-        "kernel": "8.1"
+        "kernel": ">=8.1"
     },
     "dependencies": {},
     "permissions": [

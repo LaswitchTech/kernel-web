@@ -466,7 +466,7 @@ class TaskController extends Controller
         $_SESSION['tasks_flash'] = ['type' => $type, 'message' => $message];
     }
 
-    private function popFlash(): ?array
+    protected function popFlash(): ?array
     {
         $flash = $_SESSION['tasks_flash'] ?? null;
         unset($_SESSION['tasks_flash']);

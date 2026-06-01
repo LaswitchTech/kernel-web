@@ -54,7 +54,7 @@
             <div class="d-grid gap-2">
                 <?php if ($isAuthenticated): ?>
                 <div class="text-center small text-muted mb-2">Signed in as <strong><?= htmlspecialchars($currentUsername ?? $currentUserEmail ?? 'user') ?></strong></div>
-                <a href="/admin" class="btn btn-primary btn-lg">
+                <a href="/app/" class="btn btn-primary btn-lg">
                     <i class="bi bi-box-arrow-in-right"></i> Go to App
                 </a>
                 <form method="POST" action="/auth/logout" style="display:inline;">
